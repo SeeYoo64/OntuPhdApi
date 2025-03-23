@@ -1,6 +1,6 @@
 ﻿namespace OntuPhdApi.Models
 {
-    public class Program
+    public class ProgramView
     {
         public int Id { get; set; }
         public string Name { get; set; }
@@ -17,7 +17,7 @@
         public string LinkFaculty { get; set; }
         public string LinkFile { get; set; }
         public List<ProgramComponent> Components { get; set; }
-        public List<Job> Jobs { get; set; }  // Список профессий
+        public List<Job> Jobs { get; set; } 
     }
 
     public class FieldOfStudy
