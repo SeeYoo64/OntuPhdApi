@@ -3,7 +3,7 @@
     public class ProgramCharacteristics
     {
         public Area Area { get; set; }
-        public string Focus { get; set; }
+        public Focus Focus { get; set; }
         public Features Features { get; set; }
     }
 
@@ -14,6 +14,11 @@
         public string Theory { get; set; }
         public string Methods { get; set; }
         public string Instruments { get; set; }
+    }
+
+    public class Focus
+    {
+        public string Focus1 { get; set; }
     }
 
     public class Features

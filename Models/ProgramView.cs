@@ -1,11 +1,11 @@
 ﻿namespace OntuPhdApi.Models
 {
-    public class ProgramView
+    public class Program
     {
         public int Id { get; set; }
         public string Name { get; set; }
-        public FieldOfStudy FieldOfStudy { get; set; }  // Объект с code и name
-        public Speciality Speciality { get; set; }      // Объект с code и name
+        public FieldOfStudy FieldOfStudy { get; set; }
+        public Speciality Speciality { get; set; }
         public List<string> Form { get; set; }
         public int Years { get; set; }
         public int Credits { get; set; }
@@ -16,6 +16,8 @@
         public ProgramResults ProgramResults { get; set; }
         public string LinkFaculty { get; set; }
         public string LinkFile { get; set; }
+        public List<ProgramComponent> Components { get; set; }
+        public List<Job> Jobs { get; set; }  // Список профессий
     }
 
     public class FieldOfStudy
