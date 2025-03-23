@@ -8,6 +8,6 @@
         public string ComponentName { get; set; }
         public int ComponentCredits { get; set; }
         public int ComponentHours { get; set; }
-        public string ControlForm { get; set; }
+        public List<string> ControlForm { get; set; }
     }
 }

@@ -83,7 +83,7 @@ namespace OntuPhdApi.Services
                                     ComponentName = reader.GetString(2),
                                     ComponentCredits = reader.GetInt32(3),
                                     ComponentHours = reader.GetInt32(4),
-                                    ControlForm = reader.GetString(5)
+                                    ControlForm = reader.IsDBNull(5) ? null : JsonSerializer.Deserialize<List<string>>(reader.GetString(5), jsonOptions)
                                 });
                             }
                         }
@@ -186,7 +186,7 @@ namespace OntuPhdApi.Services
                                     ComponentName = reader.GetString(2),
                                     ComponentCredits = reader.GetInt32(3),
                                     ComponentHours = reader.GetInt32(4),
-                                    ControlForm = reader.GetString(5)
+                                    ControlForm = reader.IsDBNull(5) ? null : JsonSerializer.Deserialize<List<string>>(reader.GetString(5), jsonOptions)
                                 });
                             }
                         }
