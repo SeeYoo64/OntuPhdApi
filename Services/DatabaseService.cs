@@ -26,7 +26,7 @@ namespace OntuPhdApi.Services
                 connection.Open();
 
                 using (var cmd = new NpgsqlCommand(
-                    "SELECT Id, Name, FieldOfStudy, Speciality, Form, Years, Credits, Sum, Costs, " +
+                    "SELECT Id, Name, Name_Eng, FieldOfStudy, Speciality, Form, Years, Credits, Sum, Costs, " +
                     "ProgramCharacteristics, ProgramCompetence, ProgramResults, LinkFaculty, LinkFile " +
                     "FROM Programs", connection))
                 using (var reader = cmd.ExecuteReader())
@@ -39,18 +39,19 @@ namespace OntuPhdApi.Services
                             {
                                 Id = reader.GetInt32(0),
                                 Name = reader.GetString(1),
-                                FieldOfStudy = reader.IsDBNull(2) ? null : JsonSerializer.Deserialize<FieldOfStudy>(reader.GetString(2), jsonOptions),
-                                Speciality = reader.IsDBNull(3) ? null : JsonSerializer.Deserialize<Speciality>(reader.GetString(3), jsonOptions),
-                                Form = reader.IsDBNull(4) ? null : JsonSerializer.Deserialize<List<string>>(reader.GetString(4), jsonOptions),
-                                Years = reader.GetInt32(5),
-                                Credits = reader.GetInt32(6),
-                                Sum = reader.GetDecimal(7),
-                                Costs = reader.IsDBNull(8) ? null : JsonSerializer.Deserialize<List<decimal>>(reader.GetString(8), jsonOptions),
-                                ProgramCharacteristics = reader.IsDBNull(9) ? null : JsonSerializer.Deserialize<ProgramCharacteristics>(reader.GetString(9), jsonOptions),
-                                ProgramCompetence = reader.IsDBNull(10) ? null : JsonSerializer.Deserialize<ProgramCompetence>(reader.GetString(10), jsonOptions),
-                                ProgramResults = reader.IsDBNull(11) ? null : JsonSerializer.Deserialize<ProgramResults>(reader.GetString(11), jsonOptions),
-                                LinkFaculty = reader.GetString(12),
-                                LinkFile = reader.GetString(13),
+                                NameEng = reader.IsDBNull(2) ? null : reader.GetString(2), // Читаем name_eng
+                                FieldOfStudy = reader.IsDBNull(3) ? null : JsonSerializer.Deserialize<FieldOfStudy>(reader.GetString(3), jsonOptions),
+                                Speciality = reader.IsDBNull(4) ? null : JsonSerializer.Deserialize<Speciality>(reader.GetString(4), jsonOptions),
+                                Form = reader.IsDBNull(5) ? null : JsonSerializer.Deserialize<List<string>>(reader.GetString(5), jsonOptions),
+                                Years = reader.GetInt32(6),
+                                Credits = reader.GetInt32(7),
+                                Sum = reader.GetDecimal(8),
+                                Costs = reader.IsDBNull(9) ? null : JsonSerializer.Deserialize<List<decimal>>(reader.GetString(9), jsonOptions),
+                                ProgramCharacteristics = reader.IsDBNull(10) ? null : JsonSerializer.Deserialize<ProgramCharacteristics>(reader.GetString(10), jsonOptions),
+                                ProgramCompetence = reader.IsDBNull(11) ? null : JsonSerializer.Deserialize<ProgramCompetence>(reader.GetString(11), jsonOptions),
+                                ProgramResults = reader.IsDBNull(12) ? null : JsonSerializer.Deserialize<ProgramResults>(reader.GetString(12), jsonOptions),
+                                LinkFaculty = reader.GetString(13),
+                                LinkFile = reader.GetString(14),
                                 Components = new List<ProgramComponent>(),
                                 Jobs = new List<Job>()
                             };
@@ -127,7 +128,7 @@ namespace OntuPhdApi.Services
                 connection.Open();
 
                 using (var cmd = new NpgsqlCommand(
-                    "SELECT Id, Name, FieldOfStudy, Speciality, Form, Years, Credits, Sum, Costs, " +
+                    "SELECT Id, Name, Name_Eng, FieldOfStudy, Speciality, Form, Years, Credits, Sum, Costs, " +
                     "ProgramCharacteristics, ProgramCompetence, ProgramResults, LinkFaculty, LinkFile " +
                     "FROM Programs WHERE Id = @id", connection))
                 {
@@ -142,18 +143,19 @@ namespace OntuPhdApi.Services
                                 {
                                     Id = reader.GetInt32(0),
                                     Name = reader.GetString(1),
-                                    FieldOfStudy = reader.IsDBNull(2) ? null : JsonSerializer.Deserialize<FieldOfStudy>(reader.GetString(2), jsonOptions),
-                                    Speciality = reader.IsDBNull(3) ? null : JsonSerializer.Deserialize<Speciality>(reader.GetString(3), jsonOptions),
-                                    Form = reader.IsDBNull(4) ? null : JsonSerializer.Deserialize<List<string>>(reader.GetString(4), jsonOptions),
-                                    Years = reader.GetInt32(5),
-                                    Credits = reader.GetInt32(6),
-                                    Sum = reader.GetDecimal(7),
-                                    Costs = reader.IsDBNull(8) ? null : JsonSerializer.Deserialize<List<decimal>>(reader.GetString(8), jsonOptions),
-                                    ProgramCharacteristics = reader.IsDBNull(9) ? null : JsonSerializer.Deserialize<ProgramCharacteristics>(reader.GetString(9), jsonOptions),
-                                    ProgramCompetence = reader.IsDBNull(10) ? null : JsonSerializer.Deserialize<ProgramCompetence>(reader.GetString(10), jsonOptions),
-                                    ProgramResults = reader.IsDBNull(11) ? null : JsonSerializer.Deserialize<ProgramResults>(reader.GetString(11), jsonOptions),
-                                    LinkFaculty = reader.GetString(12),
-                                    LinkFile = reader.GetString(13),
+                                    NameEng = reader.IsDBNull(2) ? null : reader.GetString(2), // Читаем name_eng
+                                    FieldOfStudy = reader.IsDBNull(3) ? null : JsonSerializer.Deserialize<FieldOfStudy>(reader.GetString(3), jsonOptions),
+                                    Speciality = reader.IsDBNull(4) ? null : JsonSerializer.Deserialize<Speciality>(reader.GetString(4), jsonOptions),
+                                    Form = reader.IsDBNull(5) ? null : JsonSerializer.Deserialize<List<string>>(reader.GetString(5), jsonOptions),
+                                    Years = reader.GetInt32(6),
+                                    Credits = reader.GetInt32(7),
+                                    Sum = reader.GetDecimal(8),
+                                    Costs = reader.IsDBNull(9) ? null : JsonSerializer.Deserialize<List<decimal>>(reader.GetString(9), jsonOptions),
+                                    ProgramCharacteristics = reader.IsDBNull(10) ? null : JsonSerializer.Deserialize<ProgramCharacteristics>(reader.GetString(10), jsonOptions),
+                                    ProgramCompetence = reader.IsDBNull(11) ? null : JsonSerializer.Deserialize<ProgramCompetence>(reader.GetString(11), jsonOptions),
+                                    ProgramResults = reader.IsDBNull(12) ? null : JsonSerializer.Deserialize<ProgramResults>(reader.GetString(12), jsonOptions),
+                                    LinkFaculty = reader.GetString(13),
+                                    LinkFile = reader.GetString(14),
                                     Components = new List<ProgramComponent>(),
                                     Jobs = new List<Job>()
                                 };
@@ -230,13 +232,14 @@ namespace OntuPhdApi.Services
 
                 int programId;
                 using (var cmd = new NpgsqlCommand(
-                    "INSERT INTO Programs (Name, FieldOfStudy, Speciality, Form, Years, Credits, Sum, Costs, " +
+                    "INSERT INTO Programs (Name, Name_Eng, FieldOfStudy, Speciality, Form, Years, Credits, Sum, Costs, " +
                     "ProgramCharacteristics, ProgramCompetence, ProgramResults, LinkFaculty, LinkFile) " +
-                    "VALUES (@name, @fieldOfStudy, @speciality, @form, @years, @credits, @sum, @costs, " +
+                    "VALUES (@name, @nameEng, @fieldOfStudy, @speciality, @form, @years, @credits, @sum, @costs, " +
                     "@programCharacteristics, @programCompetence, @programResults, @linkFaculty, @linkFile) " +
                     "RETURNING Id", connection))
                 {
                     cmd.Parameters.AddWithValue("name", program.Name);
+                    cmd.Parameters.AddWithValue("nameEng", (object)program.NameEng ?? DBNull.Value); // Учитываем, что nameEng может быть null
                     cmd.Parameters.AddWithValue("fieldOfStudy", JsonSerializer.Serialize(program.FieldOfStudy, jsonOptions));
                     cmd.Parameters.AddWithValue("speciality", JsonSerializer.Serialize(program.Speciality, jsonOptions));
                     cmd.Parameters.AddWithValue("form", JsonSerializer.Serialize(program.Form, jsonOptions));
