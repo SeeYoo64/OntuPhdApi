@@ -1,5 +1,6 @@
 ﻿using Npgsql;
 using OntuPhdApi.Models;
+using System.Reflection.Metadata;
 using System.Text.Json;
 
 namespace OntuPhdApi.Services
@@ -312,5 +313,121 @@ namespace OntuPhdApi.Services
                 }
             }
         }
+    
+        
+        public List<Documents> GetDocuments()
+        {
+            var documents = new List<Documents>();
+
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                connection.Open();
+
+                using (var cmd = new NpgsqlCommand("Select Id, ProgramId, Name, Type, Link From Documents", connection))
+
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        documents.Add(new Documents
+                        {
+                            Id = reader.GetInt32(0),
+                            ProgramId = reader.GetInt32(1),
+                            Name = reader.GetString(2),
+                            Type = reader.GetString(3),
+                            Link = reader.GetString(4)
+                        });
+                    }
+                }
+            }
+
+            return documents;
+
+        }
+
+
+        public Documents GetDocumentsById(int id)
+        {
+            Documents document = null;
+
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                connection.Open();
+
+                using (var cmd = new NpgsqlCommand("Select Id, ProgramId, Name, Type, Link From Documents WHERE Id = @id", connection))
+                {
+                    cmd.Parameters.AddWithValue("id", id);
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            document = new Documents
+                            {
+                                Id = reader.GetInt32(0),
+                                ProgramId = reader.GetInt32(1),
+                                Name = reader.GetString(2),
+                                Type = reader.GetString(3),
+                                Link = reader.GetString(4)
+                            };
+                        }
+                    }
+                }
+            }
+            return document;
+        }
+
+        public List<Documents> GetDocumentsByType(string type)
+        {
+            var documents = new List<Documents>();
+
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                connection.Open();
+
+                using (var cmd = new NpgsqlCommand("SELECT Id, ProgramId, Name, Type, Link FROM Documents WHERE Type = @type", connection))
+                {
+                    cmd.Parameters.AddWithValue("type", type);
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            documents.Add(new Documents
+                            {
+                                Id = reader.GetInt32(0),
+                                ProgramId = reader.GetInt32(1),
+                                Name = reader.GetString(2),
+                                Type = reader.GetString(3),
+                                Link = reader.GetString(4)
+                            });
+                        }
+                    }
+                }
+            }
+
+            return documents;
+        }
+
+        public void AddDocument(Documents document)
+        {
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                connection.Open();
+
+                using (var cmd = new NpgsqlCommand(
+                    "INSERT INTO Documents (ProgramId, Name, Type, Link) " +
+                    "VALUES (@programId, @name, @type, @link) RETURNING Id", connection))
+                {
+                    cmd.Parameters.AddWithValue("programId", document.ProgramId);
+                    cmd.Parameters.AddWithValue("name", document.Name);
+                    cmd.Parameters.AddWithValue("type", document.Type);
+                    cmd.Parameters.AddWithValue("link", document.Link);
+                    document.Id = (int)cmd.ExecuteScalar();
+                }
+            }
+        }
+
+
+
+
     }
 }
