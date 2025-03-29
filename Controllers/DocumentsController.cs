@@ -43,7 +43,7 @@ namespace OntuPhdApi.Controllers
         {
             try
             {
-                var document = _dbService.GetDocumentsById(id);
+                var document = _dbService.GetDocumentById(id);
                 if (document == null)
                 {
                     return NotFound($"Document with ID {id} not found.");

@@ -313,8 +313,8 @@ namespace OntuPhdApi.Services
                 }
             }
         }
-    
-        
+
+
         public List<Documents> GetDocuments()
         {
             var documents = new List<Documents>();
@@ -323,8 +323,7 @@ namespace OntuPhdApi.Services
             {
                 connection.Open();
 
-                using (var cmd = new NpgsqlCommand("Select Id, ProgramId, Name, Type, Link From Documents", connection))
-
+                using (var cmd = new NpgsqlCommand("SELECT Id, ProgramId, Name, Type, Link FROM Documents", connection))
                 using (var reader = cmd.ExecuteReader())
                 {
                     while (reader.Read())
@@ -332,7 +331,7 @@ namespace OntuPhdApi.Services
                         documents.Add(new Documents
                         {
                             Id = reader.GetInt32(0),
-                            ProgramId = reader.GetInt32(1),
+                            ProgramId = reader.IsDBNull(1) ? null : reader.GetInt32(1),
                             Name = reader.GetString(2),
                             Type = reader.GetString(3),
                             Link = reader.GetString(4)
@@ -342,11 +341,10 @@ namespace OntuPhdApi.Services
             }
 
             return documents;
-
         }
 
 
-        public Documents GetDocumentsById(int id)
+        public Documents GetDocumentById(int id)
         {
             Documents document = null;
 
@@ -354,17 +352,17 @@ namespace OntuPhdApi.Services
             {
                 connection.Open();
 
-                using (var cmd = new NpgsqlCommand("Select Id, ProgramId, Name, Type, Link From Documents WHERE Id = @id", connection))
+                using (var cmd = new NpgsqlCommand("SELECT Id, ProgramId, Name, Type, Link FROM Documents WHERE Id = @id", connection))
                 {
                     cmd.Parameters.AddWithValue("id", id);
                     using (var reader = cmd.ExecuteReader())
                     {
-                        while (reader.Read())
+                        if (reader.Read())
                         {
                             document = new Documents
                             {
                                 Id = reader.GetInt32(0),
-                                ProgramId = reader.GetInt32(1),
+                                ProgramId = reader.IsDBNull(1) ? null : reader.GetInt32(1), // Обрабатываем NULL
                                 Name = reader.GetString(2),
                                 Type = reader.GetString(3),
                                 Link = reader.GetString(4)
@@ -373,6 +371,7 @@ namespace OntuPhdApi.Services
                     }
                 }
             }
+
             return document;
         }
 
@@ -394,7 +393,7 @@ namespace OntuPhdApi.Services
                             documents.Add(new Documents
                             {
                                 Id = reader.GetInt32(0),
-                                ProgramId = reader.GetInt32(1),
+                                ProgramId = reader.IsDBNull(1) ? null : reader.GetInt32(1), // Обрабатываем NULL
                                 Name = reader.GetString(2),
                                 Type = reader.GetString(3),
                                 Link = reader.GetString(4)
@@ -417,7 +416,7 @@ namespace OntuPhdApi.Services
                     "INSERT INTO Documents (ProgramId, Name, Type, Link) " +
                     "VALUES (@programId, @name, @type, @link) RETURNING Id", connection))
                 {
-                    cmd.Parameters.AddWithValue("programId", document.ProgramId);
+                    cmd.Parameters.AddWithValue("programId", (object)document.ProgramId ?? DBNull.Value); // Обрабатываем NULL
                     cmd.Parameters.AddWithValue("name", document.Name);
                     cmd.Parameters.AddWithValue("type", document.Type);
                     cmd.Parameters.AddWithValue("link", document.Link);
