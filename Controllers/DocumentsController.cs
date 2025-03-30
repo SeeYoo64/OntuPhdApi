@@ -24,6 +24,18 @@ namespace OntuPhdApi.Controllers
                 else
                 {
                     var documents = _dbService.GetDocuments();
+
+                    // Сортировка по Status: Completed -> Ontime -> NotStarted, затем по DataStart
+                    documents = documents
+                        .OrderBy(r => r.Type switch
+                        {
+                            "Entry" => 1,
+                            "Normative" => 2,
+                            _ => 3
+                        })
+                        .ThenBy(r => r.Type)
+                        .ToList();
+
                     return Ok(documents);
                 }
             }
