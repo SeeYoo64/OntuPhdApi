@@ -11,6 +11,10 @@
   ```
 
 2. В PostgreSQL
+  - Дропнуть базу, если есть старый бекап
+    ```sql
+    DROP DATABASE ontu_phd;  
+    ```
   - Создать базу данных
     ```sql
     CREATE DATABASE ontu_phd;  
