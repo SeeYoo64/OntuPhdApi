@@ -20,7 +20,15 @@ namespace OntuPhdApi.Controllers
         {
             try
             {
-                var roadmaps = _dbService.GetRoadmaps();
+                var roadmaps = _dbService.GetRoadmaps()
+                    .OrderBy(r => r.Status switch
+                    {
+                        RoadmapStatus.Completed => 1,
+                        RoadmapStatus.Ontime => 2,
+                        RoadmapStatus.NotStarted => 3,
+                        _ => 4 // На случай, если появятся новые статусы
+                    })
+                    .ToList();
                 return Ok(roadmaps);
             }
             catch (Exception ex)
@@ -65,5 +73,6 @@ namespace OntuPhdApi.Controllers
                 return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }
+
     }
 }

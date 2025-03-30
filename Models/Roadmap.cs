@@ -1,4 +1,6 @@
-﻿namespace OntuPhdApi.Models
+﻿using System.Text.Json.Serialization;
+
+namespace OntuPhdApi.Models
 {
     public enum RoadmapStatus
     {
@@ -11,8 +13,13 @@
     {
         public int Id { get; set; }
         public string Type { get; set; }
+
+        [JsonConverter(typeof(DateOnlyConverter))]
         public DateTime DataStart { get; set; }
+
+        [JsonConverter(typeof(NullableDateOnlyConverter))]
         public DateTime? DataEnd { get; set; }
+
         public string? AdditionalTime { get; set; }
         public string Description { get; set; }
 
@@ -21,7 +28,7 @@
             get
             {
                 var now = DateTime.UtcNow;
-                var effectiveEnd = DataEnd ?? DataStart; 
+                var effectiveEnd = DataEnd ?? DataStart;
 
                 if (now < DataStart)
                     return RoadmapStatus.NotStarted;
