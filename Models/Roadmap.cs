@@ -27,12 +27,12 @@ namespace OntuPhdApi.Models
         {
             get
             {
-                var now = DateTime.UtcNow;
+                var now = DateTime.Now;
                 var effectiveEnd = DataEnd ?? DataStart;
 
                 if (now < DataStart)
                     return RoadmapStatus.NotStarted;
-                if (now >= DataStart && now <= effectiveEnd)
+                if (now >= DataStart && now <= effectiveEnd.AddHours(24))
                     return RoadmapStatus.Ontime;
                 return RoadmapStatus.Completed;
             }
