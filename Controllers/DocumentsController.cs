@@ -34,7 +34,10 @@ namespace OntuPhdApi.Controllers
                             _ => 3
                         })
                         .ThenBy(r => r.Type)
+                        .ThenBy(r => r.Id)
                         .ToList();
+
+
 
                     return Ok(documents);
                 }
