@@ -16,19 +16,32 @@ namespace OntuPhdApi.Controllers
         }
 
         [HttpGet]
-        public IActionResult GetRoadmaps()
+        public IActionResult GetRoadmaps([FromQuery] string? type)
         {
             try
             {
-                var roadmaps = _dbService.GetRoadmaps()
+                List<Roadmap> roadmaps;
+                if (!string.IsNullOrEmpty(type))
+                {
+                    roadmaps = _dbService.GetRoadmapsByType(type);
+                }
+                else
+                {
+                    roadmaps = _dbService.GetRoadmaps();
+                }
+
+                // Сортировка по Status: Completed -> Ontime -> NotStarted, затем по DataStart
+                roadmaps = roadmaps
                     .OrderBy(r => r.Status switch
                     {
                         RoadmapStatus.Completed => 1,
                         RoadmapStatus.Ontime => 2,
                         RoadmapStatus.NotStarted => 3,
-                        _ => 4 // На случай, если появятся новые статусы
+                        _ => 4
                     })
+                    .ThenBy(r => r.DataStart)
                     .ToList();
+
                 return Ok(roadmaps);
             }
             catch (Exception ex)

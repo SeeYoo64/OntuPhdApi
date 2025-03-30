@@ -590,7 +590,37 @@ namespace OntuPhdApi.Services
             return roadmap;
         }
 
+        public List<Roadmap> GetRoadmapsByType(string type)
+        {
+            var roadmaps = new List<Roadmap>();
 
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                connection.Open();
+
+                using (var cmd = new NpgsqlCommand("SELECT Id, Type, DataStart, DataEnd, AdditionalTime, Description FROM Roadmaps WHERE Type = @type", connection))
+                {
+                    cmd.Parameters.AddWithValue("type", type);
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            roadmaps.Add(new Roadmap
+                            {
+                                Id = reader.GetInt32(0),
+                                Type = reader.GetString(1),
+                                DataStart = reader.GetDateTime(2),
+                                DataEnd = reader.IsDBNull(3) ? null : reader.GetDateTime(3),
+                                AdditionalTime = reader.IsDBNull(4) ? null : reader.GetString(4),
+                                Description = reader.GetString(5)
+                            });
+                        }
+                    }
+                }
+            }
+
+            return roadmaps;
+        }
 
 
         public void AddRoadmap(Roadmap roadmap)
