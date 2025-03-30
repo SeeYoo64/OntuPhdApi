@@ -6,14 +6,9 @@ namespace OntuPhdApi.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class ProgramsController : ControllerBase
+    public class ProgramsController(DatabaseService dbService) : ControllerBase
     {
-        private readonly DatabaseService _dbService;
-
-        public ProgramsController(DatabaseService dbService)
-        {
-            _dbService = dbService;
-        }
+        private readonly DatabaseService _dbService = dbService;
 
         [HttpGet]
         public IActionResult GetPrograms()

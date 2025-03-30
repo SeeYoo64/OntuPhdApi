@@ -7,14 +7,9 @@ namespace OntuPhdApi.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class DocumentsController : ControllerBase
+    public class DocumentsController(DatabaseService dbService) : ControllerBase
     {
-        private readonly DatabaseService _dbService;
-
-        public DocumentsController(DatabaseService dbService)
-        {
-            _dbService = dbService;
-        }
+        private readonly DatabaseService _dbService = dbService;
 
         [HttpGet]
         public IActionResult GetDocuments([FromQuery] string? type)
