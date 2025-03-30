@@ -15,18 +15,11 @@
     ```sql
     CREATE DATABASE ontu_phd;  
     ```
-  - Создать таблицу
-    ```sql
-    CREATE TABLE Doctors (  
-    Id SERIAL PRIMARY KEY,  
-    Name VARCHAR(100) NOT NULL,  
-    Degree VARCHAR(50) NOT NULL
-    );  
-    INSERT INTO Doctors (Name, Degree) VALUES  
-    ('Імя1 1 ', 'Завідувач1 відділу1'),  
-    ('Імя2 2 ', 'Завідувач2 відділу2');  
-    ```
-
+  - Восстановить резервную копию
+    - ![image](https://github.com/user-attachments/assets/b05c3343-adf8-4ce9-b2d0-29fc553fdac8)
+      <br> _Выбери sql файл, под названием - backup_database_
+    - ![image](https://github.com/user-attachments/assets/8b129596-e4b5-44c2-b764-39f752ef1210)
+      <br> Restore!
  3. Настрой конфигурацию:
     - в файле appsettings.json изменить **_Username_** и **_password_** на свои данные для PostgreSQL
 
@@ -38,7 +31,7 @@
   Если всё ок, то увидишь сообщение вроде "Now listening on: http://localhost:5124" <br>
 
   Теперь в браузере можешь перейти на страницу + /swagger для удобного тестирования API. <br>
-  Так-же в Postman`e можно заходить на http://localhost:5124/api/doctors
+  Так-же в Postman`e можно заходить на http://localhost:5124/api/documents 
   
 
 
