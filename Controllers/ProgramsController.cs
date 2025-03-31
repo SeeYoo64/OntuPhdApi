@@ -20,7 +20,11 @@ namespace OntuPhdApi.Controllers
 
                 // Сортировка по Id
                 programs = programs
-                    .OrderBy(r => r.Id)
+                    .OrderBy(r => r.Degree switch {
+                        "phd" => 1,
+                        _ => 2
+                    })
+                    .ThenBy(r => r.Id)
                     .ToList();
 
                 return Ok(programs);
