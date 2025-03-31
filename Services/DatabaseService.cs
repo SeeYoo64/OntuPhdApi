@@ -23,7 +23,7 @@ namespace OntuPhdApi.Services
                 connection.Open();
 
                 using (var cmd = new NpgsqlCommand(
-                    "SELECT Id, Degree, Name, Name_Eng, FieldOfStudy, Speciality, Form, Years, Credits, Sum, Costs, " +
+                    "SELECT Id, Degree, Name, Name_Eng, FieldOfStudy, Speciality, Form, Purpose, Years, Credits, Sum, Costs, " +
                     "ProgramCharacteristics, ProgramCompetence, ProgramResults, LinkFaculty, LinkFile " +
                     "FROM Programs", connection))
                 using (var reader = cmd.ExecuteReader())
@@ -41,15 +41,16 @@ namespace OntuPhdApi.Services
                                 FieldOfStudy = reader.IsDBNull(4) ? null : JsonSerializer.Deserialize<FieldOfStudy>(reader.GetString(4), jsonOptions),
                                 Speciality = reader.IsDBNull(5) ? null : JsonSerializer.Deserialize<Speciality>(reader.GetString(5), jsonOptions),
                                 Form = reader.IsDBNull(6) ? null : JsonSerializer.Deserialize<List<string>>(reader.GetString(6), jsonOptions),
-                                Years = reader.GetInt32(7),
-                                Credits = reader.GetInt32(8),
-                                Sum = reader.GetDecimal(9),
-                                Costs = reader.IsDBNull(10) ? null : JsonSerializer.Deserialize<List<decimal>>(reader.GetString(10), jsonOptions),
-                                ProgramCharacteristics = reader.IsDBNull(11) ? null : JsonSerializer.Deserialize<ProgramCharacteristics>(reader.GetString(11), jsonOptions),
-                                ProgramCompetence = reader.IsDBNull(12) ? null : JsonSerializer.Deserialize<ProgramCompetence>(reader.GetString(12), jsonOptions),
-                                Results = reader.IsDBNull(13) ? null : JsonSerializer.Deserialize<List<string>>(reader.GetString(13), jsonOptions),
-                                LinkFaculty = reader.GetString(14),
-                                LinkFile = reader.GetString(15),
+                                Purpose = reader.GetString(7),
+                                Years = reader.GetInt32(8),
+                                Credits = reader.GetInt32(9),
+                                Sum = reader.GetDecimal(10),
+                                Costs = reader.IsDBNull(11) ? null : JsonSerializer.Deserialize<List<decimal>>(reader.GetString(11), jsonOptions),
+                                ProgramCharacteristics = reader.IsDBNull(12) ? null : JsonSerializer.Deserialize<ProgramCharacteristics>(reader.GetString(12), jsonOptions),
+                                ProgramCompetence = reader.IsDBNull(13) ? null : JsonSerializer.Deserialize<ProgramCompetence>(reader.GetString(13), jsonOptions),
+                                Results = reader.IsDBNull(14) ? null : JsonSerializer.Deserialize<List<string>>(reader.GetString(14), jsonOptions),
+                                LinkFaculty = reader.GetString(15),
+                                LinkFile = reader.GetString(16),
                                 Components = new List<ProgramComponent>(),
                                 Jobs = new List<Job>()
                             };
@@ -122,7 +123,7 @@ namespace OntuPhdApi.Services
                 connection.Open();
 
                 using (var cmd = new NpgsqlCommand(
-                    "SELECT Id, Degree, Name, Name_Eng, FieldOfStudy, Speciality, Form, Years, Credits, Sum, Costs, " +
+                    "SELECT Id, Degree, Name, Name_Eng, FieldOfStudy, Speciality, Form, Purpose, Years, Credits, Sum, Costs, " +
                     "ProgramCharacteristics, ProgramCompetence, ProgramResults, LinkFaculty, LinkFile " +
                     "FROM Programs WHERE Id = @id", connection))
                 {
@@ -141,15 +142,16 @@ namespace OntuPhdApi.Services
                                 FieldOfStudy = reader.IsDBNull(4) ? null : JsonSerializer.Deserialize<FieldOfStudy>(reader.GetString(4), jsonOptions),
                                 Speciality = reader.IsDBNull(5) ? null : JsonSerializer.Deserialize<Speciality>(reader.GetString(5), jsonOptions),
                                 Form = reader.IsDBNull(6) ? null : JsonSerializer.Deserialize<List<string>>(reader.GetString(6), jsonOptions),
-                                Years = reader.GetInt32(7),
-                                Credits = reader.GetInt32(8),
-                                Sum = reader.GetDecimal(9),
-                                Costs = reader.IsDBNull(10) ? null : JsonSerializer.Deserialize<List<decimal>>(reader.GetString(10), jsonOptions),
-                                ProgramCharacteristics = reader.IsDBNull(11) ? null : JsonSerializer.Deserialize<ProgramCharacteristics>(reader.GetString(11), jsonOptions),
-                                ProgramCompetence = reader.IsDBNull(12) ? null : JsonSerializer.Deserialize<ProgramCompetence>(reader.GetString(12), jsonOptions),
-                                Results = reader.IsDBNull(13) ? null : JsonSerializer.Deserialize<List<string>>(reader.GetString(13), jsonOptions),
-                                LinkFaculty = reader.GetString(14),
-                                LinkFile = reader.GetString(15),
+                                Purpose = reader.GetString(7),
+                                Years = reader.GetInt32(8),
+                                Credits = reader.GetInt32(9),
+                                Sum = reader.GetDecimal(10),
+                                Costs = reader.IsDBNull(11) ? null : JsonSerializer.Deserialize<List<decimal>>(reader.GetString(11), jsonOptions),
+                                ProgramCharacteristics = reader.IsDBNull(12) ? null : JsonSerializer.Deserialize<ProgramCharacteristics>(reader.GetString(12), jsonOptions),
+                                ProgramCompetence = reader.IsDBNull(13) ? null : JsonSerializer.Deserialize<ProgramCompetence>(reader.GetString(13), jsonOptions),
+                                Results = reader.IsDBNull(14) ? null : JsonSerializer.Deserialize<List<string>>(reader.GetString(14), jsonOptions),
+                                LinkFaculty = reader.GetString(15),
+                                LinkFile = reader.GetString(16),
                                 Components = new List<ProgramComponent>(),
                                 Jobs = new List<Job>()
                             };

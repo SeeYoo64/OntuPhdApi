@@ -9,6 +9,7 @@
         public FieldOfStudy FieldOfStudy { get; set; }
         public Speciality Speciality { get; set; }
         public List<string> Form { get; set; }
+        public string Purpose { get; set; }
         public int Years { get; set; }
         public int Credits { get; set; }
         public decimal Sum { get; set; }
