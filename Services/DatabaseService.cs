@@ -644,7 +644,124 @@ namespace OntuPhdApi.Services
         }
 
 
+        public List<News> GetNews()
+        {
+            var newsList = new List<News>();
+            var jsonOptions = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
 
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                connection.Open();
+
+                using (var cmd = new NpgsqlCommand("SELECT Id, Title, Summary, MainTag, OtherTags, Date, Thumbnail, Photos, Body FROM News", connection))
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        try
+                        {
+                            newsList.Add(new News
+                            {
+                                Id = reader.GetInt32(0),
+                                Title = reader.GetString(1),
+                                Summary = reader.GetString(2),
+                                MainTag = reader.GetString(3),
+                                OtherTags = JsonSerializer.Deserialize<List<string>>(reader.GetString(4), jsonOptions),
+                                Date = reader.GetDateTime(5),
+                                Thumbnail = reader.GetString(6),
+                                Photos = JsonSerializer.Deserialize<List<string>>(reader.GetString(7), jsonOptions),
+                                Body = JsonSerializer.Deserialize<List<string>>(reader.GetString(8), jsonOptions)
+                            });
+                        }
+                        catch (JsonException ex)
+                        {
+                            Console.WriteLine($"Error deserializing News with ID {reader.GetInt32(0)}: {ex.Message}");
+                        }
+                    }
+                }
+            }
+
+            return newsList;
+        }
+
+        public News GetNewsById(int id)
+        {
+            News news = null;
+            var jsonOptions = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
+
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                connection.Open();
+
+                using (var cmd = new NpgsqlCommand("SELECT Id, Title, Summary, MainTag, OtherTags, Date, Thumbnail, Photos, Body FROM News WHERE Id = @id", connection))
+                {
+                    cmd.Parameters.AddWithValue("id", id);
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            try
+                            {
+                                news = new News
+                                {
+                                    Id = reader.GetInt32(0),
+                                    Title = reader.GetString(1),
+                                    Summary = reader.GetString(2),
+                                    MainTag = reader.GetString(3),
+                                    OtherTags = JsonSerializer.Deserialize<List<string>>(reader.GetString(4), jsonOptions),
+                                    Date = reader.GetDateTime(5),
+                                    Thumbnail = reader.GetString(6),
+                                    Photos = JsonSerializer.Deserialize<List<string>>(reader.GetString(7), jsonOptions),
+                                    Body = JsonSerializer.Deserialize<List<string>>(reader.GetString(8), jsonOptions)
+                                };
+                            }
+                            catch (JsonException ex)
+                            {
+                                throw new Exception($"Error deserializing News with ID {id}: {ex.Message}");
+                            }
+                        }
+                    }
+                }
+            }
+
+            return news;
+        }
+
+
+
+        public void AddNews(News news)
+        {
+            var jsonOptions = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
+
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                connection.Open();
+
+                using (var cmd = new NpgsqlCommand(
+                    "INSERT INTO News (Title, Summary, MainTag, OtherTags, Date, Thumbnail, Photos, Body) " +
+                    "VALUES (@title, @summary, @mainTag, @otherTags, @date, @thumbnail, @photos, @body) RETURNING Id", connection))
+                {
+                    cmd.Parameters.AddWithValue("title", news.Title);
+                    cmd.Parameters.AddWithValue("summary", news.Summary);
+                    cmd.Parameters.AddWithValue("mainTag", news.MainTag);
+                    cmd.Parameters.AddWithValue("otherTags", JsonSerializer.Serialize(news.OtherTags, jsonOptions));
+                    cmd.Parameters.AddWithValue("date", news.Date);
+                    cmd.Parameters.AddWithValue("thumbnail", news.Thumbnail);
+                    cmd.Parameters.AddWithValue("photos", JsonSerializer.Serialize(news.Photos, jsonOptions));
+                    cmd.Parameters.AddWithValue("body", JsonSerializer.Serialize(news.Body, jsonOptions));
+                    news.Id = (int)cmd.ExecuteScalar();
+                }
+            }
+        }
 
     }
 }
