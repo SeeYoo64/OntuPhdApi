@@ -207,6 +207,48 @@ namespace OntuPhdApi.Services
             return program;
         }
 
+        public List<ProgramsDegree> GetProgramsByDegree (string Degree)
+        {
+            var programs = new List<ProgramsDegree>();
+            var jsonOptions = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                connection.Open();
+
+                using (var cmd = new NpgsqlCommand(
+                    "SELECT Id, Degree, Name, Name_Eng, FieldOfStudy, Speciality " +
+                    "FROM Programs WHERE Degree = @degree", connection))
+                {
+                    cmd.Parameters.AddWithValue("degree", Degree);
+                    using var reader = cmd.ExecuteReader();
+                    while (reader.Read())
+                    {
+                        try
+                        {
+                            programs.Add(new ProgramsDegree
+                            {
+                                Id = reader.GetInt32(0),
+                                Degree = reader.GetString(1),
+                                Name = reader.GetString(2),
+                                NameEng = reader.IsDBNull(3) ? null : reader.GetString(3),
+                                FieldOfStudy = reader.IsDBNull(4) ? null : JsonSerializer.Deserialize<FieldOfStudy>(reader.GetString(4), jsonOptions),
+                                Speciality = reader.IsDBNull(5) ? null : JsonSerializer.Deserialize<Speciality>(reader.GetString(5), jsonOptions),
+                            });
+                        }
+                        catch (JsonException ex)
+                        {
+                            throw new Exception($"Error deserializing program with degree {Degree}: {ex.Message}");
+                        }
+                    }
+                }
+            }
+
+            return programs;
+        }
+
         public void AddProgram(ProgramView program)
         {
             var jsonOptions = new JsonSerializerOptions

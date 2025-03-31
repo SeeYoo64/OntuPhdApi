@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System;
+using Microsoft.AspNetCore.Mvc;
 using OntuPhdApi.Models;
 using OntuPhdApi.Services;
 
@@ -11,18 +12,34 @@ namespace OntuPhdApi.Controllers
         private readonly DatabaseService _dbService = dbService;
 
         [HttpGet]
-        public IActionResult GetPrograms()
+        public IActionResult GetPrograms([FromQuery] string? Degree)
         {
             try
             {
-                var programs = _dbService.GetPrograms();
-
-                // Сортировка по Id
-                programs = programs
+                if (!string.IsNullOrEmpty(Degree))
+                {
+                    List<ProgramsDegree> programsDegree;
+                    programsDegree = _dbService.GetProgramsByDegree(Degree);
+                    // Сортировка по Id
+                    programsDegree = programsDegree
                     .OrderBy(r => r.Id)
                     .ToList();
 
-                return Ok(programs);
+                    return Ok(programsDegree);
+                }
+                else
+                {
+                    List<ProgramView> programs;
+                    programs = _dbService.GetPrograms();
+                    // Сортировка по Id
+                    programs = programs
+                        .OrderBy(r => r.Id)
+                        .ToList();
+
+                    return Ok(programs);
+                }
+
+
             }
             catch (Exception ex)
             {
