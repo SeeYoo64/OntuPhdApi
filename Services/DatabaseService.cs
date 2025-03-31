@@ -22,7 +22,7 @@ namespace OntuPhdApi.Services
                 connection.Open();
 
                 using (var cmd = new NpgsqlCommand(
-                    "SELECT Id, Name, Name_Eng, FieldOfStudy, Speciality, Form, Years, Credits, Sum, Costs, " +
+                    "SELECT Id, Degree, Name, Name_Eng, FieldOfStudy, Speciality, Form, Years, Credits, Sum, Costs, " +
                     "ProgramCharacteristics, ProgramCompetence, ProgramResults, LinkFaculty, LinkFile " +
                     "FROM Programs", connection))
                 using (var reader = cmd.ExecuteReader())
@@ -34,20 +34,21 @@ namespace OntuPhdApi.Services
                             var program = new ProgramView
                             {
                                 Id = reader.GetInt32(0),
-                                Name = reader.GetString(1),
-                                NameEng = reader.IsDBNull(2) ? null : reader.GetString(2),
-                                FieldOfStudy = reader.IsDBNull(3) ? null : JsonSerializer.Deserialize<FieldOfStudy>(reader.GetString(3), jsonOptions),
-                                Speciality = reader.IsDBNull(4) ? null : JsonSerializer.Deserialize<Speciality>(reader.GetString(4), jsonOptions),
-                                Form = reader.IsDBNull(5) ? null : JsonSerializer.Deserialize<List<string>>(reader.GetString(5), jsonOptions),
-                                Years = reader.GetInt32(6),
-                                Credits = reader.GetInt32(7),
-                                Sum = reader.GetDecimal(8),
-                                Costs = reader.IsDBNull(9) ? null : JsonSerializer.Deserialize<List<decimal>>(reader.GetString(9), jsonOptions),
-                                ProgramCharacteristics = reader.IsDBNull(10) ? null : JsonSerializer.Deserialize<ProgramCharacteristics>(reader.GetString(10), jsonOptions),
-                                ProgramCompetence = reader.IsDBNull(11) ? null : JsonSerializer.Deserialize<ProgramCompetence>(reader.GetString(11), jsonOptions),
-                                ProgramResults = reader.IsDBNull(12) ? null : JsonSerializer.Deserialize<ProgramResults>(reader.GetString(12), jsonOptions),
-                                LinkFaculty = reader.GetString(13),
-                                LinkFile = reader.GetString(14),
+                                Degree = reader.GetString(1),
+                                Name = reader.GetString(2),
+                                NameEng = reader.IsDBNull(3) ? null : reader.GetString(3),
+                                FieldOfStudy = reader.IsDBNull(4) ? null : JsonSerializer.Deserialize<FieldOfStudy>(reader.GetString(4), jsonOptions),
+                                Speciality = reader.IsDBNull(5) ? null : JsonSerializer.Deserialize<Speciality>(reader.GetString(5), jsonOptions),
+                                Form = reader.IsDBNull(6) ? null : JsonSerializer.Deserialize<List<string>>(reader.GetString(6), jsonOptions),
+                                Years = reader.GetInt32(7),
+                                Credits = reader.GetInt32(8),
+                                Sum = reader.GetDecimal(9),
+                                Costs = reader.IsDBNull(10) ? null : JsonSerializer.Deserialize<List<decimal>>(reader.GetString(10), jsonOptions),
+                                ProgramCharacteristics = reader.IsDBNull(11) ? null : JsonSerializer.Deserialize<ProgramCharacteristics>(reader.GetString(11), jsonOptions),
+                                ProgramCompetence = reader.IsDBNull(12) ? null : JsonSerializer.Deserialize<ProgramCompetence>(reader.GetString(12), jsonOptions),
+                                ProgramResults = reader.IsDBNull(13) ? null : JsonSerializer.Deserialize<ProgramResults>(reader.GetString(13), jsonOptions),
+                                LinkFaculty = reader.GetString(14),
+                                LinkFile = reader.GetString(15),
                                 Components = new List<ProgramComponent>(),
                                 Jobs = new List<Job>()
                             };
@@ -120,7 +121,7 @@ namespace OntuPhdApi.Services
                 connection.Open();
 
                 using (var cmd = new NpgsqlCommand(
-                    "SELECT Id, Name, Name_Eng, FieldOfStudy, Speciality, Form, Years, Credits, Sum, Costs, " +
+                    "SELECT Id, Degree, Name, Name_Eng, FieldOfStudy, Speciality, Form, Years, Credits, Sum, Costs, " +
                     "ProgramCharacteristics, ProgramCompetence, ProgramResults, LinkFaculty, LinkFile " +
                     "FROM Programs WHERE Id = @id", connection))
                 {
@@ -133,20 +134,21 @@ namespace OntuPhdApi.Services
                             program = new ProgramView
                             {
                                 Id = reader.GetInt32(0),
-                                Name = reader.GetString(1),
-                                NameEng = reader.IsDBNull(2) ? null : reader.GetString(2),
-                                FieldOfStudy = reader.IsDBNull(3) ? null : JsonSerializer.Deserialize<FieldOfStudy>(reader.GetString(3), jsonOptions),
-                                Speciality = reader.IsDBNull(4) ? null : JsonSerializer.Deserialize<Speciality>(reader.GetString(4), jsonOptions),
-                                Form = reader.IsDBNull(5) ? null : JsonSerializer.Deserialize<List<string>>(reader.GetString(5), jsonOptions),
-                                Years = reader.GetInt32(6),
-                                Credits = reader.GetInt32(7),
-                                Sum = reader.GetDecimal(8),
-                                Costs = reader.IsDBNull(9) ? null : JsonSerializer.Deserialize<List<decimal>>(reader.GetString(9), jsonOptions),
-                                ProgramCharacteristics = reader.IsDBNull(10) ? null : JsonSerializer.Deserialize<ProgramCharacteristics>(reader.GetString(10), jsonOptions),
-                                ProgramCompetence = reader.IsDBNull(11) ? null : JsonSerializer.Deserialize<ProgramCompetence>(reader.GetString(11), jsonOptions),
-                                ProgramResults = reader.IsDBNull(12) ? null : JsonSerializer.Deserialize<ProgramResults>(reader.GetString(12), jsonOptions),
-                                LinkFaculty = reader.GetString(13),
-                                LinkFile = reader.GetString(14),
+                                Degree = reader.GetString(1),
+                                Name = reader.GetString(2),
+                                NameEng = reader.IsDBNull(3) ? null : reader.GetString(3),
+                                FieldOfStudy = reader.IsDBNull(4) ? null : JsonSerializer.Deserialize<FieldOfStudy>(reader.GetString(4), jsonOptions),
+                                Speciality = reader.IsDBNull(5) ? null : JsonSerializer.Deserialize<Speciality>(reader.GetString(5), jsonOptions),
+                                Form = reader.IsDBNull(6) ? null : JsonSerializer.Deserialize<List<string>>(reader.GetString(6), jsonOptions),
+                                Years = reader.GetInt32(7),
+                                Credits = reader.GetInt32(8),
+                                Sum = reader.GetDecimal(9),
+                                Costs = reader.IsDBNull(10) ? null : JsonSerializer.Deserialize<List<decimal>>(reader.GetString(10), jsonOptions),
+                                ProgramCharacteristics = reader.IsDBNull(11) ? null : JsonSerializer.Deserialize<ProgramCharacteristics>(reader.GetString(11), jsonOptions),
+                                ProgramCompetence = reader.IsDBNull(12) ? null : JsonSerializer.Deserialize<ProgramCompetence>(reader.GetString(12), jsonOptions),
+                                ProgramResults = reader.IsDBNull(13) ? null : JsonSerializer.Deserialize<ProgramResults>(reader.GetString(13), jsonOptions),
+                                LinkFaculty = reader.GetString(14),
+                                LinkFile = reader.GetString(15),
                                 Components = new List<ProgramComponent>(),
                                 Jobs = new List<Job>()
                             };
@@ -217,24 +219,31 @@ namespace OntuPhdApi.Services
 
             int programId;
             using (var cmd = new NpgsqlCommand(
-                "INSERT INTO Programs (Name, Name_Eng, FieldOfStudy, Speciality, Form, Years, Credits, Sum, Costs, " +
+                "INSERT INTO Programs (Degree, Name, Name_Eng, FieldOfStudy, Speciality, Form, Years, Credits, Sum, Costs, " +
                 "ProgramCharacteristics, ProgramCompetence, ProgramResults, LinkFaculty, LinkFile) " +
-                "VALUES (@name, @nameEng, @fieldOfStudy, @speciality, @form, @years, @credits, @sum, @costs, " +
+                "VALUES (@degree, @name, @nameEng, @fieldOfStudy, @speciality, @form, @years, @credits, @sum, @costs, " +
                 "@programCharacteristics, @programCompetence, @programResults, @linkFaculty, @linkFile) " +
                 "RETURNING Id", connection))
             {
+                cmd.Parameters.AddWithValue("degree", program.Degree);
                 cmd.Parameters.AddWithValue("name", program.Name);
                 cmd.Parameters.AddWithValue("nameEng", (object)program.NameEng ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("fieldOfStudy", JsonSerializer.Serialize(program.FieldOfStudy, jsonOptions));
-                cmd.Parameters.AddWithValue("speciality", JsonSerializer.Serialize(program.Speciality, jsonOptions));
-                cmd.Parameters.AddWithValue("form", JsonSerializer.Serialize(program.Form, jsonOptions));
+                cmd.Parameters.Add(new NpgsqlParameter("fieldOfStudy", NpgsqlTypes.NpgsqlDbType.Jsonb)
+                {
+                    Value = JsonSerializer.Serialize(program.FieldOfStudy, jsonOptions)
+                });
+                cmd.Parameters.Add(new NpgsqlParameter("speciality", NpgsqlTypes.NpgsqlDbType.Jsonb)
+                {
+                    Value = JsonSerializer.Serialize(program.Speciality, jsonOptions)
+                });
+                cmd.Parameters.Add(new NpgsqlParameter("form", NpgsqlTypes.NpgsqlDbType.Jsonb) { Value = JsonSerializer.Serialize(program.Form, jsonOptions) });
                 cmd.Parameters.AddWithValue("years", program.Years);
                 cmd.Parameters.AddWithValue("credits", program.Credits);
                 cmd.Parameters.AddWithValue("sum", program.Sum);
-                cmd.Parameters.AddWithValue("costs", JsonSerializer.Serialize(program.Costs, jsonOptions));
-                cmd.Parameters.AddWithValue("programCharacteristics", JsonSerializer.Serialize(program.ProgramCharacteristics, jsonOptions));
-                cmd.Parameters.AddWithValue("programCompetence", JsonSerializer.Serialize(program.ProgramCompetence, jsonOptions));
-                cmd.Parameters.AddWithValue("programResults", JsonSerializer.Serialize(program.ProgramResults, jsonOptions));
+                cmd.Parameters.Add(new NpgsqlParameter("costs", NpgsqlTypes.NpgsqlDbType.Jsonb) { Value = JsonSerializer.Serialize(program.Costs, jsonOptions) });
+                cmd.Parameters.Add(new NpgsqlParameter("programCharacteristics", NpgsqlTypes.NpgsqlDbType.Jsonb) { Value = JsonSerializer.Serialize(program.ProgramCharacteristics, jsonOptions) });
+                cmd.Parameters.Add(new NpgsqlParameter("programCompetence", NpgsqlTypes.NpgsqlDbType.Jsonb) { Value = JsonSerializer.Serialize(program.ProgramCompetence, jsonOptions) });
+                cmd.Parameters.Add(new NpgsqlParameter("programResults", NpgsqlTypes.NpgsqlDbType.Jsonb) { Value = JsonSerializer.Serialize(program.ProgramResults, jsonOptions) });
                 cmd.Parameters.AddWithValue("linkFaculty", program.LinkFaculty);
                 cmd.Parameters.AddWithValue("linkFile", program.LinkFile);
                 programId = (int)cmd.ExecuteScalar();
@@ -252,6 +261,8 @@ namespace OntuPhdApi.Services
                     cmd.Parameters.AddWithValue("componentName", component.ComponentName);
                     cmd.Parameters.AddWithValue("componentCredits", component.ComponentCredits);
                     cmd.Parameters.AddWithValue("componentHours", component.ComponentHours);
+                    cmd.Parameters.Add(new NpgsqlParameter("controlForm", NpgsqlTypes.NpgsqlDbType.Jsonb) { Value = JsonSerializer.Serialize(component.ControlForm, jsonOptions) });
+
                     cmd.Parameters.AddWithValue("controlForm", JsonSerializer.Serialize(component.ControlForm, jsonOptions));
                     cmd.ExecuteNonQuery();
                 }
@@ -522,8 +533,8 @@ namespace OntuPhdApi.Services
                 "VALUES (@name, @description, @requirements, @originalsRequired) RETURNING Id", connection);
             cmd.Parameters.AddWithValue("name", applyDocument.Name);
             cmd.Parameters.AddWithValue("description", applyDocument.Description);
-            cmd.Parameters.AddWithValue("requirements", JsonSerializer.Serialize(applyDocument.Requirements, jsonOptions));
-            cmd.Parameters.AddWithValue("originalsRequired", JsonSerializer.Serialize(applyDocument.Requirements, jsonOptions));
+            cmd.Parameters.Add(new NpgsqlParameter("requirements", NpgsqlTypes.NpgsqlDbType.Jsonb) { Value = JsonSerializer.Serialize(applyDocument.Requirements, jsonOptions) });
+            cmd.Parameters.Add(new NpgsqlParameter("originalsRequired", NpgsqlTypes.NpgsqlDbType.Jsonb) { Value = JsonSerializer.Serialize(applyDocument.OriginalsRequired, jsonOptions) });
             applyDocument.Id = (int)cmd.ExecuteScalar();
         }
 
@@ -830,11 +841,11 @@ namespace OntuPhdApi.Services
                     cmd.Parameters.AddWithValue("title", news.Title);
                     cmd.Parameters.AddWithValue("summary", news.Summary);
                     cmd.Parameters.AddWithValue("mainTag", news.MainTag);
-                    cmd.Parameters.AddWithValue("otherTags", JsonSerializer.Serialize(news.OtherTags, jsonOptions));
+                    cmd.Parameters.Add(new NpgsqlParameter("otherTags", NpgsqlTypes.NpgsqlDbType.Jsonb) { Value = JsonSerializer.Serialize(news.OtherTags, jsonOptions) });
                     cmd.Parameters.AddWithValue("date", news.Date);
                     cmd.Parameters.AddWithValue("thumbnail", news.Thumbnail);
-                    cmd.Parameters.AddWithValue("photos", JsonSerializer.Serialize(news.Photos, jsonOptions));
-                    cmd.Parameters.AddWithValue("body", JsonSerializer.Serialize(news.Body, jsonOptions));
+                    cmd.Parameters.Add(new NpgsqlParameter("photos", NpgsqlTypes.NpgsqlDbType.Jsonb) { Value = JsonSerializer.Serialize(news.Photos, jsonOptions) });
+                    cmd.Parameters.Add(new NpgsqlParameter("body", NpgsqlTypes.NpgsqlDbType.Jsonb) { Value = JsonSerializer.Serialize(news.Body, jsonOptions) });
                     news.Id = (int)cmd.ExecuteScalar();
                 }
             }

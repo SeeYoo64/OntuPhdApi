@@ -16,6 +16,12 @@ namespace OntuPhdApi.Controllers
             try
             {
                 var programs = _dbService.GetPrograms();
+
+                // Сортировка по Id
+                programs = programs
+                    .OrderBy(r => r.Id)
+                    .ToList();
+
                 return Ok(programs);
             }
             catch (Exception ex)
