@@ -1,4 +1,5 @@
 ﻿using Npgsql;
+using Npgsql.Internal.Postgres;
 using OntuPhdApi.Models;
 using System.Reflection.Metadata;
 using System.Text.Json;
@@ -207,9 +208,10 @@ namespace OntuPhdApi.Services
             return program;
         }
 
-        public List<ProgramsDegree> GetProgramsByDegree (string Degree)
+
+        public List<ProgramsDegreeDto> GetProgramsDegrees(string degree = null)
         {
-            var programs = new List<ProgramsDegree>();
+            var programs = new List<ProgramsDegreeDto>();
             var jsonOptions = new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
@@ -218,29 +220,31 @@ namespace OntuPhdApi.Services
             {
                 connection.Open();
 
-                using (var cmd = new NpgsqlCommand(
-                    "SELECT Id, Degree, Name, Name_Eng, FieldOfStudy, Speciality " +
-                    "FROM Programs WHERE Degree = @degree", connection))
+                var query = "SELECT Id, Degree, FieldOfStudy, Speciality, Name FROM Programs";
+                if (!string.IsNullOrEmpty(degree))
                 {
-                    cmd.Parameters.AddWithValue("degree", Degree);
-                    using var reader = cmd.ExecuteReader();
-                    while (reader.Read())
+                    query += " WHERE Degree = @degree";
+                }
+
+                using (var cmd = new NpgsqlCommand(query, connection))
+                {
+                    if (!string.IsNullOrEmpty(degree))
                     {
-                        try
+                        cmd.Parameters.AddWithValue("degree", degree);
+                    }
+
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
                         {
-                            programs.Add(new ProgramsDegree
+                            programs.Add(new ProgramsDegreeDto
                             {
                                 Id = reader.GetInt32(0),
                                 Degree = reader.GetString(1),
-                                Name = reader.GetString(2),
-                                NameEng = reader.IsDBNull(3) ? null : reader.GetString(3),
-                                FieldOfStudy = reader.IsDBNull(4) ? null : JsonSerializer.Deserialize<FieldOfStudy>(reader.GetString(4), jsonOptions),
-                                Speciality = reader.IsDBNull(5) ? null : JsonSerializer.Deserialize<Speciality>(reader.GetString(5), jsonOptions),
+                                FieldOfStudy = reader.IsDBNull(2) ? null : JsonSerializer.Deserialize<FieldOfStudy>(reader.GetString(2), jsonOptions),
+                                Speciality = reader.IsDBNull(3) ? null : JsonSerializer.Deserialize<Speciality>(reader.GetString(3), jsonOptions),
+                                Name = reader.GetString(4)
                             });
-                        }
-                        catch (JsonException ex)
-                        {
-                            throw new Exception($"Error deserializing program with degree {Degree}: {ex.Message}");
                         }
                     }
                 }
@@ -248,6 +252,38 @@ namespace OntuPhdApi.Services
 
             return programs;
         }
+
+        public List<ProgramsFieldDto> GetProgramsFields()
+        {
+            var programs = new List<ProgramsFieldDto>();
+            var jsonOptions = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                connection.Open();
+
+                using (var cmd = new NpgsqlCommand("SELECT Id, Degree, FieldOfStudy FROM Programs", connection))
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        programs.Add(new ProgramsFieldDto
+                        {
+                            Id = reader.GetInt32(0),
+                            Degree = reader.GetString(1),
+                            FieldOfStudy = reader.IsDBNull(2) ? null : JsonSerializer.Deserialize<FieldOfStudy>(reader.GetString(2), jsonOptions),
+                        });
+                    }
+                }
+            }
+
+            return programs;
+        }
+
+
+
 
         public void AddProgram(ProgramView program)
         {

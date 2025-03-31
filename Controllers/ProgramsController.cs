@@ -16,36 +16,50 @@ namespace OntuPhdApi.Controllers
         {
             try
             {
-                if (!string.IsNullOrEmpty(Degree))
-                {
-                    List<ProgramsDegree> programsDegree;
-                    programsDegree = _dbService.GetProgramsByDegree(Degree);
-                    // Сортировка по Id
-                    programsDegree = programsDegree
+                var programs = _dbService.GetPrograms();
+
+                // Сортировка по Id
+                programs = programs
                     .OrderBy(r => r.Id)
                     .ToList();
 
-                    return Ok(programsDegree);
-                }
-                else
-                {
-                    List<ProgramView> programs;
-                    programs = _dbService.GetPrograms();
-                    // Сортировка по Id
-                    programs = programs
-                        .OrderBy(r => r.Id)
-                        .ToList();
-
-                    return Ok(programs);
-                }
-
-
+                return Ok(programs);
             }
             catch (Exception ex)
             {
                 return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }
+
+
+        [HttpGet("fields")]
+        public IActionResult GetProgramsFields()
+        {
+            try
+            {
+                var programsFields = _dbService.GetProgramsFields();
+                return Ok(programsFields);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        [HttpGet("degrees")]
+        public IActionResult GetProgramsDegrees([FromQuery] string? degree)
+        {
+            try
+            {
+                var programsDegrees = _dbService.GetProgramsDegrees(degree);
+                return Ok(programsDegrees);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
 
         [HttpGet("{id}")]
         public IActionResult GetProgram(int id)
