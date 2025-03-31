@@ -46,7 +46,7 @@ namespace OntuPhdApi.Services
                                 Costs = reader.IsDBNull(10) ? null : JsonSerializer.Deserialize<List<decimal>>(reader.GetString(10), jsonOptions),
                                 ProgramCharacteristics = reader.IsDBNull(11) ? null : JsonSerializer.Deserialize<ProgramCharacteristics>(reader.GetString(11), jsonOptions),
                                 ProgramCompetence = reader.IsDBNull(12) ? null : JsonSerializer.Deserialize<ProgramCompetence>(reader.GetString(12), jsonOptions),
-                                ProgramResults = reader.IsDBNull(13) ? null : JsonSerializer.Deserialize<ProgramResults>(reader.GetString(13), jsonOptions),
+                                Results = reader.IsDBNull(13) ? null : JsonSerializer.Deserialize<List<string>>(reader.GetString(13), jsonOptions),
                                 LinkFaculty = reader.GetString(14),
                                 LinkFile = reader.GetString(15),
                                 Components = new List<ProgramComponent>(),
@@ -146,7 +146,7 @@ namespace OntuPhdApi.Services
                                 Costs = reader.IsDBNull(10) ? null : JsonSerializer.Deserialize<List<decimal>>(reader.GetString(10), jsonOptions),
                                 ProgramCharacteristics = reader.IsDBNull(11) ? null : JsonSerializer.Deserialize<ProgramCharacteristics>(reader.GetString(11), jsonOptions),
                                 ProgramCompetence = reader.IsDBNull(12) ? null : JsonSerializer.Deserialize<ProgramCompetence>(reader.GetString(12), jsonOptions),
-                                ProgramResults = reader.IsDBNull(13) ? null : JsonSerializer.Deserialize<ProgramResults>(reader.GetString(13), jsonOptions),
+                                Results = reader.IsDBNull(13) ? null : JsonSerializer.Deserialize<List<string>>(reader.GetString(13), jsonOptions),
                                 LinkFaculty = reader.GetString(14),
                                 LinkFile = reader.GetString(15),
                                 Components = new List<ProgramComponent>(),
@@ -243,7 +243,7 @@ namespace OntuPhdApi.Services
                 cmd.Parameters.Add(new NpgsqlParameter("costs", NpgsqlTypes.NpgsqlDbType.Jsonb) { Value = JsonSerializer.Serialize(program.Costs, jsonOptions) });
                 cmd.Parameters.Add(new NpgsqlParameter("programCharacteristics", NpgsqlTypes.NpgsqlDbType.Jsonb) { Value = JsonSerializer.Serialize(program.ProgramCharacteristics, jsonOptions) });
                 cmd.Parameters.Add(new NpgsqlParameter("programCompetence", NpgsqlTypes.NpgsqlDbType.Jsonb) { Value = JsonSerializer.Serialize(program.ProgramCompetence, jsonOptions) });
-                cmd.Parameters.Add(new NpgsqlParameter("programResults", NpgsqlTypes.NpgsqlDbType.Jsonb) { Value = JsonSerializer.Serialize(program.ProgramResults, jsonOptions) });
+                cmd.Parameters.Add(new NpgsqlParameter("programResults", NpgsqlTypes.NpgsqlDbType.Jsonb) { Value = JsonSerializer.Serialize(program.Results, jsonOptions) });
                 cmd.Parameters.AddWithValue("linkFaculty", program.LinkFaculty);
                 cmd.Parameters.AddWithValue("linkFile", program.LinkFile);
                 programId = (int)cmd.ExecuteScalar();
