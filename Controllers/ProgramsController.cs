@@ -2,23 +2,29 @@
 using Microsoft.AspNetCore.Mvc;
 using OntuPhdApi.Models;
 using OntuPhdApi.Services;
+using OntuPhdApi.Services.Programs;
 
 namespace OntuPhdApi.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class ProgramsController(DatabaseService dbService) : ControllerBase
+    public class ProgramsController : ControllerBase
     {
-        private readonly DatabaseService _dbService = dbService;
+        private readonly IProgramService _programService;
+
+        public ProgramsController(IProgramService programService)
+        {
+            _programService = programService;
+        }
 
         [HttpGet]
         public IActionResult GetPrograms([FromQuery] string? Degree)
         {
             try
             {
-                var programs = _dbService.GetPrograms();
+                var programs = _programService.GetPrograms();
 
-                // Сортировка по Id
+                // Сортировка по Degrees - phd -> everything else
                 programs = programs
                     .OrderBy(r => r.Degree switch {
                         "phd" => 1,
@@ -41,7 +47,7 @@ namespace OntuPhdApi.Controllers
         {
             try
             {
-                var programsFields = _dbService.GetProgramsFields();
+                var programsFields = _programService.GetProgramsFields();
                 return Ok(programsFields);
             }
             catch (Exception ex)
@@ -55,7 +61,7 @@ namespace OntuPhdApi.Controllers
         {
             try
             {
-                var programsDegrees = _dbService.GetProgramsDegrees(degree);
+                var programsDegrees = _programService.GetProgramsDegrees(degree);
                 return Ok(programsDegrees);
             }
             catch (Exception ex)
@@ -70,7 +76,7 @@ namespace OntuPhdApi.Controllers
         {
             try
             {
-                var program = _dbService.GetProgramById(id);
+                var program = _programService.GetProgramById(id);
                 if (program == null)
                 {
                     return NotFound($"Program with ID {id} not found.");
@@ -93,7 +99,7 @@ namespace OntuPhdApi.Controllers
 
             try
             {
-                _dbService.AddProgram(program);
+                _programService.AddProgram(program);
                 return CreatedAtAction(nameof(GetProgram), new { id = program.Id }, program);
             }
             catch (Exception ex)
