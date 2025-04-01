@@ -1,6 +1,6 @@
 ﻿namespace OntuPhdApi.Models
 {
-    public class ApplyDocuments
+    public class ApplyDocumentsModel
     {
         public int Id { get; set; }
         public string Name { get; set; }

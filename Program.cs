@@ -1,4 +1,5 @@
 using OntuPhdApi.Services;
+using OntuPhdApi.Services.ApplyDocuments;
 using OntuPhdApi.Services.Documents;
 using OntuPhdApi.Services.Programs;
 
@@ -19,6 +20,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<IProgramService, ProgramService>();
 builder.Services.AddScoped<IDocumentService, DocumentService>();
+builder.Services.AddScoped<IApplyDocumentsService, ApplyDocumentsService>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

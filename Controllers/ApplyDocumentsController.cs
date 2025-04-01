@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using OntuPhdApi.Models;
 using OntuPhdApi.Services;
+using OntuPhdApi.Services.ApplyDocuments;
 
 namespace OntuPhdApi.Controllers
 {
@@ -8,11 +9,11 @@ namespace OntuPhdApi.Controllers
     [Route("api/[controller]")]
     public class ApplyDocumentsController : ControllerBase
     {
-        private readonly DatabaseService _dbService;
+        private readonly IApplyDocumentsService _applyDocumentService;
 
-        public ApplyDocumentsController(DatabaseService dbService)
+        public ApplyDocumentsController(IApplyDocumentsService applyDocumentService)
         {
-            _dbService = dbService;
+            _applyDocumentService = applyDocumentService;
         }
 
         [HttpGet]
@@ -22,12 +23,12 @@ namespace OntuPhdApi.Controllers
             {
                 if (!string.IsNullOrEmpty(name))
                 {
-                    var applyDocuments = _dbService.GetApplyDocumentsByName(name);
+                    var applyDocuments = _applyDocumentService.GetApplyDocumentsByName(name);
                     return Ok(applyDocuments);
                 }
                 else
                 {
-                    var applyDocuments = _dbService.GetApplyDocuments();
+                    var applyDocuments = _applyDocumentService.GetApplyDocuments();
                     return Ok(applyDocuments);
                 }
             }
@@ -42,7 +43,7 @@ namespace OntuPhdApi.Controllers
         {
             try
             {
-                var applyDocument = _dbService.GetApplyDocumentById(id);
+                var applyDocument = _applyDocumentService.GetApplyDocumentById(id);
                 if (applyDocument == null)
                 {
                     return NotFound($"ApplyDocument with ID {id} not found.");
@@ -56,7 +57,7 @@ namespace OntuPhdApi.Controllers
         }
 
         [HttpPost]
-        public IActionResult AddApplyDocument([FromBody] ApplyDocuments applyDocument)
+        public IActionResult AddApplyDocument([FromBody] ApplyDocumentsModel applyDocument)
         {
             if (applyDocument == null || string.IsNullOrEmpty(applyDocument.Name) || string.IsNullOrEmpty(applyDocument.Description))
             {
@@ -65,7 +66,7 @@ namespace OntuPhdApi.Controllers
 
             try
             {
-                _dbService.AddApplyDocument(applyDocument);
+                _applyDocumentService.AddApplyDocument(applyDocument);
                 return CreatedAtAction(nameof(GetApplyDocument), new { id = applyDocument.Id }, applyDocument);
             }
             catch (Exception ex)
