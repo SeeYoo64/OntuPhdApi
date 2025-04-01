@@ -1,4 +1,4 @@
-﻿using OntuPhdApi.Models;
+﻿using OntuPhdApi.Models.Programs;
 
 namespace OntuPhdApi.Services.Programs
 {

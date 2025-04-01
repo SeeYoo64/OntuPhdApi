@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using OntuPhdApi.Models;
+using OntuPhdApi.Models.News;
 using OntuPhdApi.Services;
+using OntuPhdApi.Services.News;
+using OntuPhdApi.Services.Programs;
 
 namespace OntuPhdApi.Controllers
 {
@@ -8,21 +10,21 @@ namespace OntuPhdApi.Controllers
     [Route("api/[controller]")]
     public class NewsController : ControllerBase
     {
-        private readonly DatabaseService _dbService;
-        private readonly IWebHostEnvironment _environment;
+        private readonly INewsService _newsService;
 
-        public NewsController(DatabaseService dbService, IWebHostEnvironment environment)
+        public NewsController(INewsService newsService, IWebHostEnvironment environment)
         {
-            _dbService = dbService;
+            _newsService = newsService;
             _environment = environment;
         }
+        private readonly IWebHostEnvironment _environment;
 
         [HttpGet]
         public IActionResult GetNews()
         {
             try
             {
-                var news = _dbService.GetNews();
+                var news = _newsService.GetNews();
                 return Ok(news);
             }
             catch (Exception ex)
@@ -36,7 +38,7 @@ namespace OntuPhdApi.Controllers
         {
             try
             {
-                var news = _dbService.GetNewsById(id);
+                var news = _newsService.GetNewsById(id);
                 if (news == null)
                 {
                     return NotFound($"News with ID {id} not found.");
@@ -67,7 +69,7 @@ namespace OntuPhdApi.Controllers
             try
             {
                 // Создаём объект News
-                var news = new News
+                var news = new NewsModel
                 {
                     Title = newsDto.Title,
                     Summary = newsDto.Summary,
@@ -78,7 +80,7 @@ namespace OntuPhdApi.Controllers
                 };
 
                 // Сохраняем новость в базе, чтобы получить Id
-                _dbService.AddNews(news);
+                _newsService.AddNews(news);
 
                 // Создаём директорию для файлов новости
                 var newsDir = Path.Combine(_environment.ContentRootPath, "Files", "Uploads", "News", news.Id.ToString());
@@ -108,7 +110,7 @@ namespace OntuPhdApi.Controllers
                 }
 
                 // Обновляем запись в базе с путями к файлам
-                _dbService.UpdateNews(news);
+                _newsService.UpdateNews(news);
 
                 return CreatedAtAction(nameof(GetNews), new { id = news.Id }, news);
             }
@@ -150,7 +152,7 @@ namespace OntuPhdApi.Controllers
         {
             try
             {
-                var latestNews = _dbService.GetLatestNews(4);
+                var latestNews = _newsService.GetLatestNews(4);
                 return Ok(latestNews);
             }
             catch (Exception ex)

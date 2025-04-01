@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Npgsql;
 using OntuPhdApi.Models;
+using OntuPhdApi.Models.Programs;
 using System.Text.Json;
 
 namespace OntuPhdApi.Services.Programs

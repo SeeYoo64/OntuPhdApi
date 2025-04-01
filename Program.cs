@@ -1,6 +1,7 @@
 using OntuPhdApi.Services;
 using OntuPhdApi.Services.ApplyDocuments;
 using OntuPhdApi.Services.Documents;
+using OntuPhdApi.Services.News;
 using OntuPhdApi.Services.Programs;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -21,6 +22,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<IProgramService, ProgramService>();
 builder.Services.AddScoped<IDocumentService, DocumentService>();
 builder.Services.AddScoped<IApplyDocumentsService, ApplyDocumentsService>();
+builder.Services.AddScoped<INewsService, NewsService>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

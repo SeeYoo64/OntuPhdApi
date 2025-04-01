@@ -9,10 +9,9 @@ namespace OntuPhdApi.Services.Documents
 
         public DocumentService(IConfiguration configuration)
         {
-
             _connectionString = configuration.GetConnectionString("DefaultConnection");
-
         }
+
         public List<DocumentsModel> GetDocuments()
         {
             var documents = new List<DocumentsModel>();

@@ -1,4 +1,4 @@
-﻿namespace OntuPhdApi.Models
+﻿namespace OntuPhdApi.Models.News
 {
     public class NewsDto
     {

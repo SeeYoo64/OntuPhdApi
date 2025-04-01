@@ -1,6 +1,6 @@
 ﻿using System;
 using Microsoft.AspNetCore.Mvc;
-using OntuPhdApi.Models;
+using OntuPhdApi.Models.Programs;
 using OntuPhdApi.Services;
 using OntuPhdApi.Services.Programs;
 

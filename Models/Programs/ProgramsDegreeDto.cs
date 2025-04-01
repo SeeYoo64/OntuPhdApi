@@ -1,4 +1,4 @@
-﻿namespace OntuPhdApi.Models
+﻿namespace OntuPhdApi.Models.Programs
 {
     public class ProgramsDegreeDto
     {
