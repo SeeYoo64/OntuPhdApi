@@ -38,7 +38,6 @@ namespace OntuPhdApi.Services.Employees
 
             return employees;
         }
-
         public EmployeesModel GetEmployeeById(int id)
         {
             EmployeesModel employee = null;
@@ -68,7 +67,6 @@ namespace OntuPhdApi.Services.Employees
 
             return employee;
         }
-
         public void UpdateEmployee(EmployeesModel employee)
         {
             using (var connection = new NpgsqlConnection(_connectionString))
@@ -103,9 +101,6 @@ namespace OntuPhdApi.Services.Employees
                 }
             }
         }
-    
-    
-    
     
     }
 }
