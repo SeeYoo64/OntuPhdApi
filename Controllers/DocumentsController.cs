@@ -2,14 +2,20 @@
 using Microsoft.AspNetCore.Mvc;
 using OntuPhdApi.Models;
 using OntuPhdApi.Services;
+using OntuPhdApi.Services.Documents;
 
 namespace OntuPhdApi.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class DocumentsController(DatabaseService dbService) : ControllerBase
+    public class DocumentsController : ControllerBase
     {
-        private readonly DatabaseService _dbService = dbService;
+        private readonly IDocumentService _documentService;
+
+        public DocumentsController(IDocumentService documentService)
+        {
+            _documentService = documentService;
+        }
 
         [HttpGet]
         public IActionResult GetDocuments([FromQuery] string? type)
@@ -18,12 +24,12 @@ namespace OntuPhdApi.Controllers
             {
                 if (!string.IsNullOrEmpty(type))
                 {
-                    var documents = _dbService.GetDocumentsByType(type);
+                    var documents = _documentService.GetDocumentsByType(type);
                     return Ok(documents);
                 }
                 else
                 {
-                    var documents = _dbService.GetDocuments();
+                    var documents = _documentService.GetDocuments();
 
                     // Сортировка по Status: Completed -> Ontime -> NotStarted, затем по DataStart
                     documents = documents
@@ -53,7 +59,7 @@ namespace OntuPhdApi.Controllers
         {
             try
             {
-                var document = _dbService.GetDocumentById(id);
+                var document = _documentService.GetDocumentById(id);
                 if (document == null)
                 {
                     return NotFound($"Document with ID {id} not found.");
@@ -67,7 +73,7 @@ namespace OntuPhdApi.Controllers
         }
 
         [HttpPost]
-        public IActionResult AddDocument([FromBody] Documents document)
+        public IActionResult AddDocument([FromBody] DocumentsModel document)
         {
             if (document == null || string.IsNullOrEmpty(document.Name) || string.IsNullOrEmpty(document.Type) || string.IsNullOrEmpty(document.Link))
             {
@@ -76,7 +82,7 @@ namespace OntuPhdApi.Controllers
 
             try
             {
-                _dbService.AddDocument(document);
+                _documentService.AddDocument(document);
                 return CreatedAtAction(nameof(GetDocument), new { id = document.Id }, document);
             }
             catch (Exception ex)
@@ -84,5 +90,9 @@ namespace OntuPhdApi.Controllers
                 return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }
+    
+    
+    
+    
     }
 }
