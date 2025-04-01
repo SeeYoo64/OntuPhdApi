@@ -735,9 +735,9 @@ namespace OntuPhdApi.Services
         }
 
 
-        public List<News> GetNews()
+        public List<NewsView> GetNews()
         {
-            var newsList = new List<News>();
+            var newsList = new List<NewsView>();
             var jsonOptions = new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
@@ -747,24 +747,20 @@ namespace OntuPhdApi.Services
             {
                 connection.Open();
 
-                using (var cmd = new NpgsqlCommand("SELECT Id, Title, Summary, MainTag, OtherTags, Date, Thumbnail, Photos, Body FROM News", connection))
+                using (var cmd = new NpgsqlCommand("SELECT Id, Title, MainTag, Date, Thumbnail FROM News", connection))
                 using (var reader = cmd.ExecuteReader())
                 {
                     while (reader.Read())
                     {
                         try
                         {
-                            newsList.Add(new News
+                            newsList.Add(new NewsView
                             {
                                 Id = reader.GetInt32(0),
                                 Title = reader.GetString(1),
-                                Summary = reader.GetString(2),
-                                MainTag = reader.GetString(3),
-                                OtherTags = JsonSerializer.Deserialize<List<string>>(reader.GetString(4), jsonOptions),
-                                Date = reader.GetDateTime(5),
-                                Thumbnail = reader.GetString(6),
-                                Photos = JsonSerializer.Deserialize<List<string>>(reader.GetString(7), jsonOptions),
-                                Body = JsonSerializer.Deserialize<List<string>>(reader.GetString(8), jsonOptions)
+                                MainTag = reader.GetString(2),
+                                Date = reader.GetDateTime(3),
+                                Thumbnail = reader.GetString(4)
                             });
                         }
                         catch (JsonException ex)
