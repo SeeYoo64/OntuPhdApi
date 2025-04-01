@@ -853,9 +853,9 @@ namespace OntuPhdApi.Services
             }
         }
 
-        public List<News> GetLatestNews(int count = 4)
+        public List<NewsLatest> GetLatestNews(int count = 4)
         {
-            var newsList = new List<News>();
+            var newsList = new List<NewsLatest>();
             var jsonOptions = new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
@@ -866,7 +866,7 @@ namespace OntuPhdApi.Services
                 connection.Open();
 
                 using (var cmd = new NpgsqlCommand(
-                    "SELECT Id, Title, Summary, MainTag, OtherTags, Date, Thumbnail, Photos, Body " +
+                    "SELECT Id, Title, Summary, MainTag, Date, Thumbnail " +
                     "FROM News " +
                     "ORDER BY Date DESC " +
                     "LIMIT @count", connection))
@@ -878,17 +878,14 @@ namespace OntuPhdApi.Services
                         {
                             try
                             {
-                                newsList.Add(new News
+                                newsList.Add(new NewsLatest
                                 {
                                     Id = reader.GetInt32(0),
                                     Title = reader.GetString(1),
                                     Summary = reader.GetString(2),
                                     MainTag = reader.GetString(3),
-                                    OtherTags = JsonSerializer.Deserialize<List<string>>(reader.GetString(4), jsonOptions),
-                                    Date = reader.GetDateTime(5),
-                                    Thumbnail = reader.GetString(6),
-                                    Photos = JsonSerializer.Deserialize<List<string>>(reader.GetString(7), jsonOptions),
-                                    Body = JsonSerializer.Deserialize<List<string>>(reader.GetString(8), jsonOptions)
+                                    Date = reader.GetDateTime(4),
+                                    Thumbnail = reader.GetString(5),
                                 });
                             }
                             catch (JsonException ex)
