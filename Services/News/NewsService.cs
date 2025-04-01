@@ -86,7 +86,7 @@ namespace OntuPhdApi.Services.News
                                     Date = reader.GetDateTime(5),
                                     Thumbnail = reader.GetString(6),
                                     Photos = JsonSerializer.Deserialize<List<string>>(reader.GetString(7), jsonOptions),
-                                    Body = JsonSerializer.Deserialize<List<string>>(reader.GetString(8), jsonOptions)
+                                    Body = reader.GetString(8)
                                 };
                             }
                             catch (JsonException ex)

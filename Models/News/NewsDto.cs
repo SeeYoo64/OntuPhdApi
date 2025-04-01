@@ -9,6 +9,6 @@
         public DateTime Date { get; set; }
         public IFormFile Thumbnail { get; set; } 
         public List<IFormFile> Photos { get; set; } 
-        public List<string> Body { get; set; }
+        public string Body { get; set; }
     }
 }

@@ -15,6 +15,6 @@ namespace OntuPhdApi.Models.News
 
         public string Thumbnail { get; set; }
         public List<string> Photos { get; set; }
-        public List<string> Body { get; set; }
+        public string Body { get; set; }
     }
 }
