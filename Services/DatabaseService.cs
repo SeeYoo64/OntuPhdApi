@@ -20,7 +20,8 @@ namespace OntuPhdApi.Services
             {
                 connection.Open();
 
-                using (var cmd = new NpgsqlCommand("SELECT Id, Type, DataStart, DataEnd, AdditionalTime, Description FROM Roadmaps", connection))
+                using (var cmd = new NpgsqlCommand("SELECT Id, Type, DataStart, " +
+                    "DataEnd, AdditionalTime, Description FROM Roadmaps", connection))
                 using (var reader = cmd.ExecuteReader())
                 {
                     while (reader.Read())

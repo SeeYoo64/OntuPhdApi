@@ -26,7 +26,8 @@ namespace OntuPhdApi.Services.ApplyDocuments
             {
                 connection.Open();
 
-                using var cmd = new NpgsqlCommand("SELECT Id, Name, Description, Requirements, OriginalsRequired FROM ApplyDocuments", connection);
+                using var cmd = new NpgsqlCommand("SELECT Id, Name, Description, " +
+                    "Requirements, OriginalsRequired FROM ApplyDocuments", connection);
                 using var reader = cmd.ExecuteReader();
                 while (reader.Read())
                 {
