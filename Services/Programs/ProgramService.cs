@@ -223,7 +223,7 @@ namespace OntuPhdApi.Services.Programs
             {
                 connection.Open();
 
-                var query = "SELECT Id, Degree, Name, FieldOfStudy, Speciality  FROM Program";
+                var query = "SELECT Id, Degree, Name, Field_Of_Study, Speciality  FROM Program";
                 if (!string.IsNullOrEmpty(degree))
                 {
                     query += " WHERE Degree = @degree";
