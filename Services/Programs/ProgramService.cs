@@ -257,34 +257,34 @@ namespace OntuPhdApi.Services.Programs
         }
 
 
-        //public List<ProgramsFieldDto> GetProgramsFields()
-        //{
-        //    var programs = new List<ProgramsFieldDto>();
-        //    var jsonOptions = new JsonSerializerOptions
-        //    {
-        //        PropertyNameCaseInsensitive = true
-        //    };
-        //    using (var connection = new NpgsqlConnection(_connectionString))
-        //    {
-        //        connection.Open();
+        public List<ProgramsFieldDto> GetProgramsFields()
+        {
+            var programs = new List<ProgramsFieldDto>();
+            var jsonOptions = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                connection.Open();
 
-        //        using (var cmd = new NpgsqlCommand("SELECT Id, Degree, FieldOfStudy FROM Programs", connection))
-        //        using (var reader = cmd.ExecuteReader())
-        //        {
-        //            while (reader.Read())
-        //            {
-        //                programs.Add(new ProgramsFieldDto
-        //                {
-        //                    Id = reader.GetInt32(0),
-        //                    Degree = reader.GetString(1),
-        //                    FieldOfStudy = reader.IsDBNull(2) ? null : JsonSerializer.Deserialize<FieldOfStudy>(reader.GetString(2), jsonOptions),
-        //                });
-        //            }
-        //        }
-        //    }
+                using (var cmd = new NpgsqlCommand("SELECT Id, Degree, Field_Of_Study FROM Program", connection))
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        programs.Add(new ProgramsFieldDto
+                        {
+                            Id = reader.GetInt32(0),
+                            Degree = reader.GetString(1),
+                            FieldOfStudy = reader.IsDBNull(2) ? null : JsonSerializer.Deserialize<FieldOfStudy>(reader.GetString(2), jsonOptions),
+                        });
+                    }
+                }
+            }
 
-        //    return programs;
-        //}
+            return programs;
+        }
 
 
         public void AddProgram(ProgramModel program)
