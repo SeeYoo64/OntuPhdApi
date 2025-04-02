@@ -6,6 +6,6 @@
         public string Degree { get; set; }
         public string Name { get; set; }
         public FieldOfStudy FieldOfStudy { get; set; }
-        public Speciality Speciality { get; set; }
+        public ShortSpeciality ShortSpeciality { get; set; }
     }
 }

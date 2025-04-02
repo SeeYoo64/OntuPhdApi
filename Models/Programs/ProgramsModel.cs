@@ -28,6 +28,12 @@
         public string Name { get; set; }
     }
 
+    public class ShortSpeciality
+    {
+        public string Code { get; set; }
+        public string Name { get; set; }
+    }
+
     public class Speciality
     {
         public string Code { get; set; }

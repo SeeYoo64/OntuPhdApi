@@ -246,7 +246,7 @@ namespace OntuPhdApi.Services.Programs
                                 Degree = reader.GetString(1),
                                 Name = reader.GetString(2),
                                 FieldOfStudy = reader.IsDBNull(3) ? null : JsonSerializer.Deserialize<FieldOfStudy>(reader.GetString(3), jsonOptions),
-                                Speciality = reader.IsDBNull(4) ? null : JsonSerializer.Deserialize<Speciality>(reader.GetString(4), jsonOptions)
+                                ShortSpeciality = reader.IsDBNull(4) ? null : JsonSerializer.Deserialize<ShortSpeciality>(reader.GetString(4), jsonOptions)
                             });
                         }
                     }
