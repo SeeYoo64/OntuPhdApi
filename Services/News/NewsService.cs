@@ -16,9 +16,9 @@ namespace OntuPhdApi.Services.News
 
         }
 
-        public List<NewsView> GetNews()
+        public List<NewsModel> GetNews()
         {
-            var newsList = new List<NewsView>();
+            var newsList = new List<NewsModel>();
             var jsonOptions = new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
@@ -28,20 +28,25 @@ namespace OntuPhdApi.Services.News
             {
                 connection.Open();
 
-                using (var cmd = new NpgsqlCommand("SELECT Id, Title, MainTag, Date, Thumbnail FROM News", connection))
+                using (var cmd = new NpgsqlCommand("SELECT Id, Title, Summary, MainTag, " +
+                    "Othertags, Date, Thumbnail, Photos, Body FROM News", connection))
                 using (var reader = cmd.ExecuteReader())
                 {
                     while (reader.Read())
                     {
                         try
                         {
-                            newsList.Add(new NewsView
+                            newsList.Add(new NewsModel
                             {
                                 Id = reader.GetInt32(0),
                                 Title = reader.GetString(1),
-                                MainTag = reader.GetString(2),
-                                Date = reader.GetDateTime(3),
-                                Thumbnail = reader.GetString(4)
+                                Summary = reader.GetString(2),
+                                MainTag = reader.GetString(3),
+                                OtherTags = JsonSerializer.Deserialize<List<string>>(reader.GetString(4), jsonOptions),
+                                Date = reader.GetDateTime(5),
+                                Thumbnail = reader.GetString(6),
+                                Photos = JsonSerializer.Deserialize<List<string>>(reader.GetString(7), jsonOptions),
+                                Body = reader.GetString(8)
                             });
                         }
                         catch (JsonException ex)
@@ -55,9 +60,9 @@ namespace OntuPhdApi.Services.News
             return newsList;
         }
 
-        public NewsModel GetNewsById(int id)
+        public NewsView GetNewsById(int id)
         {
-            NewsModel news = null;
+            NewsView news = null;
             var jsonOptions = new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
@@ -67,7 +72,8 @@ namespace OntuPhdApi.Services.News
             {
                 connection.Open();
 
-                using (var cmd = new NpgsqlCommand("SELECT Id, Title, Summary, MainTag, OtherTags, Date, Thumbnail, Photos, Body FROM News WHERE Id = @id", connection))
+                using (var cmd = new NpgsqlCommand("SELECT Id, Title, " +
+                    "MainTag, OtherTags, Date, Photos, Body FROM News WHERE Id = @id", connection))
                 {
                     cmd.Parameters.AddWithValue("id", id);
                     using (var reader = cmd.ExecuteReader())
@@ -76,17 +82,15 @@ namespace OntuPhdApi.Services.News
                         {
                             try
                             {
-                                news = new NewsModel
+                                news = new NewsView
                                 {
                                     Id = reader.GetInt32(0),
                                     Title = reader.GetString(1),
-                                    Summary = reader.GetString(2),
-                                    MainTag = reader.GetString(3),
-                                    OtherTags = JsonSerializer.Deserialize<List<string>>(reader.GetString(4), jsonOptions),
-                                    Date = reader.GetDateTime(5),
-                                    Thumbnail = reader.GetString(6),
-                                    Photos = JsonSerializer.Deserialize<List<string>>(reader.GetString(7), jsonOptions),
-                                    Body = reader.GetString(8)
+                                    MainTag = reader.GetString(2),
+                                    OtherTags = JsonSerializer.Deserialize<List<string>>(reader.GetString(3), jsonOptions),
+                                    Date = reader.GetDateTime(4),
+                                    Photos = JsonSerializer.Deserialize<List<string>>(reader.GetString(5), jsonOptions),
+                                    Body = reader.GetString(6)
                                 };
                             }
                             catch (JsonException ex)
