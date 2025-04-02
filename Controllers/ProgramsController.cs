@@ -18,22 +18,24 @@ namespace OntuPhdApi.Controllers
         }
 
         [HttpGet]
-        public IActionResult GetPrograms([FromQuery] string? Degree)
+        public IActionResult GetPrograms()
         {
             try
             {
-                var programs = _programService.GetPrograms();
 
-                // Сортировка по Degrees - phd -> everything else
-                programs = programs
-                    .OrderBy(r => r.Degree switch {
-                        "phd" => 1,
-                        _ => 2
-                    })
-                    .ThenBy(r => r.Id)
-                    .ToList();
+                    var programs = _programService.GetPrograms();
 
-                return Ok(programs);
+                    // Сортировка по Degrees - phd -> everything else
+                    programs = programs
+                        .OrderBy(r => r.Degree switch {
+                            "phd" => 1,
+                            _ => 2
+                        })
+                        .ThenBy(r => r.Id)
+                        .ToList();
+
+                    return Ok(programs);
+
             }
             catch (Exception ex)
             {
@@ -90,7 +92,7 @@ namespace OntuPhdApi.Controllers
         }
 
         [HttpPost]
-        public IActionResult AddProgram([FromBody] ProgramView program)
+        public IActionResult AddProgram([FromBody] ProgramModel program)
         {
             if (program == null || string.IsNullOrEmpty(program.Name))
             {
