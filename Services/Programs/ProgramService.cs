@@ -59,7 +59,7 @@ namespace OntuPhdApi.Services.Programs
                                 LinkFile = reader.IsDBNull(14) ? null : reader.GetString(14),
                                 Accredited = reader.GetBoolean(15),
                                 Directions = reader.IsDBNull(16) ? null : JsonSerializer.Deserialize<List<string>>(reader.GetString(16), jsonOptions),
-                                Object = reader.IsDBNull(17) ? null : reader.GetString(17),
+                                Objects = reader.IsDBNull(17) ? null : reader.GetString(17),
                                 Components = new List<ProgramComponent>(),
                                 Jobs = new List<Job>()
                             };
@@ -164,7 +164,7 @@ namespace OntuPhdApi.Services.Programs
                                 Accredited = reader.GetBoolean(15),
                                 Components = new List<ProgramComponent>(),
                                 Jobs = new List<Job>(),
-                                Object = reader.IsDBNull(16) ? null : reader.GetString(16),
+                                Objects = reader.IsDBNull(16) ? null : reader.GetString(16),
                                 Directions = reader.IsDBNull(17) ? null : JsonSerializer.Deserialize<List<string>>(reader.GetString(17), jsonOptions)
 
                             };
@@ -254,7 +254,7 @@ namespace OntuPhdApi.Services.Programs
                             Speciality = shortSpeciality,
                             Form = program.Form,
                             Description = program.Purpose,
-                            Objects = program.Object,
+                            Objects = program.Objects,
                             Directions = program.Directions,
                             LinkFaculty = program.LinkFaculty,
                             LinkFile = program.LinkFile,

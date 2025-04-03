@@ -9,7 +9,7 @@
         public FieldOfStudy FieldOfStudy { get; set; }
         public Speciality Speciality { get; set; }
         public List<string> Form { get; set; }
-        public string? Object { get; set; }
+        public string? Objects { get; set; }
         public List<string>? Directions { get; set; }
         public string Purpose { get; set; }
         public int? Years { get; set; }
