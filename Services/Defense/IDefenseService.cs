@@ -4,6 +4,8 @@ namespace OntuPhdApi.Services.Defense
 {
     public interface IDefenseService
     {
-        List<DefensePhdModel> GetDefenses();
+        List<DefenseModel> GetDefenses();
+        DefenseModel GetDefenseById(int id);
+        List<DefenseModel> GetDefensesByDegree(string degree);
     }
 }

@@ -1,6 +1,6 @@
 ﻿namespace OntuPhdApi.Models.Defense
 {
-    public class DefensePhdModel
+    public class DefenseModel
     {
         public int Id { get; set; }
         public int ProgramId { get; set; }
@@ -12,6 +12,7 @@
         public string Address { get; set; }
         public string Description { get; set; }
         public string NameOfCompositionOfRada { get; set; }
+        public string Placeholder { get; set; }
         public List<MemberOfRada> Members { get; set; }
         public List<Files> Files { get; set; }
         public DateTime DateOfPublication {get; set;}

@@ -170,7 +170,6 @@ namespace OntuPhdApi.Services.Programs
                             Console.WriteLine($"Error deserializing program with ID {reader.GetInt32(0)}: {ex.Message}");
                         }
                     }
-
                 }
 
                 using (var cmd = new NpgsqlCommand(

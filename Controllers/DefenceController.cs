@@ -31,5 +31,36 @@ namespace OntuPhdApi.Controllers
             }
         }
 
+        [HttpGet("{id}")]
+        public IActionResult GetDefenseById(int id)
+        {
+            try
+            {
+                var defense = _defenseService.GetDefenseById(id);
+                if (defense == null)
+                {
+                    return NotFound($"News with ID {id} not found.");
+                }
+                return Ok(defense);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        [HttpGet("degree")]
+        public IActionResult GetProgramsDegrees([FromQuery] string? degree)
+        {
+            try
+            {
+                var defensesDegrees = _defenseService.GetDefensesByDegree(degree);
+                return Ok(defensesDegrees);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
     }
 }

@@ -14,9 +14,9 @@ namespace OntuPhdApi.Services.Defense
             _connectionString = configuration.GetConnectionString("DefaultConnection");
         }
 
-        public List<DefensePhdModel> GetDefenses()
+        public List<DefenseModel> GetDefenses()
         {
-            var defenseList = new List<DefensePhdModel>();
+            var defenseList = new List<DefenseModel>();
             var jsonOptions = new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
@@ -27,7 +27,7 @@ namespace OntuPhdApi.Services.Defense
                 connection.Open();
 
                 using (var cmd = new NpgsqlCommand("SELECT Id, Name_Surname, defense_name, science_teachers, " +
-                    "date_of_defense, address, description, members, files, date_of_publication, program_id " +
+                    "date_of_defense, address, description, placeholder, members, files, date_of_publication, program_id " +
                     "FROM Defense", connection))
                 using (var reader = cmd.ExecuteReader())
                 {
@@ -35,20 +35,21 @@ namespace OntuPhdApi.Services.Defense
                     {
                         try
                         {
-                            defenseList.Add(new DefensePhdModel
+                            defenseList.Add(new DefenseModel
                             {
                                 Id = reader.GetInt32(0),
                                 NameSurname = reader.GetString(1),
                                 DefenseName = reader.GetString(2),
-                                ScienceTeachers = reader.GetString(3),
+                                ScienceTeachers = reader.IsDBNull(3) ? null : reader.GetString(3),
                                 DateOfDefense = reader.GetDateTime(4),
                                 ProgramInfo = new ProgramDefense(),
-                                Address = reader.GetString(5),
-                                Description = reader.GetString(6),
-                                Members = JsonSerializer.Deserialize<List<MemberOfRada>>(reader.GetString(7), jsonOptions), 
-                                Files = JsonSerializer.Deserialize<List<Files>>(reader.GetString(8), jsonOptions),
-                                DateOfPublication = reader.GetDateTime(9),
-                                ProgramId = reader.GetInt32(10)
+                                Address = reader.IsDBNull(5) ? null : reader.GetString(5),
+                                Description = reader.IsDBNull(6) ? null : reader.GetString(6),
+                                Placeholder = reader.IsDBNull(7) ? null : reader.GetString(7),
+                                Members = reader.IsDBNull(8) ? null : JsonSerializer.Deserialize<List<MemberOfRada>>(reader.GetString(8), jsonOptions), 
+                                Files = JsonSerializer.Deserialize<List<Files>>(reader.GetString(9), jsonOptions),
+                                DateOfPublication = reader.GetDateTime(10),
+                                ProgramId = reader.GetInt32(11)
                             });
                         }
                         catch (JsonException ex)
@@ -88,9 +89,9 @@ namespace OntuPhdApi.Services.Defense
         }
 
 
-        public List<DefensePhdModel> GetDefenses()
+        public DefenseModel GetDefenseById(int id)
         {
-            var defenseList = new List<DefensePhdModel>();
+            var defense = new DefenseModel();
             var jsonOptions = new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
@@ -101,65 +102,137 @@ namespace OntuPhdApi.Services.Defense
                 connection.Open();
 
                 using (var cmd = new NpgsqlCommand("SELECT Id, Name_Surname, defense_name, science_teachers, " +
-                    "date_of_defense, address, description, members, files, date_of_publication, program_id " +
-                    "FROM Defense", connection))
-                using (var reader = cmd.ExecuteReader())
+                    "date_of_defense, address, description, placeholder, members, files, date_of_publication, program_id " +
+                    "FROM Defense WHERE id = @id", connection))
                 {
-                    while (reader.Read())
+                    cmd.Parameters.AddWithValue("id", id);
+                    using (var reader = cmd.ExecuteReader())
                     {
-                        try
+                        if(reader.Read())
                         {
-                            defenseList.Add(new DefensePhdModel
+                            try
                             {
-                                Id = reader.GetInt32(0),
-                                NameSurname = reader.GetString(1),
-                                DefenseName = reader.GetString(2),
-                                ScienceTeachers = reader.GetString(3),
-                                DateOfDefense = reader.GetDateTime(4),
-                                ProgramInfo = new ProgramDefense(),
-                                Address = reader.GetString(5),
-                                Description = reader.GetString(6),
-                                Members = JsonSerializer.Deserialize<List<MemberOfRada>>(reader.GetString(7), jsonOptions),
-                                Files = JsonSerializer.Deserialize<List<Files>>(reader.GetString(8), jsonOptions),
-                                DateOfPublication = reader.GetDateTime(9),
-                                ProgramId = reader.GetInt32(10)
-                            });
-                        }
-                        catch (JsonException ex)
-                        {
-                            Console.WriteLine($"Error deserializing News with ID {reader.GetInt32(0)}: {ex.Message}");
+                                defense = new DefenseModel
+                                {
+                                    Id = reader.GetInt32(0),
+                                    NameSurname = reader.GetString(1),
+                                    DefenseName = reader.GetString(2),
+                                    ScienceTeachers = reader.IsDBNull(3) ? null : reader.GetString(3),
+                                    DateOfDefense = reader.GetDateTime(4),
+                                    ProgramInfo = new ProgramDefense(),
+                                    Address = reader.IsDBNull(5) ? null : reader.GetString(5),
+                                    Description = reader.IsDBNull(6) ? null : reader.GetString(6),
+                                    Placeholder = reader.IsDBNull(7) ? null : reader.GetString(7),
+                                    Members = reader.IsDBNull(8) ? null : JsonSerializer.Deserialize<List<MemberOfRada>>(reader.GetString(8), jsonOptions),
+                                    Files = JsonSerializer.Deserialize<List<Files>>(reader.GetString(9), jsonOptions),
+                                    DateOfPublication = reader.GetDateTime(10),
+                                    ProgramId = reader.GetInt32(11)
+                                };
+                            }
+                            catch (JsonException ex)
+                            {
+                                Console.WriteLine($"Error deserializing News with ID {reader.GetInt32(0)}: {ex.Message}");
+                            }
                         }
                     }
                 }
-
-                foreach (var defense in defenseList)
+                using (var cmd = new NpgsqlCommand(
+                "SELECT Id, Name, Degree, Field_of_study, Speciality " +
+                "FROM Program " +
+                "WHERE id = @programId", connection))
                 {
-
-                    using (var cmd = new NpgsqlCommand(
-                        "SELECT Id, Name, Degree, Field_of_study, Speciality " +
-                        "FROM Program " +
-                        "WHERE id = @programId", connection))
+                    cmd.Parameters.AddWithValue("programId", defense.ProgramId);
+                    using var reader = cmd.ExecuteReader();
+                    if (reader.Read())
                     {
-                        cmd.Parameters.AddWithValue("programId", defense.ProgramId);
-                        using var reader = cmd.ExecuteReader();
-                        if (reader.Read())
+                        defense.ProgramInfo = new ProgramDefense
                         {
-                            defense.ProgramInfo = new ProgramDefense
+                            Id = reader.GetInt32(0),
+                            Name = reader.GetString(1),
+                            Degree = reader.GetString(2),
+                            FieldOfStudy = reader.IsDBNull(3) ? null :
+                                JsonSerializer.Deserialize<FieldOfStudy>(reader.GetString(3), jsonOptions),
+                            Speciality = reader.IsDBNull(4) ? null :
+                                JsonSerializer.Deserialize<ShortSpeciality>(reader.GetString(4), jsonOptions),
+                        };
+                    }
+                }
+            }
+            return defense;
+        }
+
+
+        public List<DefenseModel> GetDefensesByDegree(string degree)
+        {
+            var defenseList = new List<DefenseModel>();
+            var jsonOptions = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
+
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                connection.Open();
+
+                // Выбираем только те защиты, у которых степень совпадает с указанной
+                using (var cmd = new NpgsqlCommand(@"
+                    SELECT d.Id, d.Name_Surname, d.defense_name, d.science_teachers, 
+                    d.date_of_defense, d.address, d.description, d.placeholder, 
+                    d.members, d.files, d.date_of_publication, d.program_id,
+                    p.Name, p.Degree, p.Field_of_study, p.Speciality
+                    FROM Defense d
+                    JOIN Program p ON d.program_id = p.Id
+                    WHERE p.Degree = @degree", connection))
+                {
+                    cmd.Parameters.AddWithValue("degree", degree);
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            try
                             {
-                                Id = reader.GetInt32(0),
-                                Name = reader.GetString(1),
-                                Degree = reader.GetString(2),
-                                FieldOfStudy = reader.IsDBNull(3) ? null :
-                                    JsonSerializer.Deserialize<FieldOfStudy>(reader.GetString(3), jsonOptions),
-                                Speciality = reader.IsDBNull(4) ? null :
-                                    JsonSerializer.Deserialize<ShortSpeciality>(reader.GetString(4), jsonOptions),
-                            };
+                                var defense = new DefenseModel
+                                {
+                                    Id = reader.GetInt32(0),
+                                    NameSurname = reader.GetString(1),
+                                    DefenseName = reader.GetString(2),
+                                    ScienceTeachers = reader.IsDBNull(3) ? null : reader.GetString(3),
+                                    DateOfDefense = reader.GetDateTime(4),
+                                    Address = reader.IsDBNull(5) ? null : reader.GetString(5),
+                                    Description = reader.IsDBNull(6) ? null : reader.GetString(6),
+                                    Placeholder = reader.IsDBNull(7) ? null : reader.GetString(7),
+                                    Members = reader.IsDBNull(8) ? null :
+                                        JsonSerializer.Deserialize<List<MemberOfRada>>(reader.GetString(8), jsonOptions),
+                                    Files = reader.IsDBNull(9) ? new List<Files>() :
+                                        JsonSerializer.Deserialize<List<Files>>(reader.GetString(9), jsonOptions),
+                                    DateOfPublication = reader.GetDateTime(10),
+                                    ProgramId = reader.GetInt32(11),
+                                    ProgramInfo = new ProgramDefense
+                                    {
+                                        Id = reader.GetInt32(11),
+                                        Name = reader.GetString(12),
+                                        Degree = reader.GetString(13),
+                                        FieldOfStudy = reader.IsDBNull(14) ? null :
+                                            JsonSerializer.Deserialize<FieldOfStudy>(reader.GetString(14), jsonOptions),
+                                        Speciality = reader.IsDBNull(15) ? null :
+                                            JsonSerializer.Deserialize<ShortSpeciality>(reader.GetString(15), jsonOptions),
+                                    }
+                                };
+
+                                defenseList.Add(defense);
+                            }
+                            catch (JsonException ex)
+                            {
+                                Console.WriteLine($"Error deserializing Defense with ID {reader.GetInt32(0)}: {ex.Message}");
+                            }
                         }
                     }
                 }
             }
+
             return defenseList;
         }
+
 
 
     }
