@@ -9,9 +9,11 @@
         public FieldOfStudy FieldOfStudy { get; set; }
         public Speciality Speciality { get; set; }
         public List<string> Form { get; set; }
+        public string? Object { get; set; }
+        public List<string>? Directions { get; set; }
         public string Purpose { get; set; }
-        public int Years { get; set; }
-        public int Credits { get; set; }
+        public int? Years { get; set; }
+        public int? Credits { get; set; }
         public ProgramCharacteristics ProgramCharacteristics { get; set; }
         public ProgramCompetence ProgramCompetence { get; set; }
         public List<string> Results { get; set; }

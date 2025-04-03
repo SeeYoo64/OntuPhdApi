@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using OntuPhdApi.Services;
 using OntuPhdApi.Services.ApplyDocuments;
 using OntuPhdApi.Services.Documents;
@@ -15,6 +16,8 @@ builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+        options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+
     });
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

@@ -48,9 +48,9 @@ namespace OntuPhdApi.Services.Programs
                                 FieldOfStudy = reader.IsDBNull(4) ? null : JsonSerializer.Deserialize<FieldOfStudy>(reader.GetString(4), jsonOptions),
                                 Speciality = reader.IsDBNull(5) ? null : JsonSerializer.Deserialize<Speciality>(reader.GetString(5), jsonOptions),
                                 Form = reader.IsDBNull(6) ? null : JsonSerializer.Deserialize<List<string>>(reader.GetString(6), jsonOptions),
-                                Purpose = reader.GetString(7),
-                                Years = reader.GetInt32(8),
-                                Credits = reader.GetInt32(9),
+                                Purpose = reader.IsDBNull(7) ? null : reader.GetString(7),
+                                Years = reader.IsDBNull(8) ? (int?)null : reader.GetInt32(8),
+                                Credits = reader.IsDBNull(9) ? (int?)null : reader.GetInt32(9),
                                 ProgramCharacteristics = reader.IsDBNull(10) ? null : JsonSerializer.Deserialize<ProgramCharacteristics>(reader.GetString(10), jsonOptions),
                                 ProgramCompetence = reader.IsDBNull(11) ? null : JsonSerializer.Deserialize<ProgramCompetence>(reader.GetString(11), jsonOptions),
                                 Results = reader.IsDBNull(12) ? null : JsonSerializer.Deserialize<List<string>>(reader.GetString(12), jsonOptions),
@@ -116,7 +116,7 @@ namespace OntuPhdApi.Services.Programs
             return programs;
         }
 
-        public ProgramModel GetProgramById(int id)
+        public Object GetProgramById(int id)
         {
             ProgramModel program = null;
             var jsonOptions = new JsonSerializerOptions
@@ -130,7 +130,7 @@ namespace OntuPhdApi.Services.Programs
 
                 using (var cmd = new NpgsqlCommand(
                     "SELECT Id, Degree, Name, Name_Code, Field_Of_Study, Speciality, Form, Purpose, Years, Credits, " +
-                    "Program_Characteristics, Program_Competence, Results, Link_Faculty, Link_File, Accredited " +
+                    "Program_Characteristics, Program_Competence, Results, Link_Faculty, Link_File, Accredited, Objects, Directions  " +
                     "FROM Program WHERE Id = @id", connection))
                 {
                     cmd.Parameters.AddWithValue("id", id);
@@ -148,9 +148,9 @@ namespace OntuPhdApi.Services.Programs
                                 FieldOfStudy = reader.IsDBNull(4) ? null : JsonSerializer.Deserialize<FieldOfStudy>(reader.GetString(4), jsonOptions),
                                 Speciality = reader.IsDBNull(5) ? null : JsonSerializer.Deserialize<Speciality>(reader.GetString(5), jsonOptions),
                                 Form = reader.IsDBNull(6) ? null : JsonSerializer.Deserialize<List<string>>(reader.GetString(6), jsonOptions),
-                                Purpose = reader.GetString(7),
-                                Years = reader.GetInt32(8),
-                                Credits = reader.GetInt32(9),
+                                Purpose = reader.IsDBNull(7) ? null : reader.GetString(7),
+                                Years = reader.IsDBNull(8) ? (int?)null : reader.GetInt32(8),
+                                Credits = reader.IsDBNull(9) ? (int?)null : reader.GetInt32(9),
                                 ProgramCharacteristics = reader.IsDBNull(10) ? null : JsonSerializer.Deserialize<ProgramCharacteristics>(reader.GetString(10), jsonOptions),
                                 ProgramCompetence = reader.IsDBNull(11) ? null : JsonSerializer.Deserialize<ProgramCompetence>(reader.GetString(11), jsonOptions),
                                 Results = reader.IsDBNull(12) ? null : JsonSerializer.Deserialize<List<string>>(reader.GetString(12), jsonOptions),
@@ -158,7 +158,10 @@ namespace OntuPhdApi.Services.Programs
                                 LinkFile = reader.IsDBNull(14) ? null : reader.GetString(14),
                                 Accredited = reader.GetBoolean(15),
                                 Components = new List<ProgramComponent>(),
-                                Jobs = new List<Job>()
+                                Jobs = new List<Job>(),
+                                Object = reader.IsDBNull(16) ? null : reader.GetString(16),
+                                Directions = reader.IsDBNull(17) ? null : JsonSerializer.Deserialize<List<string>>(reader.GetString(17), jsonOptions)
+
                             };
                         }
                         catch (JsonException ex)
@@ -166,6 +169,7 @@ namespace OntuPhdApi.Services.Programs
                             Console.WriteLine($"Error deserializing program with ID {reader.GetInt32(0)}: {ex.Message}");
                         }
                     }
+
                 }
 
                 using (var cmd = new NpgsqlCommand(
@@ -207,8 +211,54 @@ namespace OntuPhdApi.Services.Programs
                         });
                     }
                 }
+                var Speciality = program.Speciality;
+                ShortSpeciality shortSpeciality = new ShortSpeciality
+                {
+                    Code = Speciality.Code,
+                    Name = Speciality.Name
+                };
+                switch (program.Degree.ToLower())
+                {
+                                            
+                    case "phd":
+                        return new ProgramModelPhd
+                        {
+                            Id = program.Id,
+                            Degree = program.Degree,
+                            Name = program.Name,
+                            FieldOfStudy = program.FieldOfStudy,
+                            Speciality = shortSpeciality,
+                            Form = program.Form,
+                            Purpose = program.Purpose,
+                            Years = program.Years,
+                            Credits = program.Credits,
+                            ProgramCharacteristics = program.ProgramCharacteristics,
+                            LinkFaculty = program.LinkFaculty,
+                            LinkFile = program.LinkFile
+                        };
+                    case "doc":
+
+                        return new ProgramModelDoc
+                        {
+                            Id = program.Id,
+                            Degree = program.Degree,
+                            Name = program.Name,
+                            NameCode = program.NameCode,
+                            Accredited = program.Accredited,
+                            FieldOfStudy = program.FieldOfStudy,
+                            Speciality = shortSpeciality,
+                            Form = program.Form,
+                            Description = program.Purpose,
+                            Objects = program.Object,
+                            Directions = program.Directions,
+                            LinkFaculty = program.LinkFaculty,
+                            LinkFile = program.LinkFile,
+                        };
+                    default:
+                        throw new ArgumentException("Unsupported degree type");
+                }
+
             }
-            return program;
         }
 
 
@@ -246,7 +296,7 @@ namespace OntuPhdApi.Services.Programs
                                 Degree = reader.GetString(1),
                                 Name = reader.GetString(2),
                                 FieldOfStudy = reader.IsDBNull(3) ? null : JsonSerializer.Deserialize<FieldOfStudy>(reader.GetString(3), jsonOptions),
-                                ShortSpeciality = reader.IsDBNull(4) ? null : JsonSerializer.Deserialize<ShortSpeciality>(reader.GetString(4), jsonOptions)
+                                Speciality = reader.IsDBNull(4) ? null : JsonSerializer.Deserialize<ShortSpeciality>(reader.GetString(4), jsonOptions)
                             });
                         }
                     }

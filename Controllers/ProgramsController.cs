@@ -17,14 +17,13 @@ namespace OntuPhdApi.Controllers
             _programService = programService;
         }
 
+
         [HttpGet]
         public IActionResult GetPrograms()
         {
             try
             {
-
                     var programs = _programService.GetPrograms();
-
                     // Сортировка по Degrees - phd -> everything else
                     programs = programs
                         .OrderBy(r => r.Degree switch {
