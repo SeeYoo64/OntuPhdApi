@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using OntuPhdApi.Services;
 using OntuPhdApi.Services.ApplyDocuments;
+using OntuPhdApi.Services.Defense;
 using OntuPhdApi.Services.Documents;
 using OntuPhdApi.Services.Employees;
 using OntuPhdApi.Services.News;
@@ -30,7 +31,7 @@ builder.Services.AddScoped<IDocumentService, DocumentService>();
 builder.Services.AddScoped<IApplyDocumentsService, ApplyDocumentsService>();
 builder.Services.AddScoped<INewsService, NewsService>();
 builder.Services.AddScoped<IEmployeesService, EmployeesService>();
-
+builder.Services.AddScoped<IDefenseService, DefenseService>();
 
 var app = builder.Build();
 

@@ -1,9 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
-using Npgsql;
-using OntuPhdApi.Models;
+﻿using Npgsql;
 using OntuPhdApi.Models.Programs;
-using System;
-using System.Diagnostics;
 using System.Text.Json;
 
 namespace OntuPhdApi.Services.Programs
