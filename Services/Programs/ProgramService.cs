@@ -3,6 +3,7 @@ using Npgsql;
 using OntuPhdApi.Models;
 using OntuPhdApi.Models.Programs;
 using System;
+using System.Diagnostics;
 using System.Text.Json;
 
 namespace OntuPhdApi.Services.Programs
@@ -30,7 +31,7 @@ namespace OntuPhdApi.Services.Programs
                 connection.Open();
                 using (var cmd = new NpgsqlCommand(
                 "SELECT Id, Degree, Name, Name_Code, Field_Of_Study, Speciality, Form, Purpose, Years, Credits, " +
-                "Program_Characteristics, Program_Competence, Results, Link_Faculty, Link_File, Accredited " +
+                "Program_Characteristics, Program_Competence, Results, Link_Faculty, Link_File, Accredited, Directions, Objects " +
                 "FROM Program", connection))
 
                 using (var reader = cmd.ExecuteReader())
@@ -57,13 +58,17 @@ namespace OntuPhdApi.Services.Programs
                                 LinkFaculty = reader.IsDBNull(13) ? null : reader.GetString(13),
                                 LinkFile = reader.IsDBNull(14) ? null : reader.GetString(14),
                                 Accredited = reader.GetBoolean(15),
+                                Directions = reader.IsDBNull(16) ? null : JsonSerializer.Deserialize<List<string>>(reader.GetString(16), jsonOptions),
+                                Object = reader.IsDBNull(17) ? null : reader.GetString(17),
                                 Components = new List<ProgramComponent>(),
                                 Jobs = new List<Job>()
                             };
+
                             programs.Add(program);
                         }
                         catch (JsonException ex)
                         {
+
                             Console.WriteLine($"Error deserializing program with ID {reader.GetInt32(0)}: {ex.Message}");
                         }
                     }
