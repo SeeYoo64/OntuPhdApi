@@ -7,11 +7,11 @@ namespace OntuPhdApi.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class DefenceController : ControllerBase
+    public class DefenseController : ControllerBase
     {
         private readonly IDefenseService _defenseService;
 
-        public DefenceController(IDefenseService defenseService)
+        public DefenseController(IDefenseService defenseService)
         {
             _defenseService = defenseService;
         }
@@ -59,6 +59,9 @@ namespace OntuPhdApi.Controllers
             try
             {
                 var defensesDegrees = _defenseService.GetDefensesByDegree(degree);
+                defensesDegrees = defensesDegrees
+                .OrderByDescending(r => r.DateOfPublication)
+                .ToList();
                 return Ok(defensesDegrees);
             }
             catch (Exception ex)
