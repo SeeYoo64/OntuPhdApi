@@ -24,13 +24,29 @@ namespace OntuPhdApi.Controllers
         {
             try
             {
-                var news = _specNFieldsService.GetSpecialitiesNFields();
-                return Ok(news);
+                var fields = _specNFieldsService.GetSpecialitiesNFields();
+                return Ok(fields);
             }
             catch (Exception ex)
             {
                 return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }
+
+        [HttpGet("degree")]
+        public ActionResult<List<FieldOfStudyDto>> GetFieldsWithSpecialitiesByDegree(string degree)
+        {
+            try
+            {
+                var fields = _specNFieldsService.GetSpecialitiesNFieldsByDegree(degree);
+                return Ok(fields);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+
     }
 }

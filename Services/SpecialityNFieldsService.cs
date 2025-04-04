@@ -24,18 +24,18 @@ namespace OntuPhdApi.Services
                 connection.Open();
 
                 string sql = @"
-            SELECT 
+                SELECT 
                 f.code AS field_code,
                 f.name AS field_name,
                 s.code AS speciality_code,
                 s.name AS speciality_name
-            FROM 
-                field_of_study f
-            LEFT JOIN 
-                speciality s ON f.code = s.field_code
-            ORDER BY 
-                f.code, s.code;
-        ";
+                FROM 
+                    field_of_study f
+                LEFT JOIN 
+                    speciality s ON f.code = s.field_code
+                ORDER BY 
+                    f.code, s.code;
+                 ";
 
                 using (var cmd = new NpgsqlCommand(sql, connection))
                 using (var reader = cmd.ExecuteReader())
@@ -73,7 +73,69 @@ namespace OntuPhdApi.Services
             return fieldsDict.Values.ToList();
         }
 
+        public List<FieldOfStudyDto> GetSpecialitiesNFieldsByDegree(string degree)
+        {
+            var fieldOfStudyDtoList = new List<FieldOfStudyDto>();
+            var fieldsDict = new Dictionary<string, FieldOfStudyDto>();
 
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                connection.Open();
+
+                string sql = @"
+                SELECT 
+                f.code AS field_code,
+                f.name AS field_name,
+                f.degree AS field_degree,
+                s.code AS speciality_code,
+                s.name AS speciality_name
+                FROM 
+                    field_of_study f
+                LEFT JOIN 
+                    speciality s ON f.code = s.field_code
+                WHERE f.degree = @degree
+                ORDER BY 
+                    f.code, s.code;
+                 ";
+
+                using (var cmd = new NpgsqlCommand(sql, connection))
+                {
+                    cmd.Parameters.AddWithValue("@degree", degree);
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            string fieldCode = reader.GetString(reader.GetOrdinal("field_code"));
+
+                            // Если ещё не добавлен, добавляем FieldOfStudyDto
+                            if (!fieldsDict.TryGetValue(fieldCode, out var fieldDto))
+                            {
+                                fieldDto = new FieldOfStudyDto
+                                {
+                                    Code = fieldCode,
+                                    Name = reader.GetString(reader.GetOrdinal("field_name")),
+                                    Specialities = new List<Speciality>()
+                                };
+                                fieldsDict.Add(fieldCode, fieldDto);
+                            }
+
+                            // Если у этого поля есть специализация — добавляем
+                            if (!reader.IsDBNull(reader.GetOrdinal("speciality_code")))
+                            {
+                                var specialityDto = new Speciality
+                                {
+                                    Code = reader.GetString(reader.GetOrdinal("speciality_code")),
+                                    Name = reader.GetString(reader.GetOrdinal("speciality_name"))
+                                };
+                                fieldDto.Specialities.Add(specialityDto);
+                            }
+                        }
+                    }
+                }
+            }
+
+            return fieldsDict.Values.ToList();
+        }
 
 
     }
