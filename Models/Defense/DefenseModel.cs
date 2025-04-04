@@ -13,7 +13,7 @@
         public string Description { get; set; }
         public string NameOfCompositionOfRada { get; set; }
         public string Placeholder { get; set; }
-        public List<MemberOfRada> Members { get; set; }
+        public List<CompositionOfRada> Members { get; set; }
         public List<Files> Files { get; set; }
         public DateTime DateOfPublication {get; set;}
 
@@ -27,10 +27,15 @@
 
     }
 
-    public class MemberOfRada
+    public class CompositionOfRada
     {
         public string Position { get; set; }
-        public List<string> NameSurname { get; set; }
+        public List<MembersOfRada> Member { get; set; }
+    }
+
+    public class MembersOfRada
+    {
+        public string NameSurname { get; set; }
         public string ToolTip { get; set; }
     }
 }
