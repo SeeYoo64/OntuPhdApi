@@ -21,13 +21,12 @@ namespace OntuPhdApi.Services.Defense
             {
                 PropertyNameCaseInsensitive = true
             };
-
             using (var connection = new NpgsqlConnection(_connectionString))
             {
                 connection.Open();
 
                 using (var cmd = new NpgsqlCommand("SELECT Id, Name_Surname, defense_name, science_teachers, " +
-                    "date_of_defense, address, description, placeholder, members, files, date_of_publication, program_id " +
+                    "date_of_defense, address, message, placeholder, members, files, date_of_publication, program_id " +
                     "FROM Defense", connection))
                 using (var reader = cmd.ExecuteReader())
                 {
@@ -35,22 +34,24 @@ namespace OntuPhdApi.Services.Defense
                     {
                         try
                         {
+
                             defenseList.Add(new DefenseModel
                             {
                                 Id = reader.GetInt32(0),
                                 NameSurname = reader.GetString(1),
                                 DefenseName = reader.GetString(2),
-                                ScienceTeachers = reader.IsDBNull(3) ? null : reader.GetString(3),
+                                ScienceTeachers = reader.IsDBNull(3) ? null : JsonSerializer.Deserialize<List<string>>(reader.GetString(3), jsonOptions),
                                 DateOfDefense = reader.GetDateTime(4),
                                 ProgramInfo = new ProgramDefense(),
                                 Address = reader.IsDBNull(5) ? null : reader.GetString(5),
-                                Description = reader.IsDBNull(6) ? null : reader.GetString(6),
+                                Message = reader.IsDBNull(6) ? null : reader.GetString(6),
                                 Placeholder = reader.IsDBNull(7) ? null : reader.GetString(7),
-                                Members = reader.IsDBNull(8) ? null : JsonSerializer.Deserialize<List<CompositionOfRada>>(reader.GetString(8), jsonOptions), 
+                                Members = reader.IsDBNull(8) ? null : JsonSerializer.Deserialize<List<CompositionOfRada>>(reader.GetString(8), jsonOptions),
                                 Files = JsonSerializer.Deserialize<List<Files>>(reader.GetString(9), jsonOptions),
                                 DateOfPublication = reader.GetDateTime(10),
                                 ProgramId = reader.GetInt32(11)
                             });
+
                         }
                         catch (JsonException ex)
                         {
@@ -102,7 +103,7 @@ namespace OntuPhdApi.Services.Defense
                 connection.Open();
 
                 using (var cmd = new NpgsqlCommand("SELECT Id, Name_Surname, defense_name, science_teachers, " +
-                    "date_of_defense, address, description, placeholder, members, files, date_of_publication, program_id " +
+                    "date_of_defense, address, message, placeholder, members, files, date_of_publication, program_id " +
                     "FROM Defense WHERE id = @id", connection))
                 {
                     cmd.Parameters.AddWithValue("id", id);
@@ -117,11 +118,11 @@ namespace OntuPhdApi.Services.Defense
                                     Id = reader.GetInt32(0),
                                     NameSurname = reader.GetString(1),
                                     DefenseName = reader.GetString(2),
-                                    ScienceTeachers = reader.IsDBNull(3) ? null : reader.GetString(3),
+                                    ScienceTeachers = reader.IsDBNull(3) ? null : JsonSerializer.Deserialize<List<string>>(reader.GetString(3), jsonOptions),
                                     DateOfDefense = reader.GetDateTime(4),
                                     ProgramInfo = new ProgramDefense(),
                                     Address = reader.IsDBNull(5) ? null : reader.GetString(5),
-                                    Description = reader.IsDBNull(6) ? null : reader.GetString(6),
+                                    Message = reader.IsDBNull(6) ? null : reader.GetString(6),
                                     Placeholder = reader.IsDBNull(7) ? null : reader.GetString(7),
                                     Members = reader.IsDBNull(8) ? null : JsonSerializer.Deserialize<List<CompositionOfRada>>(reader.GetString(8), jsonOptions),
                                     Files = JsonSerializer.Deserialize<List<Files>>(reader.GetString(9), jsonOptions),
@@ -177,7 +178,7 @@ namespace OntuPhdApi.Services.Defense
                 // Выбираем только те защиты, у которых степень совпадает с указанной
                 using (var cmd = new NpgsqlCommand(@"
                     SELECT d.Id, d.Name_Surname, d.defense_name, d.science_teachers, 
-                    d.date_of_defense, d.address, d.description, d.placeholder, 
+                    d.date_of_defense, d.address, d.message, d.placeholder, 
                     d.members, d.files, d.date_of_publication, d.program_id,
                     p.Name, p.Degree, p.Field_of_study, p.Speciality
                     FROM Defense d
@@ -196,10 +197,10 @@ namespace OntuPhdApi.Services.Defense
                                     Id = reader.GetInt32(0),
                                     NameSurname = reader.GetString(1),
                                     DefenseName = reader.GetString(2),
-                                    ScienceTeachers = reader.IsDBNull(3) ? null : reader.GetString(3),
+                                    ScienceTeachers = reader.IsDBNull(3) ? null : JsonSerializer.Deserialize<List<string>>(reader.GetString(3), jsonOptions),
                                     DateOfDefense = reader.GetDateTime(4),
                                     Address = reader.IsDBNull(5) ? null : reader.GetString(5),
-                                    Description = reader.IsDBNull(6) ? null : reader.GetString(6),
+                                    Message = reader.IsDBNull(6) ? null : reader.GetString(6),
                                     Placeholder = reader.IsDBNull(7) ? null : reader.GetString(7),
                                     Members = reader.IsDBNull(8) ? null :
                                         JsonSerializer.Deserialize<List<CompositionOfRada>>(reader.GetString(8), jsonOptions),

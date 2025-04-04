@@ -1,16 +1,19 @@
-﻿namespace OntuPhdApi.Models.Defense
+﻿using System.Text.Json.Serialization;
+
+namespace OntuPhdApi.Models.Defense
 {
     public class DefenseModel
     {
         public int Id { get; set; }
+        [JsonIgnore]
         public int ProgramId { get; set; }
         public string NameSurname { get; set; }
         public string DefenseName { get; set; }
         public ProgramDefense ProgramInfo { get; set; }
-        public string ScienceTeachers { get; set; }
+        public List<string> ScienceTeachers { get; set; }
         public DateTime DateOfDefense { get; set; }
         public string Address { get; set; }
-        public string Description { get; set; }
+        public string Message { get; set; }
         public string NameOfCompositionOfRada { get; set; }
         public string Placeholder { get; set; }
         public List<CompositionOfRada> Members { get; set; }

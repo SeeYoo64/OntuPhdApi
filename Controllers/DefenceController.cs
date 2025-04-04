@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System;
+using Microsoft.AspNetCore.Mvc;
 using OntuPhdApi.Services.Defense;
 
 
@@ -21,7 +22,9 @@ namespace OntuPhdApi.Controllers
             try
             {
                 var defenses = _defenseService.GetDefenses();
-
+                defenses = defenses
+                .OrderByDescending(r => r.DateOfPublication)
+                .ToList();
                 return Ok(defenses);
 
             }
@@ -30,6 +33,7 @@ namespace OntuPhdApi.Controllers
                 return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }
+
 
         [HttpGet("{id}")]
         public IActionResult GetDefenseById(int id)
