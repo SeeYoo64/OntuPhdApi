@@ -32,6 +32,7 @@ builder.Services.AddScoped<IApplyDocumentsService, ApplyDocumentsService>();
 builder.Services.AddScoped<INewsService, NewsService>();
 builder.Services.AddScoped<IEmployeesService, EmployeesService>();
 builder.Services.AddScoped<IDefenseService, DefenseService>();
+builder.Services.AddScoped<ISpecialityNFieldsService, SpecialityNFieldsService>();
 
 var app = builder.Build();
 
