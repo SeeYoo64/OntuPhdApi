@@ -33,7 +33,7 @@ namespace OntuPhdApi.Models.Defense
     public class CompositionOfRada
     {
         public string Position { get; set; }
-        public List<MembersOfRada> Member { get; set; }
+        public List<MembersOfRada> Members { get; set; }
     }
 
     public class MembersOfRada
