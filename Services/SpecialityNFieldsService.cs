@@ -33,7 +33,6 @@ namespace OntuPhdApi.Services
                 {
                     sql += " WHERE Degree = @degree ";
                 }
-                sql += "ORDER BY f.code ";
                 using (var cmd = new NpgsqlCommand(sql, connection))
                 {
                     if (!string.IsNullOrEmpty(degree))
