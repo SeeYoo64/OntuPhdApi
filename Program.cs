@@ -33,6 +33,15 @@ builder.Services.AddScoped<INewsService, NewsService>();
 builder.Services.AddScoped<IEmployeesService, EmployeesService>();
 builder.Services.AddScoped<IDefenseService, DefenseService>();
 builder.Services.AddScoped<ISpecialityNFieldsService, SpecialityNFieldsService>();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
 
 var app = builder.Build();
 

@@ -56,8 +56,8 @@ namespace OntuPhdApi.Services.Programs
                                 Accredited = reader.GetBoolean(15),
                                 Directions = reader.IsDBNull(16) ? null : JsonSerializer.Deserialize<List<string>>(reader.GetString(16), jsonOptions),
                                 Objects = reader.IsDBNull(17) ? null : reader.GetString(17),
-                                Components = new List<ProgramComponent>(),
-                                Jobs = new List<Job>()
+                        //        Components = new List<ProgramComponent>(),
+                        //        Jobs = new List<Job>()
                             };
 
                             programs.Add(program);
