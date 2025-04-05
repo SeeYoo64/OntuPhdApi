@@ -4,7 +4,9 @@ namespace OntuPhdApi.Services
 {
     public interface ISpecialityNFieldsService
     {
-        List<FieldOfStudyDto> GetSpecialitiesNFields();
-        List<FieldOfStudyDto> GetSpecialitiesNFieldsByDegree(string degree);
+        List<FieldOfStudyDto> GetSpecialitiesNFields(string degree = null);
+
+        List<ShortSpeciality> GetSpecialitiesByCode(string code);
+
     }
 }

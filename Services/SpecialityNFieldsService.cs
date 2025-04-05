@@ -14,7 +14,7 @@ namespace OntuPhdApi.Services
             _connectionString = configuration.GetConnectionString("DefaultConnection");
         }
 
-        public List<FieldOfStudyDto> GetSpecialitiesNFields() 
+        public List<FieldOfStudyDto> GetSpecialitiesNFields(string degree = null) 
         {
             var fieldOfStudyDtoList = new List<FieldOfStudyDto>();
             var fieldsDict = new Dictionary<string, FieldOfStudyDto>();
@@ -26,81 +26,20 @@ namespace OntuPhdApi.Services
                 string sql = @"
                 SELECT 
                 f.code AS field_code,
-                f.name AS field_name,
-                s.code AS speciality_code,
-                s.name AS speciality_name
+                f.name AS field_name 
                 FROM 
-                    field_of_study f
-                LEFT JOIN 
-                    speciality s ON f.code = s.field_code
-                ORDER BY 
-                    f.code, s.code;
-                 ";
-
-                using (var cmd = new NpgsqlCommand(sql, connection))
-                using (var reader = cmd.ExecuteReader())
+                    field_of_study f";
+                if (!string.IsNullOrEmpty(degree))
                 {
-                    while (reader.Read())
-                    {
-                        string fieldCode = reader.GetString(reader.GetOrdinal("field_code"));
-
-                        // Если ещё не добавлен, добавляем FieldOfStudyDto
-                        if (!fieldsDict.TryGetValue(fieldCode, out var fieldDto))
-                        {
-                            fieldDto = new FieldOfStudyDto
-                            {
-                                Code = fieldCode,
-                                Name = reader.GetString(reader.GetOrdinal("field_name")),
-                                Specialities = new List<Speciality>()
-                            };
-                            fieldsDict.Add(fieldCode, fieldDto);
-                        }
-
-                        // Если у этого поля есть специализация — добавляем
-                        if (!reader.IsDBNull(reader.GetOrdinal("speciality_code")))
-                        {
-                            var specialityDto = new Speciality
-                            {
-                                Code = reader.GetString(reader.GetOrdinal("speciality_code")),
-                                Name = reader.GetString(reader.GetOrdinal("speciality_name"))
-                            };
-                            fieldDto.Specialities.Add(specialityDto);
-                        }
-                    }
+                    sql += " WHERE Degree = @degree ";
                 }
-            }
-
-            return fieldsDict.Values.ToList();
-        }
-
-        public List<FieldOfStudyDto> GetSpecialitiesNFieldsByDegree(string degree)
-        {
-            var fieldOfStudyDtoList = new List<FieldOfStudyDto>();
-            var fieldsDict = new Dictionary<string, FieldOfStudyDto>();
-
-            using (var connection = new NpgsqlConnection(_connectionString))
-            {
-                connection.Open();
-
-                string sql = @"
-                SELECT 
-                f.code AS field_code,
-                f.name AS field_name,
-                f.degree AS field_degree,
-                s.code AS speciality_code,
-                s.name AS speciality_name
-                FROM 
-                    field_of_study f
-                LEFT JOIN 
-                    speciality s ON f.code = s.field_code
-                WHERE f.degree = @degree
-                ORDER BY 
-                    f.code, s.code;
-                 ";
-
+                sql += "ORDER BY f.code ";
                 using (var cmd = new NpgsqlCommand(sql, connection))
                 {
-                    cmd.Parameters.AddWithValue("@degree", degree);
+                    if (!string.IsNullOrEmpty(degree))
+                    {
+                        cmd.Parameters.AddWithValue("degree", degree);
+                    }
                     using (var reader = cmd.ExecuteReader())
                     {
                         while (reader.Read())
@@ -114,27 +53,52 @@ namespace OntuPhdApi.Services
                                 {
                                     Code = fieldCode,
                                     Name = reader.GetString(reader.GetOrdinal("field_name")),
-                                    Specialities = new List<Speciality>()
                                 };
                                 fieldsDict.Add(fieldCode, fieldDto);
                             }
 
-                            // Если у этого поля есть специализация — добавляем
-                            if (!reader.IsDBNull(reader.GetOrdinal("speciality_code")))
-                            {
-                                var specialityDto = new Speciality
-                                {
-                                    Code = reader.GetString(reader.GetOrdinal("speciality_code")),
-                                    Name = reader.GetString(reader.GetOrdinal("speciality_name"))
-                                };
-                                fieldDto.Specialities.Add(specialityDto);
-                            }
                         }
                     }
                 }
             }
 
             return fieldsDict.Values.ToList();
+        }
+
+        public List<ShortSpeciality> GetSpecialitiesByCode(string code)
+        {
+            var ShortSpecialityList = new List<ShortSpeciality>();
+
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                connection.Open();
+
+                string sql = @"
+                SELECT 
+                s.code AS speciality_code,
+                s.name AS speciality_name 
+                FROM speciality s
+                WHERE s.field_code = @code";
+
+                using (var cmd = new NpgsqlCommand(sql, connection))
+                {
+                    cmd.Parameters.AddWithValue("@code", code);
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            ShortSpecialityList.Add(new ShortSpeciality
+                            {
+                                Code = reader.GetString(0),
+                                Name = reader.GetString(1)
+                            });
+
+                        }
+                    }
+                }
+            }
+
+            return ShortSpecialityList;
         }
 
 

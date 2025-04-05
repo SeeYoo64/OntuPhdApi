@@ -261,7 +261,6 @@ namespace OntuPhdApi.Services.Programs
             }
         }
 
-
         public List<ProgramsDegreeDto> GetProgramsDegrees(string degree = null)
         {
             var programs = new List<ProgramsDegreeDto>();
