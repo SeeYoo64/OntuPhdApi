@@ -155,7 +155,6 @@ namespace OntuPhdApi.Controllers
                 if (existingProgram == null)
                     return NotFound("Program not found.");
 
-                // Обновляем базовые поля программы
                 existingProgram.Degree = request.Degree ?? existingProgram.Degree;
                 existingProgram.Name = request.Name;
                 existingProgram.NameCode = request.NameCode ?? existingProgram.NameCode;
@@ -205,7 +204,7 @@ namespace OntuPhdApi.Controllers
 
                 if (request.File != null && request.File.Length > 0)
                 {
-                    var uploadFolder = Path.Combine(Directory.GetCurrentDirectory(), "Uploads");
+                    var uploadFolder = Path.Combine(Directory.GetCurrentDirectory(), "Files/Uploads/Programs");
                     if (!Directory.Exists(uploadFolder))
                         Directory.CreateDirectory(uploadFolder);
 
