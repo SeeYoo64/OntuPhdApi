@@ -1,6 +1,7 @@
 ﻿using Npgsql;
 using OntuPhdApi.Models.News;
 using OntuPhdApi.Models.Programs;
+using System.Data;
 using System.Text.Json;
 
 namespace OntuPhdApi.Services
@@ -24,11 +25,9 @@ namespace OntuPhdApi.Services
                 connection.Open();
 
                 string sql = @"
-                SELECT 
-                f.code AS field_code,
-                f.name AS field_name 
-                FROM 
-                    field_of_study f";
+                SELECT  
+                f.code, f.name, f.degree  
+                FROM field_of_study f ";
                 if (!string.IsNullOrEmpty(degree))
                 {
                     sql += " WHERE Degree = @degree ";
@@ -43,7 +42,7 @@ namespace OntuPhdApi.Services
                     {
                         while (reader.Read())
                         {
-                            string fieldCode = reader.GetString(reader.GetOrdinal("field_code"));
+                            string fieldCode = reader.GetString(reader.GetOrdinal("code"));
 
                             // Если ещё не добавлен, добавляем FieldOfStudyDto
                             if (!fieldsDict.TryGetValue(fieldCode, out var fieldDto))
@@ -51,7 +50,8 @@ namespace OntuPhdApi.Services
                                 fieldDto = new FieldOfStudyDto
                                 {
                                     Code = fieldCode,
-                                    Name = reader.GetString(reader.GetOrdinal("field_name")),
+                                    Name = reader.GetString(reader.GetOrdinal("name")),
+                                    Degree = reader.GetString(2)
                                 };
                                 fieldsDict.Add(fieldCode, fieldDto);
                             }

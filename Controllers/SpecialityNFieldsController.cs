@@ -33,8 +33,6 @@ namespace OntuPhdApi.Controllers
             }
         }
 
-        //GetSpecialitiesByCode
-
         [HttpGet("{code}")]
         public IActionResult GetSpecialitiesByCode(string code)
         {
