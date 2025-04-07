@@ -121,7 +121,7 @@ namespace OntuPhdApi.Controllers
                     LinkFaculty = request.LinkFaculty,
                     Components = request.Components,
                     Jobs = request.Jobs,
-                    Accredited = request.Accreditized,
+                    Accredited = request.Accredited,
                     ProgramDocumentId = 0 // Временно, будет заполнено сервисом
                 };
 
@@ -164,12 +164,14 @@ namespace OntuPhdApi.Controllers
                 existingProgram.Objects = request.Objects ?? existingProgram.Objects;
                 existingProgram.Directions = request.Directions ?? existingProgram.Directions;
                 existingProgram.Purpose = request.Purpose ?? existingProgram.Purpose;
+                existingProgram.Descriptions = request.Descriptions ?? existingProgram.Descriptions;
                 existingProgram.Years = request.Years ?? existingProgram.Years;
                 existingProgram.Credits = request.Credits ?? existingProgram.Credits;
+                existingProgram.Results = request.Results ?? existingProgram.Results;
                 existingProgram.LinkFaculty = request.LinkFaculty ?? existingProgram.LinkFaculty;
                 existingProgram.Components = request.Components ?? existingProgram.Components;
                 existingProgram.Jobs = request.Jobs ?? existingProgram.Jobs;
-                existingProgram.Accredited = request.Accreditized;
+                existingProgram.Accredited = request.Accredited;
 
                 if (request.ProgramCharacteristics != null)
                 {
@@ -190,7 +192,6 @@ namespace OntuPhdApi.Controllers
                     };
                 }
 
-                // Обновляем ProgramCompetence только если данные переданы
                 if (request.ProgramCompetence != null)
                 {
                     existingProgram.ProgramCompetence = new ProgramCompetence

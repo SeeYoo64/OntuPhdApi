@@ -13,6 +13,7 @@ namespace OntuPhdApi.Models.Programs
         public List<string> Form { get; set; }
         public string? Objects { get; set; }
         public List<string>? Directions { get; set; }
+        public string? Descriptions { get; set; }
         public string? Purpose { get; set; }
         public int? Years { get; set; }
         public int? Credits { get; set; }
