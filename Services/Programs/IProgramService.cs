@@ -5,8 +5,10 @@ namespace OntuPhdApi.Services.Programs
     public interface IProgramService
     {
         List<ProgramModel> GetPrograms();
-        Object GetProgramById(int id);
+        Task<ProgramModel> GetProgram(int id);
         List<ProgramsDegreeDto> GetProgramsDegrees(string degree = null);
-        void AddProgram(ProgramModel program);
+        Task AddProgram(ProgramModel program, string filePath, string contentType, long fileSize);
+        Task UpdateProgram(ProgramModel program);
+        Task UpdateProgramWithDocument(ProgramModel program, string filePath, string fileName, string contentType, long fileSize);
     }
 }

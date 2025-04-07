@@ -27,7 +27,7 @@ namespace OntuPhdApi.Services.Programs
                 connection.Open();
                 using (var cmd = new NpgsqlCommand(
                 "SELECT Id, Degree, Name, Name_Code, Field_Of_Study, Speciality, Form, Purpose, Years, Credits, " +
-                "Program_Characteristics, Program_Competence, Results, Link_Faculty, Link_File, Accredited, Directions, Objects " +
+                "Program_Characteristics, Program_Competence, Results, Link_Faculty, programdocumentid, Accredited, Directions, Objects " +
                 "FROM Program", connection))
 
                 using (var reader = cmd.ExecuteReader())
@@ -52,7 +52,7 @@ namespace OntuPhdApi.Services.Programs
                                 ProgramCompetence = reader.IsDBNull(11) ? null : JsonSerializer.Deserialize<ProgramCompetence>(reader.GetString(11), jsonOptions),
                                 Results = reader.IsDBNull(12) ? null : JsonSerializer.Deserialize<List<string>>(reader.GetString(12), jsonOptions),
                                 LinkFaculty = reader.IsDBNull(13) ? null : reader.GetString(13),
-                                LinkFile = reader.IsDBNull(14) ? null : reader.GetString(14),
+                                ProgramDocumentId = reader.IsDBNull(14) ? 0 : reader.GetInt32(14),
                                 Accredited = reader.GetBoolean(15),
                                 Directions = reader.IsDBNull(16) ? null : JsonSerializer.Deserialize<List<string>>(reader.GetString(16), jsonOptions),
                                 Objects = reader.IsDBNull(17) ? null : reader.GetString(17),
@@ -117,7 +117,7 @@ namespace OntuPhdApi.Services.Programs
             return programs;
         }
 
-        public Object GetProgramById(int id)
+        public async Task<ProgramModel> GetProgram(int id)
         {
             ProgramModel program = null;
             var jsonOptions = new JsonSerializerOptions
@@ -127,16 +127,19 @@ namespace OntuPhdApi.Services.Programs
 
             using (var connection = new NpgsqlConnection(_connectionString))
             {
-                connection.Open();
+                await connection.OpenAsync();
 
                 using (var cmd = new NpgsqlCommand(
-                    "SELECT Id, Degree, Name, Name_Code, Field_Of_Study, Speciality, Form, Purpose, Years, Credits, " +
-                    "Program_Characteristics, Program_Competence, Results, Link_Faculty, Link_File, Accredited, Objects, Directions  " +
-                    "FROM Program WHERE Id = @id", connection))
+                    "SELECT p.Id, p.Degree, p.Name, p.Name_Code, p.Field_Of_Study, p.Speciality, p.Form, p.Purpose, p.Years, p.Credits, " +
+                    "p.Program_Characteristics, p.Program_Competence, p.Results, p.Link_Faculty, p.programdocumentid, p.Accredited, p.Objects, p.Directions, " +
+                    "d.FileName, d.FilePath " +
+                    "FROM Program p " +
+                    "LEFT JOIN Programdocuments d ON p.programdocumentid = d.Id " +
+                    "WHERE p.Id = @id", connection))
                 {
                     cmd.Parameters.AddWithValue("id", id);
-                    using var reader = cmd.ExecuteReader();
-                    if (reader.Read())
+                    using var reader = await cmd.ExecuteReaderAsync();
+                    if (await reader.ReadAsync())
                     {
                         try
                         {
@@ -156,30 +159,34 @@ namespace OntuPhdApi.Services.Programs
                                 ProgramCompetence = reader.IsDBNull(11) ? null : JsonSerializer.Deserialize<ProgramCompetence>(reader.GetString(11), jsonOptions),
                                 Results = reader.IsDBNull(12) ? null : JsonSerializer.Deserialize<List<string>>(reader.GetString(12), jsonOptions),
                                 LinkFaculty = reader.IsDBNull(13) ? null : reader.GetString(13),
-                                LinkFile = reader.IsDBNull(14) ? null : reader.GetString(14),
+                                ProgramDocumentId = reader.IsDBNull(14) ? 0 : reader.GetInt32(14),
                                 Accredited = reader.GetBoolean(15),
-                                Components = new List<ProgramComponent>(),
-                                Jobs = new List<Job>(),
                                 Objects = reader.IsDBNull(16) ? null : reader.GetString(16),
-                                Directions = reader.IsDBNull(17) ? null : JsonSerializer.Deserialize<List<string>>(reader.GetString(17), jsonOptions)
-
+                                Directions = reader.IsDBNull(17) ? null : JsonSerializer.Deserialize<List<string>>(reader.GetString(17), jsonOptions),
+                               // Components = new List<ProgramComponent>(),
+                               // Jobs = new List<Job>()
                             };
                         }
                         catch (JsonException ex)
                         {
-                            Console.WriteLine($"Error deserializing program with ID {reader.GetInt32(0)}: {ex.Message}");
+                            Console.WriteLine($"Error deserializing program with ID {id}: {ex.Message}");
+                            throw;
                         }
+                    }
+                    else
+                    {
+                        return null; 
                     }
                 }
 
                 using (var cmd = new NpgsqlCommand(
-                        "SELECT Id, ComponentType, ComponentName, ComponentCredits, ComponentHours, ControlForm " +
-                        "FROM programcomponents " +
-                        "WHERE program_id = @programId", connection))
+                    "SELECT Id, ComponentType, ComponentName, ComponentCredits, ComponentHours, ControlForm " +
+                    "FROM programcomponents " +
+                    "WHERE program_id = @programId", connection))
                 {
                     cmd.Parameters.AddWithValue("programId", program.Id);
-                    using var reader = cmd.ExecuteReader();
-                    while (reader.Read())
+                    using var reader = await cmd.ExecuteReaderAsync();
+                    while (await reader.ReadAsync())
                     {
                         program.Components.Add(new ProgramComponent
                         {
@@ -189,7 +196,7 @@ namespace OntuPhdApi.Services.Programs
                             ComponentName = reader.GetString(2),
                             ComponentCredits = reader.GetInt32(3),
                             ComponentHours = reader.GetInt32(4),
-                            ControlForm = reader.IsDBNull(5) ? null : JsonSerializer.Deserialize<List<string>>(reader.GetString(5), jsonOptions) ?? throw new Exception($"Failed to deserialize ControlForm for component ID {reader.GetInt32(0)}")
+                            ControlForm = reader.IsDBNull(5) ? null : JsonSerializer.Deserialize<List<string>>(reader.GetString(5), jsonOptions)
                         });
                     }
                 }
@@ -200,8 +207,8 @@ namespace OntuPhdApi.Services.Programs
                     "WHERE program_id = @programId", connection))
                 {
                     cmd.Parameters.AddWithValue("programId", program.Id);
-                    using var reader = cmd.ExecuteReader();
-                    while (reader.Read())
+                    using var reader = await cmd.ExecuteReaderAsync();
+                    while (await reader.ReadAsync())
                     {
                         program.Jobs.Add(new Job
                         {
@@ -211,53 +218,8 @@ namespace OntuPhdApi.Services.Programs
                         });
                     }
                 }
-                var Speciality = program.Speciality;
-                ShortSpeciality shortSpeciality = new ShortSpeciality
-                {
-                    Code = Speciality.Code,
-                    Name = Speciality.Name
-                };
-                switch (program.Degree.ToLower())
-                {
-                                            
-                    case "phd":
-                        return new ProgramModelPhd
-                        {
-                            Id = program.Id,
-                            Degree = program.Degree,
-                            Name = program.Name,
-                            FieldOfStudy = program.FieldOfStudy,
-                            Speciality = shortSpeciality,
-                            Form = program.Form,
-                            Purpose = program.Purpose,
-                            Years = program.Years,
-                            Credits = program.Credits,
-                            ProgramCharacteristics = program.ProgramCharacteristics,
-                            LinkFaculty = program.LinkFaculty,
-                            LinkFile = program.LinkFile
-                        };
-                    case "doc":
 
-                        return new ProgramModelDoc
-                        {
-                            Id = program.Id,
-                            Degree = program.Degree,
-                            Name = program.Name,
-                            NameCode = program.NameCode,
-                            Accredited = program.Accredited,
-                            FieldOfStudy = program.FieldOfStudy,
-                            Speciality = shortSpeciality,
-                            Form = program.Form,
-                            Description = program.Purpose,
-                            Objects = program.Objects,
-                            Directions = program.Directions,
-                            LinkFaculty = program.LinkFaculty,
-                            LinkFile = program.LinkFile,
-                        };
-                    default:
-                        throw new ArgumentException("Unsupported degree type");
-                }
-
+                return program;
             }
         }
 
@@ -305,98 +267,111 @@ namespace OntuPhdApi.Services.Programs
             return programs;
         }
 
-        public void AddProgram(ProgramModel program)
+        public async Task AddProgram(ProgramModel program, string filePath, string contentType, long fileSize)
         {
-            var jsonOptions = new JsonSerializerOptions
+            using (var connection = new NpgsqlConnection(_connectionString))
             {
-                PropertyNameCaseInsensitive = true
-            };
+                await connection.OpenAsync();
 
-            using var connection = new NpgsqlConnection(_connectionString);
-            connection.Open();
+                // Сохранение документа
+                var documentQuery = "INSERT INTO Documents (FileName, FilePath, FileSize, ContentType) VALUES (@FileName, @FilePath, @FileSize, @ContentType) RETURNING Id";
+                int documentId;
+                using (var cmd = new NpgsqlCommand(documentQuery, connection))
+                {
+                    cmd.Parameters.AddWithValue("FileName", program.Name + Path.GetExtension(filePath)); // Имя файла можно связать с программой
+                    cmd.Parameters.AddWithValue("FilePath", filePath);
+                    cmd.Parameters.AddWithValue("FileSize", fileSize);
+                    cmd.Parameters.AddWithValue("ContentType", contentType);
+                    documentId = (int)await cmd.ExecuteScalarAsync();
+                }
 
-            int programId;
-            using (var cmd = new NpgsqlCommand(
-                "INSERT INTO Programs (Degree, Name, Name_Eng, FieldOfStudy, Speciality, Form, Years, Credits, " +
-                "ProgramCharacteristics, ProgramCompetence, ProgramResults, LinkFaculty, LinkFile) " +
-                "VALUES (@degree, @name, @nameEng, @fieldOfStudy, @speciality, @form, @years, @credits, @sum, @costs, " +
-                "@programCharacteristics, @programCompetence, @programResults, @linkFaculty, @linkFile) " +
-                "RETURNING Id", connection))
-            {
-                cmd.Parameters.AddWithValue("degree", program.Degree);
-                cmd.Parameters.AddWithValue("name", program.Name);
-                cmd.Parameters.AddWithValue("nameEng", (object)program.NameCode ?? DBNull.Value);
-                cmd.Parameters.Add(new NpgsqlParameter("fieldOfStudy", NpgsqlTypes.NpgsqlDbType.Jsonb)
+                // Сохранение программы
+                var programQuery = "INSERT INTO Programs (Degree, Name, NameCode, Purpose, Years, Credits, LinkFaculty, ProgramDocumentId, Accredited) VALUES (@Degree, @Name, @NameCode, @Purpose, @Years, @Credits, @LinkFaculty, @ProgramDocumentId, @Accredited) RETURNING Id";
+                using (var cmd = new NpgsqlCommand(programQuery, connection))
                 {
-                    Value = JsonSerializer.Serialize(program.FieldOfStudy, jsonOptions)
-                });
-                cmd.Parameters.Add(new NpgsqlParameter("speciality", NpgsqlTypes.NpgsqlDbType.Jsonb)
-                {
-                    Value = JsonSerializer.Serialize(program.Speciality, jsonOptions)
-                });
-                cmd.Parameters.Add(new NpgsqlParameter("form", NpgsqlTypes.NpgsqlDbType.Jsonb) { Value = JsonSerializer.Serialize(program.Form, jsonOptions) });
-                cmd.Parameters.AddWithValue("years", program.Years);
-                cmd.Parameters.AddWithValue("credits", program.Credits);
-                cmd.Parameters.Add(new NpgsqlParameter("programCharacteristics", NpgsqlTypes.NpgsqlDbType.Jsonb) { Value = JsonSerializer.Serialize(program.ProgramCharacteristics, jsonOptions) });
-                cmd.Parameters.Add(new NpgsqlParameter("programCompetence", NpgsqlTypes.NpgsqlDbType.Jsonb) { Value = JsonSerializer.Serialize(program.ProgramCompetence, jsonOptions) });
-                cmd.Parameters.Add(new NpgsqlParameter("programResults", NpgsqlTypes.NpgsqlDbType.Jsonb) { Value = JsonSerializer.Serialize(program.Results, jsonOptions) });
-                cmd.Parameters.AddWithValue("linkFaculty", program.LinkFaculty);
-                cmd.Parameters.AddWithValue("linkFile", program.LinkFile);
-                programId = (int)cmd.ExecuteScalar();
+                    cmd.Parameters.AddWithValue("Degree", program.Degree ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("Name", program.Name);
+                    cmd.Parameters.AddWithValue("NameCode", program.NameCode ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("Purpose", program.Purpose ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("Years", program.Years ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("Credits", program.Credits ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("LinkFaculty", program.LinkFaculty ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("ProgramDocumentId", documentId);
+                    cmd.Parameters.AddWithValue("Accredited", program.Accredited);
+                    program.Id = (int)await cmd.ExecuteScalarAsync();
+                }
+                program.ProgramDocumentId = documentId;
             }
+        }
 
-            if (program.Components != null)
+        public async Task UpdateProgram(ProgramModel program)
+        {
+            using (var connection = new NpgsqlConnection(_connectionString))
             {
-                foreach (var component in program.Components)
+                await connection.OpenAsync();
+                var query = "UPDATE Program SET Degree = @Degree, Name = @Name, Name_Code = @NameCode, Purpose = @Purpose, Years = @Years, Credits = @Credits, Link_Faculty = @LinkFaculty, Accredited = @Accredited WHERE Id = @Id";
+                using (var cmd = new NpgsqlCommand(query, connection))
                 {
-                    using var cmd = new NpgsqlCommand(
-                        "INSERT INTO ProgramComponents (ProgramId, ComponentType, ComponentName, ComponentCredits, ComponentHours, ControlForm) " +
-                        "VALUES (@programId, @componentType, @componentName, @componentCredits, @componentHours, @controlForm)", connection);
-                    cmd.Parameters.AddWithValue("programId", programId);
-                    cmd.Parameters.AddWithValue("componentType", component.ComponentType);
-                    cmd.Parameters.AddWithValue("componentName", component.ComponentName);
-                    cmd.Parameters.AddWithValue("componentCredits", component.ComponentCredits);
-                    cmd.Parameters.AddWithValue("componentHours", component.ComponentHours);
-                    cmd.Parameters.Add(new NpgsqlParameter("controlForm", NpgsqlTypes.NpgsqlDbType.Jsonb) { Value = JsonSerializer.Serialize(component.ControlForm, jsonOptions) });
-
-                    cmd.Parameters.AddWithValue("controlForm", JsonSerializer.Serialize(component.ControlForm, jsonOptions));
-                    cmd.ExecuteNonQuery();
+                    cmd.Parameters.AddWithValue("Id", program.Id);
+                    cmd.Parameters.AddWithValue("Degree", program.Degree ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("Name", program.Name);
+                    cmd.Parameters.AddWithValue("NameCode", program.NameCode ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("Purpose", program.Purpose ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("Years", program.Years ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("Credits", program.Credits ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("LinkFaculty", program.LinkFaculty ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("Accredited", program.Accredited);
+                    await cmd.ExecuteNonQueryAsync();
                 }
             }
+        }
 
-            if (program.Jobs != null)
+        public async Task UpdateProgramWithDocument(ProgramModel program, string filePath, string fileName, string contentType, long fileSize)
+        {
+            using (var connection = new NpgsqlConnection(_connectionString))
             {
-                foreach (var job in program.Jobs)
-                {
-                    int jobId;
-                    using (var cmd = new NpgsqlCommand(
-                        "SELECT Id FROM Jobs WHERE Code = @code AND Title = @title", connection))
-                    {
-                        cmd.Parameters.AddWithValue("code", job.Code);
-                        cmd.Parameters.AddWithValue("title", job.Title);
-                        var result = cmd.ExecuteScalar();
-                        if (result != null)
-                        {
-                            jobId = (int)result;
-                        }
-                        else
-                        {
-                            using var insertCmd = new NpgsqlCommand(
-                                "INSERT INTO Jobs (Code, Title) VALUES (@code, @title) RETURNING Id", connection);
-                            insertCmd.Parameters.AddWithValue("code", job.Code);
-                            insertCmd.Parameters.AddWithValue("title", job.Title);
-                            jobId = (int)insertCmd.ExecuteScalar();
-                        }
-                    }
+                await connection.OpenAsync();
 
-                    using (var cmd = new NpgsqlCommand(
-                        "INSERT INTO ProgramJobs (ProgramId, JobId) VALUES (@programId, @jobId)", connection))
+                // Удаление старого документа (если был)
+                if (program.ProgramDocumentId != 0)
+                {
+                    var deleteQuery = "DELETE FROM ProgramDocuments WHERE Id = @Id";
+                    using (var cmd = new NpgsqlCommand(deleteQuery, connection))
                     {
-                        cmd.Parameters.AddWithValue("programId", programId);
-                        cmd.Parameters.AddWithValue("jobId", jobId);
-                        cmd.ExecuteNonQuery();
+                        cmd.Parameters.AddWithValue("Id", program.ProgramDocumentId);
+                        await cmd.ExecuteNonQueryAsync();
                     }
                 }
+
+                // Сохранение нового документа
+                var documentQuery = "INSERT INTO ProgramDocuments (FileName, FilePath, FileSize, ContentType) VALUES (@FileName, @FilePath, @FileSize, @ContentType) RETURNING Id";
+                int documentId;
+                using (var cmd = new NpgsqlCommand(documentQuery, connection))
+                {
+                    cmd.Parameters.AddWithValue("FileName", fileName);
+                    cmd.Parameters.AddWithValue("FilePath", filePath);
+                    cmd.Parameters.AddWithValue("FileSize", fileSize);
+                    cmd.Parameters.AddWithValue("ContentType", contentType);
+                    documentId = (int)await cmd.ExecuteScalarAsync();
+                }
+
+                // Обновление программы
+                var programQuery = "UPDATE Program SET Degree = @Degree, Name = @Name, Name_Code = @NameCode, Purpose = @Purpose, Years = @Years, Credits = @Credits, Link_Faculty = @LinkFaculty, ProgramDocumentId = @ProgramDocumentId, Accredited = @Accredited WHERE Id = @Id";
+                using (var cmd = new NpgsqlCommand(programQuery, connection))
+                {
+                    cmd.Parameters.AddWithValue("Id", program.Id);
+                    cmd.Parameters.AddWithValue("Degree", program.Degree ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("Name", program.Name);
+                    cmd.Parameters.AddWithValue("NameCode", program.NameCode ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("Purpose", program.Purpose ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("Years", program.Years ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("Credits", program.Credits ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("LinkFaculty", program.LinkFaculty ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("ProgramDocumentId", documentId);
+                    cmd.Parameters.AddWithValue("Accredited", program.Accredited);
+                    await cmd.ExecuteNonQueryAsync();
+                }
+                program.ProgramDocumentId = documentId;
             }
         }
 

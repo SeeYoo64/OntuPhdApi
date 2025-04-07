@@ -14,7 +14,7 @@
         public string Objects { get; set; }
         public List<string> Directions { get; set; }
         public string LinkFaculty { get; set; }
-        public string LinkFile { get; set; }
+        public int ProgramDocumentId { get; set; }
 
     }
 }
