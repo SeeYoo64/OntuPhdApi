@@ -42,21 +42,6 @@ namespace OntuPhdApi.Controllers
             }
         }
 
-
-        [HttpGet("fields")]
-        public IActionResult GetProgramsFields()
-        {
-            try
-            {
-                var programsFields = _programService.GetProgramsFields();
-                return Ok(programsFields);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
-        }
-
         [HttpGet("degrees")]
         public IActionResult GetProgramsDegrees([FromQuery] string? degree)
         {
