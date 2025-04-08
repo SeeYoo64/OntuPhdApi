@@ -65,7 +65,7 @@ app.Use(async (context, next) =>
     await next.Invoke();
 });
 
-app.UseHttpsRedirection();
+// app.UseHttpsRedirection();
 app.UseCors("AllowSpecificOrigin"); // Применяем политику CORS
 app.UseAuthorization();
 app.MapControllers();
