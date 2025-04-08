@@ -4,8 +4,8 @@ namespace OntuPhdApi.Models.Programs
 {
     public class ProgramRequestDto
     {
-        public string Degree { get; set; }
-        public string Name { get; set; }
+        public string? Degree { get; set; }
+        public string? Name { get; set; }
         public string? NameCode { get; set; }
         public FieldOfStudy? FieldOfStudy { get; set; }
         public Speciality? Speciality { get; set; }

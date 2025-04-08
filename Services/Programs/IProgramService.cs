@@ -10,5 +10,6 @@ namespace OntuPhdApi.Services.Programs
         Task AddProgram(ProgramModel program, string filePath, string contentType, long fileSize);
         Task UpdateProgram(ProgramModel program);
         Task UpdateProgramWithDocument(ProgramModel program, string filePath, string fileName, string contentType, long fileSize);
+        Task DeleteProgram(int id);
     }
 }

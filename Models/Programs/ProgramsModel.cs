@@ -5,8 +5,8 @@ namespace OntuPhdApi.Models.Programs
     public class ProgramModel
     {
         public int Id { get; set; }
-        public string Degree { get; set; }
-        public string Name { get; set; }
+        public string? Degree { get; set; }
+        public string? Name { get; set; }
         public string? NameCode { get; set; }
         public FieldOfStudy FieldOfStudy { get; set; }
         public Speciality Speciality { get; set; }
@@ -30,28 +30,28 @@ namespace OntuPhdApi.Models.Programs
 
     public class FieldOfStudy
     {
-        public string Code { get; set; }
-        public string Name { get; set; }
+        public string? Code { get; set; }
+        public string? Name { get; set; }
     }
     public class FieldOfStudyDto
     {
-        public string Code { get; set; }
-        public string Name { get; set; }
-        public List<Speciality> Specialities { get; set; }
-        public string Degree { get; set; }
+        public string? Code { get; set; }
+        public string? Name { get; set; }
+        public List<Speciality>? Specialities { get; set; }
+        public string? Degree { get; set; }
     }
 
     public class ShortSpeciality
     {
-        public string Code { get; set; }
-        public string Name { get; set; }
+        public string? Code { get; set; }
+        public string? Name { get; set; }
     }
 
     public class Speciality
     {
-        public string Code { get; set; }
-        public string Name { get; set; }
-        public string FieldCode { get; set; }  // Связь с кодом FieldOfStudy
+        public string?Code { get; set; }
+        public string? Name { get; set; }
+        public string? FieldCode { get; set; }  // Связь с кодом FieldOfStudy
     }
 
     public class ProgramComponent

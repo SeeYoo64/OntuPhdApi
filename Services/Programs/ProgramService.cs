@@ -333,7 +333,7 @@ namespace OntuPhdApi.Services.Programs
                 {
                     cmd.Parameters.AddWithValue("Id", program.Id);
                     cmd.Parameters.AddWithValue("Degree", program.Degree ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("Name", program.Name);
+                    cmd.Parameters.AddWithValue("Name", program.Name ?? (object)DBNull.Value);
                     cmd.Parameters.AddWithValue("NameCode", program.NameCode ?? (object)DBNull.Value);
                     cmd.Parameters.AddWithValue("Descriptions", program.Descriptions ?? (object)DBNull.Value);
                     cmd.Parameters.AddWithValue("Purpose", program.Purpose ?? (object)DBNull.Value);
@@ -391,30 +391,114 @@ namespace OntuPhdApi.Services.Programs
                     cmd.Parameters.AddWithValue("FilePath", filePath);
                     cmd.Parameters.AddWithValue("FileSize", fileSize);
                     cmd.Parameters.AddWithValue("ContentType", contentType);
+                    
+
                     documentId = (int)await cmd.ExecuteScalarAsync();
+                    Console.WriteLine(documentId);
                 }
 
                 // Обновление программы
-                var programQuery = "UPDATE Program SET Degree = @Degree, Name = @Name, Name_Code = @NameCode, Purpose = @Purpose, Years = @Years, " +
-                    "Credits = @Credits, Link_Faculty = @LinkFaculty, ProgramDocumentId = @ProgramDocumentId, Accredited = @Accredited WHERE Id = @Id";
-                using (var cmd = new NpgsqlCommand(programQuery, connection))
+                var query = @"
+            UPDATE Program
+            SET Degree = @Degree, 
+                Name = @Name, 
+                Name_Code = @NameCode, 
+                Purpose = @Purpose, 
+                Years = @Years, 
+                Credits = @Credits, 
+                Link_Faculty = @LinkFaculty, 
+                Accredited = @Accredited,
+                Form = @Form,
+                Directions = @Directions,
+                Results = @Results,
+                Objects = @Objects,
+                Descriptions = @Descriptions,
+                Field_Of_Study = @FieldOfStudy,
+                ProgramDocumentId = @ProgramDocumentId,
+                Speciality = @Speciality
+            WHERE Id = @Id";
+                using (var cmd = new NpgsqlCommand(query, connection))
                 {
                     cmd.Parameters.AddWithValue("Id", program.Id);
                     cmd.Parameters.AddWithValue("Degree", program.Degree ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("Name", program.Name);
+                    cmd.Parameters.AddWithValue("Name", program.Name ?? (object)DBNull.Value);
                     cmd.Parameters.AddWithValue("NameCode", program.NameCode ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("Descriptions", program.Descriptions ?? (object)DBNull.Value);
                     cmd.Parameters.AddWithValue("Purpose", program.Purpose ?? (object)DBNull.Value);
                     cmd.Parameters.AddWithValue("Years", program.Years ?? (object)DBNull.Value);
                     cmd.Parameters.AddWithValue("Credits", program.Credits ?? (object)DBNull.Value);
                     cmd.Parameters.AddWithValue("LinkFaculty", program.LinkFaculty ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("ProgramDocumentId", documentId);
                     cmd.Parameters.AddWithValue("Accredited", program.Accredited);
+                    cmd.Parameters.AddWithValue("Objects", program.Objects ?? (object)DBNull.Value);
+
+                    // JSONB поля
+                    var formJson = program.Form != null ? JsonSerializer.Serialize(program.Form) : null;
+                    cmd.Parameters.Add(new NpgsqlParameter("Form", NpgsqlDbType.Jsonb) { Value = formJson ?? (object)DBNull.Value });
+
+                    var directionsJson = program.Directions != null ? JsonSerializer.Serialize(program.Directions) : null;
+                    cmd.Parameters.Add(new NpgsqlParameter("Directions", NpgsqlDbType.Jsonb) { Value = directionsJson ?? (object)DBNull.Value });
+
+                    var resultsJson = program.Results != null ? JsonSerializer.Serialize(program.Results) : null;
+                    cmd.Parameters.Add(new NpgsqlParameter("Results", NpgsqlDbType.Jsonb) { Value = resultsJson ?? (object)DBNull.Value });
+
+                    var fieldOfStudyJson = program.FieldOfStudy != null ? JsonSerializer.Serialize(program.FieldOfStudy) : null;
+                    cmd.Parameters.Add(new NpgsqlParameter("FieldOfStudy", NpgsqlDbType.Jsonb) { Value = fieldOfStudyJson ?? (object)DBNull.Value });
+
+                    var specialityJson = program.Speciality != null ? JsonSerializer.Serialize(program.Speciality) : null;
+                    cmd.Parameters.Add(new NpgsqlParameter("Speciality", NpgsqlDbType.Jsonb) { Value = specialityJson ?? (object)DBNull.Value });
+
+                    cmd.Parameters.AddWithValue("ProgramDocumentId", documentId);
+
                     await cmd.ExecuteNonQueryAsync();
                 }
-                program.ProgramDocumentId = documentId;
+
             }
         }
 
+
+
+        public async Task DeleteProgram(int id)
+        {
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+
+                // Получаем информацию о programdocument, чтобы удалить файл с диска
+                string filePath = null;
+                var selectDocQuery = "SELECT FilePath FROM programdocuments WHERE Id = (SELECT programdocumentid FROM Program WHERE Id = @Id)";
+                using (var cmd = new NpgsqlCommand(selectDocQuery, connection))
+                {
+                    cmd.Parameters.AddWithValue("Id", id);
+                    var result = await cmd.ExecuteScalarAsync();
+                    filePath = result as string;
+                }
+
+                // Удаляем запись из таблицы programdocuments
+                var deleteDocQuery = "DELETE FROM programdocuments WHERE Id = (SELECT programdocumentid FROM Program WHERE Id = @Id)";
+                using (var cmd = new NpgsqlCommand(deleteDocQuery, connection))
+                {
+                    cmd.Parameters.AddWithValue("Id", id);
+                    await cmd.ExecuteNonQueryAsync();
+                }
+
+                // Удаляем программу из таблицы Program
+                var deleteProgramQuery = "DELETE FROM Program WHERE Id = @Id";
+                using (var cmd = new NpgsqlCommand(deleteProgramQuery, connection))
+                {
+                    cmd.Parameters.AddWithValue("Id", id);
+                    var rowsAffected = await cmd.ExecuteNonQueryAsync();
+
+                    if (rowsAffected == 0)
+                        throw new Exception("Program not found.");
+                }
+
+                // Удаляем файл с диска, если он существует
+                if (!string.IsNullOrEmpty(filePath) && File.Exists(filePath))
+                {
+                    File.Delete(filePath);
+                }
+            }
+        }
 
 
     }

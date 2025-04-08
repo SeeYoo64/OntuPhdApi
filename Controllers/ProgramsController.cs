@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Npgsql;
 using OntuPhdApi.Models.Programs;
@@ -144,10 +145,10 @@ namespace OntuPhdApi.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateProgram(int id, [FromForm] ProgramRequestDto request)
         {
-            if (string.IsNullOrEmpty(request.Name))
-            {
-                return BadRequest("Invalid program data. Name is required.");
-            }
+            //if (string.IsNullOrEmpty(request.Name))
+            //{
+            //    return BadRequest("Invalid program data. Name is required.");
+            //}
 
             try
             {
@@ -156,7 +157,7 @@ namespace OntuPhdApi.Controllers
                     return NotFound("Program not found.");
 
                 existingProgram.Degree = request.Degree ?? existingProgram.Degree;
-                existingProgram.Name = request.Name;
+                existingProgram.Name = request.Name ?? existingProgram.Name;
                 existingProgram.NameCode = request.NameCode ?? existingProgram.NameCode;
                 existingProgram.FieldOfStudy = request.FieldOfStudy ?? existingProgram.FieldOfStudy;
                 existingProgram.Speciality = request.Speciality ?? existingProgram.Speciality;
@@ -237,6 +238,32 @@ namespace OntuPhdApi.Controllers
                 return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }
+
+
+
+
+
+
+
+
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteProgram(int id)
+        {
+            try
+            {
+                await _programService.DeleteProgram(id);
+                return NoContent(); // 204 - Успешное удаление
+            }
+            catch (Exception ex)
+            {
+                if (ex.Message == "Program not found.")
+                    return NotFound("Program not found.");
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+
 
     }
 }

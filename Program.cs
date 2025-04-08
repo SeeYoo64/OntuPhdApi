@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Hosting;
 using OntuPhdApi.Services;
 using OntuPhdApi.Services.ApplyDocuments;
 using OntuPhdApi.Services.Defense;
@@ -8,6 +9,11 @@ using OntuPhdApi.Services.News;
 using OntuPhdApi.Services.Programs;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// щрс ярпнвйс сдюкх!!!!! еякх ме пюанрюер!!!!!!!!!!!!!!!!!!!!!!!! х асдер напюрмн кнйюкуняр
+// хкх днаюбэ врн_рн еы╗
+builder.WebHost.UseUrls("http://0.0.0.0:5124", "https://0.0.0.0:5125");
+
 
 // Add services to the container.
 builder.Services.AddControllers();
