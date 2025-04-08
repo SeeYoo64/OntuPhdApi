@@ -42,15 +42,14 @@ builder.Services.AddScoped<ISpecialityNFieldsService, SpecialityNFieldsService>(
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", builder =>
+    options.AddPolicy("AllowSpecificOrigin", builder =>
     {
-        builder.AllowAnyOrigin()
+        builder.WithOrigins("http://192.168.0.160:3000") 
                .AllowAnyHeader()
-               .AllowAnyMethod();
+               .AllowAnyMethod()
+               .AllowCredentials();
     });
 });
-
-builder.Services.AddControllers();
 
 var app = builder.Build();
 
@@ -60,11 +59,15 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+app.Use(async (context, next) =>
+{
+    Console.WriteLine($"Request: {context.Request.Method} {context.Request.Path}");
+    await next.Invoke();
+});
 
 app.UseHttpsRedirection();
-app.UseCors("AllowAll");
+app.UseCors("AllowSpecificOrigin"); // Применяем политику CORS
 app.UseAuthorization();
-
 app.MapControllers();
 
 app.Run();
