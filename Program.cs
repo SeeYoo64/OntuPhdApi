@@ -39,15 +39,18 @@ builder.Services.AddScoped<INewsService, NewsService>();
 builder.Services.AddScoped<IEmployeesService, EmployeesService>();
 builder.Services.AddScoped<IDefenseService, DefenseService>();
 builder.Services.AddScoped<ISpecialityNFieldsService, SpecialityNFieldsService>();
+
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
+    options.AddPolicy("AllowAll", builder =>
     {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
+        builder.AllowAnyOrigin()
+               .AllowAnyHeader()
+               .AllowAnyMethod();
     });
 });
+
+builder.Services.AddControllers();
 
 var app = builder.Build();
 
@@ -59,9 +62,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
-app.UseAuthorization();
 app.UseCors("AllowAll");
+app.UseAuthorization();
+
 app.MapControllers();
 
 app.Run();

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Text.Json;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Npgsql;
 using OntuPhdApi.Models.Programs;
