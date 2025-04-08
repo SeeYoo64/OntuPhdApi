@@ -42,14 +42,15 @@ builder.Services.AddScoped<ISpecialityNFieldsService, SpecialityNFieldsService>(
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowSpecificOrigin", builder =>
+    options.AddPolicy("AllowAll", builder =>
     {
-        builder.WithOrigins("http://192.168.0.160:3000") 
+        builder.AllowAnyOrigin()
                .AllowAnyHeader()
-               .AllowAnyMethod()
-               .AllowCredentials();
+               .AllowAnyMethod();
     });
 });
+
+
 
 var app = builder.Build();
 
@@ -66,7 +67,7 @@ app.Use(async (context, next) =>
 });
 
 // app.UseHttpsRedirection();
-app.UseCors("AllowSpecificOrigin"); // Применяем политику CORS
+app.UseCors("AllowAll");
 app.UseAuthorization();
 app.MapControllers();
 
