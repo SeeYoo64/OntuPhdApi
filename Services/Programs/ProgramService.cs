@@ -380,8 +380,10 @@ namespace OntuPhdApi.Services.Programs
                 Objects = @Objects,
                 Descriptions = @Descriptions,
                 Field_Of_Study = @FieldOfStudy,
-                Speciality = @Speciality
-            WHERE Id = @Id";
+                Speciality = @Speciality,
+                Program_characteristics = @ProgramCharacteristic,
+                ProgramDocumentId = @ProgramDocumentId
+                WHERE Id = @Id";
                 using (var cmd = new NpgsqlCommand(query, connection))
                 {
                     cmd.Parameters.AddWithValue("Id", program.Id);
@@ -395,6 +397,7 @@ namespace OntuPhdApi.Services.Programs
                     cmd.Parameters.AddWithValue("LinkFaculty", program.LinkFaculty ?? (object)DBNull.Value);
                     cmd.Parameters.AddWithValue("Accredited", program.Accredited);
                     cmd.Parameters.AddWithValue("Objects", program.Objects ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("ProgramDocumentId", program.ProgramDocumentId ?? (object)DBNull.Value);
 
                     // JSONB поля
                     var formJson = program.Form != null ? JsonSerializer.Serialize(program.Form) : null;
@@ -411,6 +414,9 @@ namespace OntuPhdApi.Services.Programs
 
                     var specialityJson = program.Speciality != null ? JsonSerializer.Serialize(program.Speciality) : null;
                     cmd.Parameters.Add(new NpgsqlParameter("Speciality", NpgsqlDbType.Jsonb) { Value = specialityJson ?? (object)DBNull.Value });
+
+                    var programCharacteristicJson = program.ProgramCharacteristics != null ? JsonSerializer.Serialize(program.ProgramCharacteristics) : null;
+                    cmd.Parameters.Add(new NpgsqlParameter("ProgramCharacteristic", NpgsqlDbType.Jsonb) { Value= programCharacteristicJson ?? (object) DBNull.Value });
 
                     await cmd.ExecuteNonQueryAsync();
                 }
@@ -468,7 +474,8 @@ namespace OntuPhdApi.Services.Programs
                 Descriptions = @Descriptions,
                 Field_Of_Study = @FieldOfStudy,
                 ProgramDocumentId = @ProgramDocumentId,
-                Speciality = @Speciality
+                Speciality = @Speciality,
+                Program_Characteristics = @ProgramCharacteristic 
             WHERE Id = @Id";
                 using (var cmd = new NpgsqlCommand(query, connection))
                 {
@@ -499,6 +506,9 @@ namespace OntuPhdApi.Services.Programs
 
                     var specialityJson = program.Speciality != null ? JsonSerializer.Serialize(program.Speciality) : null;
                     cmd.Parameters.Add(new NpgsqlParameter("Speciality", NpgsqlDbType.Jsonb) { Value = specialityJson ?? (object)DBNull.Value });
+
+                    var programCharacteristicJson = program.ProgramCharacteristics != null ? JsonSerializer.Serialize(program.ProgramCharacteristics) : null;
+                    cmd.Parameters.Add(new NpgsqlParameter("ProgramCharacteristic", NpgsqlDbType.Jsonb) { Value = programCharacteristicJson ?? (object)DBNull.Value });
 
                     cmd.Parameters.AddWithValue("ProgramDocumentId", documentId);
 

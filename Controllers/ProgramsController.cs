@@ -265,6 +265,7 @@ namespace OntuPhdApi.Controllers
                 }
                 else
                 {
+                    existingProgram.ProgramDocumentId = null;
                     await _programService.UpdateProgram(existingProgram);
                 }
 
