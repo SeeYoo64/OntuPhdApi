@@ -1,5 +1,6 @@
 ﻿using Npgsql;
 using NpgsqlTypes;
+using OntuPhdApi.Controllers;
 using OntuPhdApi.Models.Programs;
 using System.Text.Json;
 
@@ -225,28 +226,29 @@ namespace OntuPhdApi.Services.Programs
             }
         }
 
-        public List<ProgramsDegreeDto> GetProgramsDegrees(string degree = null)
+        public List<ProgramsDegreeDto> GetProgramsDegrees(DegreeType? degree)
         {
             var programs = new List<ProgramsDegreeDto>();
             var jsonOptions = new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
             };
+
             using (var connection = new NpgsqlConnection(_connectionString))
             {
                 connection.Open();
 
-                var query = "SELECT Id, Degree, Name, Field_Of_Study, Speciality  FROM Program";
-                if (!string.IsNullOrEmpty(degree))
+                var query = "SELECT Id, Degree, Name, Field_Of_Study, Speciality FROM Program";
+                if (degree.HasValue) 
                 {
                     query += " WHERE Degree = @degree";
                 }
 
                 using (var cmd = new NpgsqlCommand(query, connection))
                 {
-                    if (!string.IsNullOrEmpty(degree))
+                    if (degree.HasValue)
                     {
-                        cmd.Parameters.AddWithValue("degree", degree);
+                        cmd.Parameters.AddWithValue("degree", degree.Value.ToString());
                     }
 
                     using (var reader = cmd.ExecuteReader())
@@ -256,7 +258,7 @@ namespace OntuPhdApi.Services.Programs
                             programs.Add(new ProgramsDegreeDto
                             {
                                 Id = reader.GetInt32(0),
-                                Degree = reader.GetString(1),
+                                Degree = reader.GetString(1), 
                                 Name = reader.GetString(2),
                                 FieldOfStudy = reader.IsDBNull(3) ? null : JsonSerializer.Deserialize<FieldOfStudy>(reader.GetString(3), jsonOptions),
                                 Speciality = reader.IsDBNull(4) ? null : JsonSerializer.Deserialize<ShortSpeciality>(reader.GetString(4), jsonOptions)

@@ -9,8 +9,14 @@ using OntuPhdApi.Services.Programs;
 
 namespace OntuPhdApi.Controllers
 {
+    public enum DegreeType
+    {
+        phd,
+        doc
+    }
     [ApiController]
     [Route("api/[controller]")]
+
     public class ProgramsController : ControllerBase
     {
         private readonly IProgramService _programService;
@@ -46,7 +52,7 @@ namespace OntuPhdApi.Controllers
         }
 
         [HttpGet("degrees")]
-        public IActionResult GetProgramsDegrees([FromQuery] string? degree)
+        public IActionResult GetProgramsDegrees([FromQuery] DegreeType? degree)
         {
             try
             {
@@ -157,22 +163,22 @@ namespace OntuPhdApi.Controllers
                 if (existingProgram == null)
                     return NotFound("Program not found.");
 
-                existingProgram.Degree = request.Degree ?? existingProgram.Degree;
-                existingProgram.Name = request.Name ?? existingProgram.Name;
-                existingProgram.NameCode = request.NameCode ?? existingProgram.NameCode;
-                existingProgram.FieldOfStudy = request.FieldOfStudy ?? existingProgram.FieldOfStudy;
-                existingProgram.Speciality = request.Speciality ?? existingProgram.Speciality;
-                existingProgram.Form = request.Form ?? existingProgram.Form;
-                existingProgram.Objects = request.Objects ?? existingProgram.Objects;
-                existingProgram.Directions = request.Directions ?? existingProgram.Directions;
-                existingProgram.Purpose = request.Purpose ?? existingProgram.Purpose;
-                existingProgram.Descriptions = request.Descriptions ?? existingProgram.Descriptions;
-                existingProgram.Years = request.Years ?? existingProgram.Years;
-                existingProgram.Credits = request.Credits ?? existingProgram.Credits;
-                existingProgram.Results = request.Results ?? existingProgram.Results;
-                existingProgram.LinkFaculty = request.LinkFaculty ?? existingProgram.LinkFaculty;
-                existingProgram.Components = request.Components ?? existingProgram.Components;
-                existingProgram.Jobs = request.Jobs ?? existingProgram.Jobs;
+                existingProgram.Degree = request.Degree; 
+                existingProgram.Name = request.Name;    
+                existingProgram.NameCode = request.NameCode;
+                existingProgram.FieldOfStudy = request.FieldOfStudy;
+                existingProgram.Speciality = request.Speciality;
+                existingProgram.Form = request.Form;
+                existingProgram.Objects = request.Objects;
+                existingProgram.Directions = request.Directions;
+                existingProgram.Purpose = request.Purpose;
+                existingProgram.Descriptions = request.Descriptions;
+                existingProgram.Years = request.Years;
+                existingProgram.Credits = request.Credits;
+                existingProgram.Results = request.Results;
+                existingProgram.LinkFaculty = request.LinkFaculty;
+                existingProgram.Components = request.Components;
+                existingProgram.Jobs = request.Jobs;
                 existingProgram.Accredited = request.Accredited;
 
                 if (request.ProgramCharacteristics != null)
@@ -188,12 +194,17 @@ namespace OntuPhdApi.Controllers
                                 Methods = request.ProgramCharacteristics.Area.Methods,
                                 Instruments = request.ProgramCharacteristics.Area.Instruments
                             }
-                            : existingProgram.ProgramCharacteristics?.Area,
+                            : null, 
                         Focus = request.ProgramCharacteristics.Focus,
                         Features = request.ProgramCharacteristics.Features
                     };
                 }
+                else
+                {
+                    existingProgram.ProgramCharacteristics = null; 
+                }
 
+                
                 if (request.ProgramCompetence != null)
                 {
                     existingProgram.ProgramCompetence = new ProgramCompetence
@@ -203,6 +214,11 @@ namespace OntuPhdApi.Controllers
                         IntegralCompetence = request.ProgramCompetence.IntegralCompetence
                     };
                 }
+                else
+                {
+                    existingProgram.ProgramCompetence = null; 
+                }
+
 
 
                 if (request.File != null && request.File.Length > 0)
@@ -211,26 +227,24 @@ namespace OntuPhdApi.Controllers
                     if (!Directory.Exists(uploadFolder))
                         Directory.CreateDirectory(uploadFolder);
 
-                    // Получаем оригинальное имя файла и расширение
                     var originalFileName = Path.GetFileNameWithoutExtension(request.File.FileName);
                     var extension = Path.GetExtension(request.File.FileName);
                     var uniqueSuffix = DateTime.Now.ToString("yyyyMMddHHmmss");
-                    var fileName = $"{originalFileName}_{uniqueSuffix}{extension}"; 
+                    var fileName = $"{originalFileName}_{uniqueSuffix}{extension}";
                     var filePath = Path.Combine(uploadFolder, fileName);
 
-                    // Сохраняем файл
                     using (var stream = new FileStream(filePath, FileMode.Create))
                     {
                         await request.File.CopyToAsync(stream);
                     }
 
-                    // Передаём оригинальное имя и путь в сервис
                     await _programService.UpdateProgramWithDocument(existingProgram, filePath, request.File.FileName, request.File.ContentType, request.File.Length);
                 }
                 else
                 {
                     await _programService.UpdateProgram(existingProgram);
                 }
+
 
                 return Ok(existingProgram);
             }
