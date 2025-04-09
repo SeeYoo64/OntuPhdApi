@@ -78,53 +78,58 @@ namespace OntuPhdApi.Controllers
         [HttpPost]
         public async Task<IActionResult> AddProgram([FromForm] ProgramRequestDto request)
         {
-            if (string.IsNullOrEmpty(request.Name) || request.File == null || request.File.Length == 0)
+            // Проверка обязательных полей: Name и Degree
+            if (string.IsNullOrEmpty(request.Name) || string.IsNullOrEmpty(request.Degree))
             {
-                return BadRequest("Invalid program data. Name and file are required.");
+                return BadRequest("Invalid program data. Name and Degree are required.");
             }
 
             try
             {
-
-                // Сохранение файла
-                if (!Directory.Exists(_uploadFolder))
-                    Directory.CreateDirectory(_uploadFolder);
-
-                var fileName = Guid.NewGuid().ToString() + Path.GetExtension(request.File.FileName);
-                var filePath = Path.Combine(_uploadFolder, fileName);
-
-
-                using (var stream = new FileStream(filePath, FileMode.Create))
-                {
-                    await request.File.CopyToAsync(stream);
-                }
-
                 // Создание модели программы
                 var program = new ProgramModel
                 {
                     Degree = request.Degree,
                     Name = request.Name,
                     NameCode = request.NameCode,
-                    FieldOfStudy = request.FieldOfStudy != null ? new FieldOfStudy { Code = request.FieldOfStudy.Code, Name = request.FieldOfStudy.Name } : null,
-                    Speciality = request.Speciality != null ? new Speciality { Code = request.Speciality.Code, Name = request.Speciality.Name, FieldCode = request.Speciality.FieldCode } : null,
+                    FieldOfStudy = request.FieldOfStudy != null
+                        ? new FieldOfStudy { Code = request.FieldOfStudy.Code, Name = request.FieldOfStudy.Name }
+                        : null,
+                    Speciality = request.Speciality != null
+                        ? new Speciality { Code = request.Speciality.Code, Name = request.Speciality.Name, FieldCode = request.Speciality.FieldCode }
+                        : null,
                     Form = request.Form,
                     Objects = request.Objects,
                     Directions = request.Directions,
+                    Descriptions = request.Descriptions,
                     Purpose = request.Purpose,
                     Years = request.Years,
                     Credits = request.Credits,
-                    ProgramCharacteristics = request.ProgramCharacteristics != null ? new ProgramCharacteristics
-                    {
-                        Area = new Area { Object = request.ProgramCharacteristics.Area.Object, Aim = request.ProgramCharacteristics.Area.Aim, Theory = request.ProgramCharacteristics.Area.Theory, Methods = request.ProgramCharacteristics.Area.Methods, Instruments = request.ProgramCharacteristics.Area.Instruments },
-                        Focus = request.ProgramCharacteristics.Focus,
-                        Features = request.ProgramCharacteristics.Features
-                    } : null,
-                    ProgramCompetence = request.ProgramCompetence != null ? new ProgramCompetence
-                    {
-                        OverallCompetence = request.ProgramCompetence.OverallCompetence,
-                        SpecialCompetence = request.ProgramCompetence.SpecialCompetence,
-                        IntegralCompetence = request.ProgramCompetence.IntegralCompetence
-                    } : null,
+                    ProgramCharacteristics = request.ProgramCharacteristics != null
+                        ? new ProgramCharacteristics
+                        {
+                            Area = request.ProgramCharacteristics.Area != null
+                                ? new Area
+                                {
+                                    Object = request.ProgramCharacteristics.Area.Object,
+                                    Aim = request.ProgramCharacteristics.Area.Aim,
+                                    Theory = request.ProgramCharacteristics.Area.Theory,
+                                    Methods = request.ProgramCharacteristics.Area.Methods,
+                                    Instruments = request.ProgramCharacteristics.Area.Instruments
+                                }
+                                : null,
+                            Focus = request.ProgramCharacteristics.Focus,
+                            Features = request.ProgramCharacteristics.Features
+                        }
+                        : null,
+                    ProgramCompetence = request.ProgramCompetence != null
+                        ? new ProgramCompetence
+                        {
+                            OverallCompetence = request.ProgramCompetence.OverallCompetence,
+                            SpecialCompetence = request.ProgramCompetence.SpecialCompetence,
+                            IntegralCompetence = request.ProgramCompetence.IntegralCompetence
+                        }
+                        : null,
                     Results = request.Results,
                     LinkFaculty = request.LinkFaculty,
                     Components = request.Components,
@@ -133,12 +138,30 @@ namespace OntuPhdApi.Controllers
                     ProgramDocumentId = 0 // Временно, будет заполнено сервисом
                 };
 
-                // Передаём путь и имя файла в сервис
-                await _programService.AddProgram(program, filePath, request.File.ContentType, request.File.Length);
+                // Обработка файла, если он есть
+                if (request.File != null && request.File.Length > 0)
+                {
+                    if (!Directory.Exists(_uploadFolder))
+                        Directory.CreateDirectory(_uploadFolder);
+
+                    var fileName = Guid.NewGuid().ToString() + Path.GetExtension(request.File.FileName);
+                    var filePath = Path.Combine(_uploadFolder, fileName);
+
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await request.File.CopyToAsync(stream);
+                    }
+
+                    // Добавление программы с файлом
+                    await _programService.AddProgram(program, filePath, request.File.ContentType, request.File.Length);
+                }
+                else
+                {
+                    // Добавление программы без файла
+                    await _programService.AddProgram(program, null, null, 0);
+                }
 
                 return CreatedAtAction(nameof(GetProgram), new { id = program.Id }, program);
-
-
             }
             catch (Exception ex)
             {

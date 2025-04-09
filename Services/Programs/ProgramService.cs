@@ -271,40 +271,91 @@ namespace OntuPhdApi.Services.Programs
             return programs;
         }
 
-        public async Task AddProgram(ProgramModel program, string filePath, string contentType, long fileSize)
+        public async Task AddProgram(ProgramModel program, string? filePath, string? contentType, long fileSize)
         {
             using (var connection = new NpgsqlConnection(_connectionString))
             {
                 await connection.OpenAsync();
 
-                // Сохранение документа
-                var documentQuery = "INSERT INTO Documents (FileName, FilePath, FileSize, ContentType) VALUES (@FileName, @FilePath, @FileSize, @ContentType) RETURNING Id";
-                int documentId;
-                using (var cmd = new NpgsqlCommand(documentQuery, connection))
+                // Сохранение документа, если файл передан
+                int? documentId = null;
+                if (!string.IsNullOrEmpty(filePath) && fileSize > 0)
                 {
-                    cmd.Parameters.AddWithValue("FileName", program.Name + Path.GetExtension(filePath)); // Имя файла можно связать с программой
-                    cmd.Parameters.AddWithValue("FilePath", filePath);
-                    cmd.Parameters.AddWithValue("FileSize", fileSize);
-                    cmd.Parameters.AddWithValue("ContentType", contentType);
-                    documentId = (int)await cmd.ExecuteScalarAsync();
+                    var documentQuery = @"
+                INSERT INTO Programdocuments (FileName, FilePath, FileSize, ContentType) 
+                VALUES (@FileName, @FilePath, @FileSize, @ContentType) 
+                RETURNING Id";
+
+                    using (var cmd = new NpgsqlCommand(documentQuery, connection))
+                    {
+                        cmd.Parameters.AddWithValue("FileName", program.Name + (Path.GetExtension(filePath) ?? ".unknown"));
+                        cmd.Parameters.AddWithValue("FilePath", filePath);
+                        cmd.Parameters.AddWithValue("FileSize", fileSize);
+                        cmd.Parameters.AddWithValue("ContentType", contentType ?? "application/octet-stream");
+                        documentId = (int)await cmd.ExecuteScalarAsync();
+                    }
                 }
 
-                // Сохранение программы
-                var programQuery = "INSERT INTO Programs (Degree, Name, NameCode, Purpose, Years, Credits, LinkFaculty, ProgramDocumentId, Accredited) VALUES (@Degree, @Name, @NameCode, @Purpose, @Years, @Credits, @LinkFaculty, @ProgramDocumentId, @Accredited) RETURNING Id";
+                // Сохранение программы со всеми полями
+                var programQuery = @"
+            INSERT INTO Program (
+                Degree, Name, Name_Code, Field_Of_Study, Speciality, Form, Objects, Directions, 
+                Descriptions, Purpose, Years, Credits, Program_Characteristics, Program_Competence, 
+                Results, Link_Faculty, ProgramDocumentId, Accredited
+            ) 
+            VALUES (
+                @Degree, @Name, @NameCode, @FieldOfStudy, @Speciality, @Form, @Objects, @Directions, 
+                @Descriptions, @Purpose, @Years, @Credits, @ProgramCharacteristics, @ProgramCompetence, 
+                @Results, @LinkFaculty, @ProgramDocumentId, @Accredited
+            ) 
+            RETURNING Id";
+
                 using (var cmd = new NpgsqlCommand(programQuery, connection))
                 {
                     cmd.Parameters.AddWithValue("Degree", program.Degree ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("Name", program.Name);
+                    cmd.Parameters.AddWithValue("Name", program.Name ?? (object)DBNull.Value);
                     cmd.Parameters.AddWithValue("NameCode", program.NameCode ?? (object)DBNull.Value);
+                    cmd.Parameters.Add(new NpgsqlParameter("FieldOfStudy", NpgsqlDbType.Jsonb)
+                    {
+                        Value = program.FieldOfStudy != null ? JsonSerializer.Serialize(program.FieldOfStudy) : DBNull.Value
+                    });
+                    cmd.Parameters.Add(new NpgsqlParameter("Speciality", NpgsqlDbType.Jsonb)
+                    {
+                        Value = program.Speciality != null ? JsonSerializer.Serialize(program.Speciality) : DBNull.Value
+                    });
+                    cmd.Parameters.Add(new NpgsqlParameter("Form", NpgsqlDbType.Jsonb)
+                    {
+                        Value = program.Form != null ? JsonSerializer.Serialize(program.Form) : DBNull.Value
+                    });
+                    cmd.Parameters.AddWithValue("Objects", program.Objects ?? (object)DBNull.Value);
+                    cmd.Parameters.Add(new NpgsqlParameter("Directions", NpgsqlDbType.Jsonb)
+                    {
+                        Value = program.Directions != null ? JsonSerializer.Serialize(program.Directions) : DBNull.Value
+                    });
+                    cmd.Parameters.AddWithValue("Descriptions", program.Descriptions ?? (object)DBNull.Value);
                     cmd.Parameters.AddWithValue("Purpose", program.Purpose ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("Years", program.Years ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("Credits", program.Credits ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("Years", program.Years.HasValue ? program.Years.Value : (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("Credits", program.Credits.HasValue ? program.Credits.Value : (object)DBNull.Value);
+                    cmd.Parameters.Add(new NpgsqlParameter("ProgramCharacteristics", NpgsqlDbType.Jsonb)
+                    {
+                        Value = program.ProgramCharacteristics != null ? JsonSerializer.Serialize(program.ProgramCharacteristics) : DBNull.Value
+                    });
+                    cmd.Parameters.Add(new NpgsqlParameter("ProgramCompetence", NpgsqlDbType.Jsonb)
+                    {
+                        Value = program.ProgramCompetence != null ? JsonSerializer.Serialize(program.ProgramCompetence) : DBNull.Value
+                    });
+                    cmd.Parameters.Add(new NpgsqlParameter("Results", NpgsqlDbType.Jsonb)
+                    {
+                        Value = program.Results != null ? JsonSerializer.Serialize(program.Results) : DBNull.Value
+                    });
                     cmd.Parameters.AddWithValue("LinkFaculty", program.LinkFaculty ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("ProgramDocumentId", documentId);
+                    cmd.Parameters.AddWithValue("ProgramDocumentId", documentId.HasValue ? documentId.Value : (object)DBNull.Value);
                     cmd.Parameters.AddWithValue("Accredited", program.Accredited);
+
                     program.Id = (int)await cmd.ExecuteScalarAsync();
                 }
-                program.ProgramDocumentId = documentId;
+
+                program.ProgramDocumentId = documentId; // Может быть null, если файл не передан
             }
         }
 

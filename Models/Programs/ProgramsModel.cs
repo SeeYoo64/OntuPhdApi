@@ -22,7 +22,7 @@ namespace OntuPhdApi.Models.Programs
         public List<string>? Results { get; set; }
         public string? LinkFaculty { get; set; }
         [JsonIgnore]
-        public int ProgramDocumentId { get; set; }
+        public int? ProgramDocumentId { get; set; }
         public List<ProgramComponent>? Components { get; set; }
         public List<Job>? Jobs { get; set; }
         public bool Accredited { get; set; }
