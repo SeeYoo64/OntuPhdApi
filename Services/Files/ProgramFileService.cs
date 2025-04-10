@@ -9,11 +9,13 @@ namespace OntuPhdApi.Services.Files
 
         private readonly string _connectionString;
         private readonly ILogger<ProgramFileService> _logger;
+        private readonly string _uploadFolder;
 
         public ProgramFileService(IConfiguration configuration, ILogger<ProgramFileService> logger)
         {
             _connectionString = configuration.GetConnectionString("DefaultConnection");
             _logger = logger;
+            _uploadFolder = Path.Combine(Directory.GetCurrentDirectory(), "Files/Uploads/Programs");
         }
 
         public async Task<int> SaveProgramFileAsync(string programName, string filePath, string contentType, long fileSize)
@@ -56,6 +58,56 @@ namespace OntuPhdApi.Services.Files
             catch (NpgsqlException ex)
             {
                 _logger.LogError(ex, "Failed to save file for program {ProgramName}.", programName);
+                throw;
+            }
+        }
+
+        public async Task<(string FilePath, string ContentType, long FileSize, int DocumentId)> SaveProgramFileFromFormAsync(string programName, IFormFile file)
+        {
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                return await SaveProgramFileFromFormAsync(programName, file, connection, null);
+            }
+        }
+
+        public async Task<(string FilePath, string ContentType, long FileSize, int DocumentId)> SaveProgramFileFromFormAsync(string programName, IFormFile file, NpgsqlConnection connection, NpgsqlTransaction transaction)
+        {
+            if (file == null || file.Length == 0)
+            {
+                _logger.LogDebug("No file provided for program {ProgramName}.", programName);
+                return (null, null, 0, 0);
+            }
+
+            if (!Directory.Exists(_uploadFolder))
+            {
+                Directory.CreateDirectory(_uploadFolder);
+            }
+
+            var originalFileName = Path.GetFileNameWithoutExtension(file.FileName);
+            var extension = Path.GetExtension(file.FileName);
+            var uniqueSuffix = DateTime.Now.ToString("yyyyMMddHHmmss");
+            var fileName = $"{originalFileName}_{uniqueSuffix}{extension}";
+            var filePath = Path.Combine(_uploadFolder, fileName);
+
+            try
+            {
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await file.CopyToAsync(stream);
+                }
+
+                var documentId = await SaveProgramFileAsync(programName, filePath, file.ContentType, file.Length, connection, transaction);
+                _logger.LogInformation("File saved for program {ProgramName} at {FilePath} with document ID {DocumentId}.", programName, filePath, documentId);
+                return (filePath, file.ContentType, file.Length, documentId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to save file for program {ProgramName}.", programName);
+                if (File.Exists(filePath))
+                {
+                    File.Delete(filePath); // Откат при ошибке
+                }
                 throw;
             }
         }

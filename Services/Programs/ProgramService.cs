@@ -109,35 +109,34 @@ namespace OntuPhdApi.Services.Programs
 
         public async Task AddProgram(ProgramModel program, string? filePath, string? contentType, long fileSize)
         {
-            _logger.LogInformation("Adding new program {ProgramName}.", program.Name);
-
             using (var connection = new NpgsqlConnection(_connectionString))
             {
                 await connection.OpenAsync();
                 using (var transaction = await connection.BeginTransactionAsync())
                 {
-                    try
-                    {
-                        // Сохранение файла, если он есть
-                        int documentId = await _fileService.SaveProgramFileAsync(program.Name, filePath, contentType, fileSize, connection, transaction);
-                        program.ProgramDocumentId = documentId == 0 ? null : documentId;
-
-                        // Сохранение программы
-                        program.Id = await _programRepository.InsertProgramAsync(program, connection, transaction);
-
-                        await transaction.CommitAsync();
-                        _logger.LogInformation("Program {ProgramName} added with ID {ProgramId} and document ID {DocumentId}.",
-                            program.Name, program.Id, program.ProgramDocumentId);
-                    }
-                    catch (Exception ex)
-                    {
-                        await transaction.RollbackAsync();
-                        _logger.LogError(ex, "Failed to add program {ProgramName}. Rolling back transaction.", program.Name);
-                        throw;
-                    }
+                    await AddProgram(program, filePath, contentType, fileSize, connection, transaction);
+                    await transaction.CommitAsync();
                 }
             }
         }
+
+        public async Task AddProgram(ProgramModel program, string? filePath, string? contentType, long fileSize, NpgsqlConnection connection, NpgsqlTransaction transaction)
+        {
+            _logger.LogInformation("Adding new program {ProgramName}.", program.Name);
+            try
+            {
+                int documentId = await _fileService.SaveProgramFileAsync(program.Name, filePath, contentType, fileSize, connection, transaction);
+                program.ProgramDocumentId = documentId == 0 ? null : documentId;
+                program.Id = await _programRepository.InsertProgramAsync(program, connection, transaction);
+                _logger.LogInformation("Program {ProgramName} added with ID {ProgramId} and document ID {DocumentId}.", program.Name, program.Id, program.ProgramDocumentId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to add program {ProgramName}.", program.Name);
+                throw;
+            }
+        }
+
 
         public async Task UpdateProgram(ProgramModel program)
         {
@@ -159,78 +158,75 @@ namespace OntuPhdApi.Services.Programs
 
         public async Task UpdateProgramWithDocument(ProgramModel program, string filePath, string fileName, string contentType, long fileSize)
         {
-            _logger.LogInformation("Updating program {ProgramName} with ID {ProgramId} and new file.", program.Name, program.Id);
-
             using (var connection = new NpgsqlConnection(_connectionString))
             {
                 await connection.OpenAsync();
                 using (var transaction = await connection.BeginTransactionAsync())
                 {
-                    try
-                    {
-                        // Обновление файла
-                        var (newFilePath, documentId) = await _fileService.UpdateProgramFileAsync(
-                            program.ProgramDocumentId ?? 0, fileName, filePath, contentType, fileSize, connection, transaction);
-                        program.ProgramDocumentId = documentId;
-
-                        // Обновление программы
-                        await _programRepository.UpdateProgramAsync(program, connection, transaction);
-
-                        await transaction.CommitAsync();
-                        _logger.LogInformation("Program {ProgramName} with ID {ProgramId} updated with new document ID {DocumentId}.",
-                            program.Name, program.Id, documentId);
-                    }
-                    catch (Exception ex)
-                    {
-                        await transaction.RollbackAsync();
-                        _logger.LogError(ex, "Failed to update program {ProgramName} with ID {ProgramId}. Rolling back transaction.", program.Name, program.Id);
-                        throw;
-                    }
+                    await UpdateProgramWithDocument(program, filePath, fileName, contentType, fileSize, connection, transaction);
+                    await transaction.CommitAsync();
                 }
             }
         }
 
+        public async Task UpdateProgramWithDocument(ProgramModel program, string filePath, string fileName, string contentType, long fileSize, NpgsqlConnection connection, NpgsqlTransaction transaction)
+        {
+            _logger.LogInformation("Updating program {ProgramName} with ID {ProgramId} and new file.", program.Name, program.Id);
+            try
+            {
+                var (newFilePath, documentId) = await _fileService.UpdateProgramFileAsync(program.ProgramDocumentId ?? 0, fileName, filePath, contentType, fileSize, connection, transaction);
+                program.ProgramDocumentId = documentId;
+                await _programRepository.UpdateProgramAsync(program, connection, transaction);
+                _logger.LogInformation("Program {ProgramName} with ID {ProgramId} updated with new document ID {DocumentId}.", program.Name, program.Id, documentId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to update program {ProgramName} with ID {ProgramId}.", program.Name, program.Id);
+                throw;
+            }
+        }
 
         public async Task DeleteProgram(int id)
         {
-            _logger.LogInformation("Deleting program with ID {ProgramId}.", id);
-
             using (var connection = new NpgsqlConnection(_connectionString))
             {
                 await connection.OpenAsync();
                 using (var transaction = await connection.BeginTransactionAsync())
                 {
-                    try
-                    {
-                        // Получаем программу для получения ProgramDocumentId
-                        var program = await _programRepository.GetProgramByIdAsync(id);
-                        if (program == null)
-                        {
-                            _logger.LogWarning("Program with ID {ProgramId} not found for deletion.", id);
-                            throw new Exception($"Program with ID {id} not found.");
-                        }
-
-                        // Удаляем файл, если он есть
-                        if (program.ProgramDocumentId.HasValue && program.ProgramDocumentId != 0)
-                        {
-                            await _fileService.DeleteProgramFileAsync(program.ProgramDocumentId.Value, connection, transaction);
-                        }
-
-                        // Удаляем программу
-                        await _programRepository.DeleteProgramAsync(id, connection, transaction);
-
-                        await transaction.CommitAsync();
-                        _logger.LogInformation("Program with ID {ProgramId} and associated file (if any) deleted.", id);
-                    }
-                    catch (Exception ex)
-                    {
-                        await transaction.RollbackAsync();
-                        _logger.LogError(ex, "Failed to delete program with ID {ProgramId}. Rolling back transaction.", id);
-                        throw;
-                    }
+                    await DeleteProgram(id, connection, transaction);
+                    await transaction.CommitAsync();
                 }
             }
         }
+
+        public async Task DeleteProgram(int id, NpgsqlConnection connection, NpgsqlTransaction transaction)
+        {
+            _logger.LogInformation("Deleting program with ID {ProgramId}.", id);
+            try
+            {
+                var program = await _programRepository.GetProgramByIdAsync(id);
+                if (program == null)
+                {
+                    _logger.LogWarning("Program with ID {ProgramId} not found for deletion.", id);
+                    throw new Exception($"Program with ID {id} not found.");
+                }
+
+                if (program.ProgramDocumentId.HasValue && program.ProgramDocumentId != 0)
+                {
+                    await _fileService.DeleteProgramFileAsync(program.ProgramDocumentId.Value, connection, transaction);
+                }
+
+                await _programRepository.DeleteProgramAsync(id, connection, transaction);
+                _logger.LogInformation("Program with ID {ProgramId} and associated file (if any) deleted.", id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to delete program with ID {ProgramId}.", id);
+                throw;
+            }
+        }
+
+
 
     }
 }
