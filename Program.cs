@@ -88,6 +88,7 @@ internal class Program
         });
 
         var app = builder.Build();
+        app.UseCors("AllowAll");
 
         // Middleware
         app.UseRouting();
@@ -99,10 +100,8 @@ internal class Program
             c.RoutePrefix = string.Empty;
         });
 
-        app.UseEndpoints(endpoints => endpoints.MapControllers());
-
         // app.UseHttpsRedirection();
-        app.UseCors("AllowAll");
+
         app.UseAuthorization();
         app.MapControllers();
 
