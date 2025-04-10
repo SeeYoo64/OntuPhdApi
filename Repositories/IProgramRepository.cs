@@ -8,17 +8,11 @@ namespace OntuPhdApi.Repositories
     {
         Task<List<ProgramModel>> GetAllProgramsAsync();
         Task<ProgramModel> GetProgramByIdAsync(int id);
+        Task<int> InsertProgramAsync(ProgramModel program);
+        Task UpdateProgramAsync(ProgramModel program);
+        Task DeleteProgramAsync(int id);
+        Task<List<ProgramsDegreeDto>> GetProgramsByDegreeAsync(DegreeType? degree);
         Task<List<ProgramComponent>> GetProgramComponentsAsync(int programId);
         Task<List<Job>> GetProgramJobsAsync(int programId);
-        Task<List<ProgramsDegreeDto>> GetProgramsByDegreeAsync(DegreeType? degree);
-
-
-        Task<int> InsertProgramAsync(ProgramModel program);
-        Task<int> InsertProgramAsync(ProgramModel program, NpgsqlConnection connection, NpgsqlTransaction transaction); // С транзакцией
-        Task UpdateProgramAsync(ProgramModel program);
-        Task UpdateProgramAsync(ProgramModel program, NpgsqlConnection connection, NpgsqlTransaction transaction); // С транзакцией
-        Task DeleteProgramAsync(int id);
-        Task DeleteProgramAsync(int id, NpgsqlConnection connection, NpgsqlTransaction transaction); // С транзакцией
-
     }
 }

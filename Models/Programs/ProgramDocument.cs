@@ -1,6 +1,6 @@
 ﻿namespace OntuPhdApi.Models.Programs
 {
-    public class ProgramDocuments
+    public class ProgramDocument
     {
         public int Id { get; set; }
         public string FileName { get; set; }

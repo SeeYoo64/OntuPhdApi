@@ -6,6 +6,7 @@ using OntuPhdApi.Services.Programs;
 using OntuPhdApi.Services.Files;
 using System;
 using System.Threading.Tasks;
+using OntuPhdApi.Data;
 
 namespace OntuPhdApi.Controllers
 {
@@ -21,18 +22,18 @@ namespace OntuPhdApi.Controllers
     {
         private readonly IProgramService _programService;
         private readonly IProgramFileService _fileService;
+        private readonly AppDbContext _context;
         private readonly ILogger<ProgramsController> _logger;
-        private readonly string _connectionString;
 
         public ProgramsController(
             IProgramService programService,
             IProgramFileService fileService,
-            IConfiguration configuration,
+            AppDbContext context,
             ILogger<ProgramsController> logger)
         {
             _programService = programService ?? throw new ArgumentNullException(nameof(programService));
             _fileService = fileService ?? throw new ArgumentNullException(nameof(fileService));
-            _connectionString = configuration.GetConnectionString("DefaultConnection");
+            _context = context ?? throw new ArgumentNullException(nameof(context));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -102,34 +103,30 @@ namespace OntuPhdApi.Controllers
                 }
 
                 var program = MapToProgramModel(request);
-                using (var connection = new NpgsqlConnection(_connectionString))
+                using (var transaction = await _context.Database.BeginTransactionAsync())
                 {
-                    await connection.OpenAsync();
-                    using (var transaction = await connection.BeginTransactionAsync())
+                    try
                     {
-                        try
+                        if (request.File != null && request.File.Length > 0)
                         {
-                            if (request.File != null && request.File.Length > 0)
-                            {
-                                var (filePath, contentType, fileSize, documentId) = await _fileService.SaveProgramFileFromFormAsync(program.Name, request.File, connection, transaction);
-                                program.ProgramDocumentId = documentId;
-                                await _programService.AddProgram(program, filePath, contentType, fileSize, connection, transaction);
-                            }
-                            else
-                            {
-                                await _programService.AddProgram(program, null, null, 0, connection, transaction);
-                            }
+                            var (filePath, contentType, fileSize, documentId) = await _fileService.SaveProgramFileFromFormAsync(program.Name, request.File);
+                            program.ProgramDocumentId = documentId;
+                            await _programService.AddProgram(program, filePath, contentType, fileSize);
+                        }
+                        else
+                        {
+                            await _programService.AddProgram(program, null, null, 0);
+                        }
 
-                            await transaction.CommitAsync();
-                            _logger.LogInformation("Program {ProgramName} added with ID {ProgramId}.", program.Name, program.Id);
-                            return CreatedAtAction(nameof(GetProgram), new { id = program.Id }, program);
-                        }
-                        catch (Exception ex)
-                        {
-                            await transaction.RollbackAsync();
-                            _logger.LogError(ex, "Failed to add program {ProgramName}. Rolling back transaction.", request.Name);
-                            throw;
-                        }
+                        await transaction.CommitAsync();
+                        _logger.LogInformation("Program {ProgramName} added with ID {ProgramId}.", program.Name, program.Id);
+                        return CreatedAtAction(nameof(GetProgram), new { id = program.Id }, program);
+                    }
+                    catch (Exception ex)
+                    {
+                        await transaction.RollbackAsync();
+                        _logger.LogError(ex, "Failed to add program {ProgramName}. Rolling back transaction.", request.Name);
+                        throw;
                     }
                 }
             }
@@ -154,34 +151,32 @@ namespace OntuPhdApi.Controllers
                 }
 
                 UpdateProgramModel(existingProgram, request);
-                using (var connection = new NpgsqlConnection(_connectionString))
+                using (var transaction = await _context.Database.BeginTransactionAsync())
                 {
-                    await connection.OpenAsync();
-                    using (var transaction = await connection.BeginTransactionAsync())
+                    try
                     {
-                        try
+                        if (request.File != null && request.File.Length > 0)
                         {
-                            if (request.File != null && request.File.Length > 0)
-                            {
-                                var (filePath, contentType, fileSize, documentId) = await _fileService.SaveProgramFileFromFormAsync(existingProgram.Name, request.File, connection, transaction);
-                                existingProgram.ProgramDocumentId = documentId;
-                                await _programService.UpdateProgramWithDocument(existingProgram, filePath, request.File.FileName, contentType, fileSize, connection, transaction);
-                            }
-                            else
-                            {
-                                await _programService.UpdateProgram(existingProgram);
-                            }
+                            var (filePath, contentType, fileSize, documentId) = await _fileService.SaveProgramFileFromFormAsync(existingProgram.Name, request.File);
+                            existingProgram.ProgramDocumentId = documentId;
+                            await _programService.UpdateProgramWithDocument(existingProgram, filePath, request.File.FileName, contentType, fileSize);
+                        }
+                        else
+                        {
+                            // Если файл не передан, оставляем ProgramDocumentId как есть или очищаем
+                            existingProgram.ProgramDocumentId = existingProgram.ProgramDocumentId; // Оставляем как есть
+                            await _programService.UpdateProgram(existingProgram);
+                        }
 
-                            await transaction.CommitAsync();
-                            _logger.LogInformation("Program with ID {ProgramId} updated successfully.", id);
-                            return Ok(existingProgram);
-                        }
-                        catch (Exception ex)
-                        {
-                            await transaction.RollbackAsync();
-                            _logger.LogError(ex, "Failed to update program with ID {ProgramId}. Rolling back transaction.", id);
-                            throw;
-                        }
+                        await transaction.CommitAsync();
+                        _logger.LogInformation("Program with ID {ProgramId} updated successfully.", id);
+                        return Ok(existingProgram);
+                    }
+                    catch (Exception ex)
+                    {
+                        await transaction.RollbackAsync();
+                        _logger.LogError(ex, "Failed to update program with ID {ProgramId}. Rolling back transaction.", id);
+                        throw;
                     }
                 }
             }
@@ -192,30 +187,29 @@ namespace OntuPhdApi.Controllers
             }
         }
 
+
+
+
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProgram(int id)
         {
             _logger.LogInformation("Deleting program with ID {ProgramId}.", id);
             try
             {
-                using (var connection = new NpgsqlConnection(_connectionString))
+                using (var transaction = await _context.Database.BeginTransactionAsync())
                 {
-                    await connection.OpenAsync();
-                    using (var transaction = await connection.BeginTransactionAsync())
+                    try
                     {
-                        try
-                        {
-                            await _programService.DeleteProgram(id, connection, transaction);
-                            await transaction.CommitAsync();
-                            _logger.LogInformation("Program with ID {ProgramId} deleted successfully.", id);
-                            return NoContent();
-                        }
-                        catch (Exception ex)
-                        {
-                            await transaction.RollbackAsync();
-                            _logger.LogError(ex, "Failed to delete program with ID {ProgramId}. Rolling back transaction.", id);
-                            throw;
-                        }
+                        await _programService.DeleteProgram(id);
+                        await transaction.CommitAsync();
+                        _logger.LogInformation("Program with ID {ProgramId} deleted successfully.", id);
+                        return NoContent();
+                    }
+                    catch (Exception ex)
+                    {
+                        await transaction.RollbackAsync();
+                        _logger.LogError(ex, "Failed to delete program with ID {ProgramId}. Rolling back transaction.", id);
+                        throw;
                     }
                 }
             }
@@ -229,16 +223,6 @@ namespace OntuPhdApi.Controllers
                 _logger.LogError(ex, "Failed to delete program with ID {ProgramId}.", id);
                 return StatusCode(500, "An error occurred while deleting the program.");
             }
-        }
-        private bool IsValidProgramRequest(ProgramRequestDto request, out string errorMessage)
-        {
-            if (string.IsNullOrEmpty(request.Name) || string.IsNullOrEmpty(request.Degree))
-            {
-                errorMessage = "Invalid program data. Name and Degree are required.";
-                return false;
-            }
-            errorMessage = null;
-            return true;
         }
 
         // Additional methods
@@ -296,25 +280,36 @@ namespace OntuPhdApi.Controllers
             };
         }
 
+        private bool IsValidProgramRequest(ProgramRequestDto request, out string errorMessage)
+        {
+            if (string.IsNullOrEmpty(request.Name) || string.IsNullOrEmpty(request.Degree))
+            {
+                errorMessage = "Invalid program data. Name and Degree are required.";
+                return false;
+            }
+            errorMessage = null;
+            return true;
+        }
+
+
         private void UpdateProgramModel(ProgramModel program, ProgramRequestDto request)
         {
             program.Degree = request.Degree;
             program.Name = request.Name;
-            program.NameCode = request.NameCode;
-            program.FieldOfStudy = request.FieldOfStudy;
-            program.Speciality = request.Speciality;
-            program.Form = request.Form;
-            program.Objects = request.Objects;
-            program.Directions = request.Directions;
-            program.Descriptions = request.Descriptions;
-            program.Purpose = request.Purpose;
-            program.Years = request.Years;
-            program.Credits = request.Credits;
-            program.Results = request.Results;
-            program.LinkFaculty = request.LinkFaculty;
-            program.Components = request.Components;
-            program.Jobs = request.Jobs;
+            program.NameCode = request.NameCode ?? null;
+            program.FieldOfStudy = request.FieldOfStudy ?? null;
+            program.Speciality = request.Speciality ?? null;
+            program.Form = request.Form ?? null;
+            program.Objects = request.Objects ?? null;
+            program.Directions = request.Directions ?? null;
+            program.Descriptions = request.Descriptions ?? null;
+            program.Purpose = request.Purpose ?? null;
+            program.Years = request.Years ?? null;
+            program.Credits = request.Credits ?? null;
+            program.Results = request.Results ?? null;
+            program.LinkFaculty = request.LinkFaculty ?? null;
             program.Accredited = request.Accredited;
+
             program.ProgramCharacteristics = request.ProgramCharacteristics != null
                 ? new ProgramCharacteristics
                 {
@@ -332,6 +327,7 @@ namespace OntuPhdApi.Controllers
                     Features = request.ProgramCharacteristics.Features
                 }
                 : null;
+
             program.ProgramCompetence = request.ProgramCompetence != null
                 ? new ProgramCompetence
                 {
@@ -341,5 +337,7 @@ namespace OntuPhdApi.Controllers
                 }
                 : null;
         }
+
+
     }
 }

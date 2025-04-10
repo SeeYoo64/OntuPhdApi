@@ -1,5 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Npgsql;
+using OntuPhdApi.Data;
+using OntuPhdApi.Models.Programs;
 using System.IO;
 
 namespace OntuPhdApi.Services.Files
@@ -7,27 +9,18 @@ namespace OntuPhdApi.Services.Files
     public class ProgramFileService : IProgramFileService
     {
 
-        private readonly string _connectionString;
+        private readonly AppDbContext _context;
         private readonly ILogger<ProgramFileService> _logger;
         private readonly string _uploadFolder;
 
-        public ProgramFileService(IConfiguration configuration, ILogger<ProgramFileService> logger)
+        public ProgramFileService(AppDbContext context, ILogger<ProgramFileService> logger)
         {
-            _connectionString = configuration.GetConnectionString("DefaultConnection");
+            _context = context;
             _logger = logger;
             _uploadFolder = Path.Combine(Directory.GetCurrentDirectory(), "Files/Uploads/Programs");
         }
 
         public async Task<int> SaveProgramFileAsync(string programName, string filePath, string contentType, long fileSize)
-        {
-            using (var connection = new NpgsqlConnection(_connectionString))
-            {
-                await connection.OpenAsync();
-                return await SaveProgramFileAsync(programName, filePath, contentType, fileSize, connection, null);
-            }
-        }
-
-        public async Task<int> SaveProgramFileAsync(string programName, string filePath, string contentType, long fileSize, NpgsqlConnection connection, NpgsqlTransaction transaction)
         {
             if (string.IsNullOrEmpty(filePath) || fileSize <= 0)
             {
@@ -35,43 +28,21 @@ namespace OntuPhdApi.Services.Files
                 return 0;
             }
 
-            var fileName = programName + (Path.GetExtension(filePath) ?? ".unknown");
-            var query = @"
-                INSERT INTO Programdocuments (FileName, FilePath, FileSize, ContentType) 
-                VALUES (@FileName, @FilePath, @FileSize, @ContentType) 
-                RETURNING Id";
-
-            try
+            var fileName = programName + Path.GetExtension(filePath);
+            var document = new ProgramDocument
             {
-                using (var cmd = new NpgsqlCommand(query, connection) { Transaction = transaction })
-                {
-                    cmd.Parameters.AddWithValue("FileName", fileName);
-                    cmd.Parameters.AddWithValue("FilePath", filePath);
-                    cmd.Parameters.AddWithValue("FileSize", fileSize);
-                    cmd.Parameters.AddWithValue("ContentType", contentType ?? "application/octet-stream");
-
-                    var documentId = (int)await cmd.ExecuteScalarAsync();
-                    _logger.LogInformation("Saved file for program {ProgramName} with document ID {DocumentId}.", programName, documentId);
-                    return documentId;
-                }
-            }
-            catch (NpgsqlException ex)
-            {
-                _logger.LogError(ex, "Failed to save file for program {ProgramName}.", programName);
-                throw;
-            }
+                FileName = fileName,
+                FilePath = filePath,
+                FileSize = fileSize,
+                ContentType = contentType ?? "application/octet-stream"
+            };
+            _context.ProgramDocuments.Add(document);
+            await _context.SaveChangesAsync();
+            _logger.LogInformation("Saved file for program {ProgramName} with document ID {DocumentId}.", programName, document.Id);
+            return document.Id;
         }
 
         public async Task<(string FilePath, string ContentType, long FileSize, int DocumentId)> SaveProgramFileFromFormAsync(string programName, IFormFile file)
-        {
-            using (var connection = new NpgsqlConnection(_connectionString))
-            {
-                await connection.OpenAsync();
-                return await SaveProgramFileFromFormAsync(programName, file, connection, null);
-            }
-        }
-
-        public async Task<(string FilePath, string ContentType, long FileSize, int DocumentId)> SaveProgramFileFromFormAsync(string programName, IFormFile file, NpgsqlConnection connection, NpgsqlTransaction transaction)
         {
             if (file == null || file.Length == 0)
             {
@@ -97,8 +68,7 @@ namespace OntuPhdApi.Services.Files
                     await file.CopyToAsync(stream);
                 }
 
-                var documentId = await SaveProgramFileAsync(programName, filePath, file.ContentType, file.Length, connection, transaction);
-                _logger.LogInformation("File saved for program {ProgramName} at {FilePath} with document ID {DocumentId}.", programName, filePath, documentId);
+                var documentId = await SaveProgramFileAsync(programName, filePath, file.ContentType, file.Length);
                 return (filePath, file.ContentType, file.Length, documentId);
             }
             catch (Exception ex)
@@ -106,66 +76,41 @@ namespace OntuPhdApi.Services.Files
                 _logger.LogError(ex, "Failed to save file for program {ProgramName}.", programName);
                 if (File.Exists(filePath))
                 {
-                    File.Delete(filePath); // Откат при ошибке
+                    File.Delete(filePath);
                 }
                 throw;
             }
         }
-
 
 
         public async Task<(string FilePath, int DocumentId)> UpdateProgramFileAsync(int existingDocumentId, string fileName, string filePath, string contentType, long fileSize)
         {
-            using (var connection = new NpgsqlConnection(_connectionString))
-            {
-                await connection.OpenAsync();
-                return await UpdateProgramFileAsync(existingDocumentId, fileName, filePath, contentType, fileSize, connection, null);
-            }
-        }
-
-        public async Task<(string FilePath, int DocumentId)> UpdateProgramFileAsync(int existingDocumentId, string fileName, string filePath, string contentType, long fileSize, NpgsqlConnection connection, NpgsqlTransaction transaction)
-        {
             if (existingDocumentId != 0)
             {
-                await DeleteProgramFileAsync(existingDocumentId, connection, transaction);
+                await DeleteProgramFileAsync(existingDocumentId);
             }
 
-            var query = @"
-                INSERT INTO Programdocuments (FileName, FilePath, FileSize, ContentType) 
-                VALUES (@FileName, @FilePath, @FileSize, @ContentType) 
-                RETURNING Id";
-
-            try
+            var document = new ProgramDocument
             {
-                using (var cmd = new NpgsqlCommand(query, connection) { Transaction = transaction })
-                {
-                    cmd.Parameters.AddWithValue("FileName", fileName);
-                    cmd.Parameters.AddWithValue("FilePath", filePath);
-                    cmd.Parameters.AddWithValue("FileSize", fileSize);
-                    cmd.Parameters.AddWithValue("ContentType", contentType);
+                FileName = fileName,
+                FilePath = filePath,
+                FileSize = fileSize,
+                ContentType = contentType
+            };
 
-                    var documentId = (int)await cmd.ExecuteScalarAsync();
-                    _logger.LogInformation("Updated file with document ID {DocumentId} at path {FilePath}.", documentId, filePath);
-                    return (filePath, documentId);
-                }
-            }
-            catch (NpgsqlException ex)
-            {
-                _logger.LogError(ex, "Failed to update file for document ID {DocumentId}.", existingDocumentId);
-                throw;
-            }
+            _context.ProgramDocuments.Add(document);
+            await _context.SaveChangesAsync();
+            _logger.LogInformation("Updated file with document ID {DocumentId} at path {FilePath}.", document.Id, filePath);
+            return (filePath, document.Id);
         }
 
+        public async Task<string> GetProgramFilePathAsync(int documentId)
+        {
+            var document = await _context.ProgramDocuments.FindAsync(documentId);
+            return document?.FilePath;
+        }
 
         public async Task DeleteProgramFileAsync(int documentId)
-        {
-            using (var connection = new NpgsqlConnection(_connectionString))
-            {
-                await connection.OpenAsync();
-                await DeleteProgramFileAsync(documentId, connection, null);
-            }
-        }
-        public async Task DeleteProgramFileAsync(int documentId, NpgsqlConnection connection, NpgsqlTransaction transaction)
         {
             if (documentId == 0)
             {
@@ -173,65 +118,19 @@ namespace OntuPhdApi.Services.Files
                 return;
             }
 
-            var filePath = await GetProgramFilePathAsync(documentId);
-            var query = "DELETE FROM Programdocuments WHERE Id = @Id";
-
-            try
+            var document = await _context.ProgramDocuments.FindAsync(documentId);
+            if (document != null)
             {
-                using (var cmd = new NpgsqlCommand(query, connection) { Transaction = transaction })
+                _context.ProgramDocuments.Remove(document);
+                await _context.SaveChangesAsync();
+
+                if (!string.IsNullOrEmpty(document.FilePath) && File.Exists(document.FilePath))
                 {
-                    cmd.Parameters.AddWithValue("Id", documentId);
-                    await cmd.ExecuteNonQueryAsync();
-                }
-
-                if (!string.IsNullOrEmpty(filePath) && File.Exists(filePath))
-                {
-                    File.Delete(filePath);
-                    _logger.LogInformation("Deleted file at {FilePath} for document ID {DocumentId}.", filePath, documentId);
-                }
-            }
-            catch (NpgsqlException ex)
-            {
-                _logger.LogError(ex, "Failed to delete file from database for document ID {DocumentId}.", documentId);
-                throw;
-            }
-            catch (IOException ex)
-            {
-                _logger.LogError(ex, "Failed to delete file from disk at {FilePath} for document ID {DocumentId}.", filePath, documentId);
-                throw;
-            }
-        }
-
-
-        public async Task<string> GetProgramFilePathAsync(int documentId)
-        {
-            if (documentId == 0)
-            {
-                return null;
-            }
-
-            using (var connection = new NpgsqlConnection(_connectionString))
-            {
-                await connection.OpenAsync();
-                var query = "SELECT FilePath FROM Programdocuments WHERE Id = @Id";
-
-                try
-                {
-                    using (var cmd = new NpgsqlCommand(query, connection))
-                    {
-                        cmd.Parameters.AddWithValue("Id", documentId);
-                        var result = await cmd.ExecuteScalarAsync();
-                        return result as string;
-                    }
-                }
-                catch (NpgsqlException ex)
-                {
-                    _logger.LogError(ex, "Failed to retrieve file path for document ID {DocumentId}.", documentId);
-                    throw;
+                    File.Delete(document.FilePath);
+                    _logger.LogInformation("Deleted file at {FilePath} for document ID {DocumentId}.", document.FilePath, documentId);
                 }
             }
         }
-
 
 
     }
