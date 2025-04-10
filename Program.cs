@@ -1,10 +1,12 @@
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Hosting;
+using OntuPhdApi.Repositories;
 using OntuPhdApi.Services;
 using OntuPhdApi.Services.ApplyDocuments;
 using OntuPhdApi.Services.Defense;
 using OntuPhdApi.Services.Documents;
 using OntuPhdApi.Services.Employees;
+using OntuPhdApi.Services.Files;
 using OntuPhdApi.Services.News;
 using OntuPhdApi.Services.Programs;
 
@@ -31,14 +33,24 @@ builder.Services.AddControllers()
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-
+builder.Services.AddScoped<IProgramRepository, ProgramRepository>();
 builder.Services.AddScoped<IProgramService, ProgramService>();
+builder.Services.AddScoped<IProgramFileService, ProgramFileService>();
+
 builder.Services.AddScoped<IDocumentService, DocumentService>();
+
 builder.Services.AddScoped<IApplyDocumentsService, ApplyDocumentsService>();
+
 builder.Services.AddScoped<INewsService, NewsService>();
+
 builder.Services.AddScoped<IEmployeesService, EmployeesService>();
+
 builder.Services.AddScoped<IDefenseService, DefenseService>();
+
 builder.Services.AddScoped<ISpecialityNFieldsService, SpecialityNFieldsService>();
+
+
+
 
 builder.Services.AddCors(options =>
 {

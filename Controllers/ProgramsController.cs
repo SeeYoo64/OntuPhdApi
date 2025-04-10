@@ -1,11 +1,10 @@
-﻿using System;
-using System.Text.Json;
-using Microsoft.AspNetCore.Cors;
-using Microsoft.AspNetCore.Mvc;
-using Npgsql;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using OntuPhdApi.Models.Programs;
-using OntuPhdApi.Services;
 using OntuPhdApi.Services.Programs;
+using System;
+using System.IO;
+using System.Threading.Tasks;
 
 namespace OntuPhdApi.Controllers
 {
@@ -14,199 +13,197 @@ namespace OntuPhdApi.Controllers
         phd,
         doc
     }
+
     [ApiController]
     [Route("api/[controller]")]
-
     public class ProgramsController : ControllerBase
     {
         private readonly IProgramService _programService;
-
-        public ProgramsController(IProgramService programService)
-        {
-            _programService = programService;
-        }
+        private readonly ILogger<ProgramsController> _logger;
         private readonly string _uploadFolder = Path.Combine(Directory.GetCurrentDirectory(), "Files/Uploads/Programs");
 
-        [HttpGet]
-        public IActionResult GetPrograms()
+        public ProgramsController(IProgramService programService, ILogger<ProgramsController> logger)
         {
+            _programService = programService ?? throw new ArgumentNullException(nameof(programService));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetPrograms()
+        {
+            _logger.LogInformation("Fetching all programs.");
             try
             {
-                    var programs = _programService.GetPrograms();
-                    // Сортировка по Degrees - phd -> everything else
-                    programs = programs
-                        .OrderBy(r => r.Degree switch {
-                            "phd" => 1,
-                            _ => 2
-                        })
-                        .ThenBy(r => r.Id)
-                        .ToList();
-
-                    return Ok(programs);
-
+                var programs = await _programService.GetPrograms();
+                return Ok(programs);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                _logger.LogError(ex, "Failed to fetch programs.");
+                return StatusCode(500, "An error occurred while retrieving programs.");
             }
         }
 
         [HttpGet("degrees")]
-        public IActionResult GetProgramsDegrees([FromQuery] DegreeType? degree)
+        public async Task<IActionResult> GetProgramsDegrees([FromQuery] DegreeType? degree)
         {
+            _logger.LogInformation("Fetching programs for degree {Degree}.", degree?.ToString() ?? "all");
             try
             {
-                var programsDegrees = _programService.GetProgramsDegrees(degree);
+                var programsDegrees = await _programService.GetProgramsDegrees(degree);
                 return Ok(programsDegrees);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                _logger.LogError(ex, "Failed to fetch programs for degree {Degree}.", degree);
+                return StatusCode(500, "An error occurred while retrieving programs by degree.");
             }
         }
-
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetProgram(int id)
         {
-            var program = await _programService.GetProgram(id);
-            if (program == null)
-                return NotFound();
-            return Ok(program);
+            _logger.LogInformation("Fetching program with ID {ProgramId}.", id);
+            try
+            {
+                var program = await _programService.GetProgram(id);
+                if (program == null)
+                {
+                    _logger.LogWarning("Program with ID {ProgramId} not found.", id);
+                    return NotFound("Program not found.");
+                }
+                return Ok(program);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to fetch program with ID {ProgramId}.", id);
+                return StatusCode(500, "An error occurred while retrieving the program.");
+            }
         }
 
         [HttpPost]
         public async Task<IActionResult> AddProgram([FromForm] ProgramRequestDto request)
         {
-            // Проверка обязательных полей: Name и Degree
-            if (string.IsNullOrEmpty(request.Name) || string.IsNullOrEmpty(request.Degree))
-            {
-                return BadRequest("Invalid program data. Name and Degree are required.");
-            }
-
+            _logger.LogInformation("Adding new program with name {ProgramName}.", request.Name);
             try
             {
-                // Создание модели программы
-                var program = new ProgramModel
+                if (!IsValidProgramRequest(request, out string errorMessage))
                 {
-                    Degree = request.Degree,
-                    Name = request.Name,
-                    NameCode = request.NameCode,
-                    FieldOfStudy = request.FieldOfStudy != null
-                        ? new FieldOfStudy { Code = request.FieldOfStudy.Code, Name = request.FieldOfStudy.Name }
-                        : null,
-                    Speciality = request.Speciality != null
-                        ? new Speciality { Code = request.Speciality.Code, Name = request.Speciality.Name, FieldCode = request.Speciality.FieldCode }
-                        : null,
-                    Form = request.Form,
-                    Objects = request.Objects,
-                    Directions = request.Directions,
-                    Descriptions = request.Descriptions,
-                    Purpose = request.Purpose,
-                    Years = request.Years,
-                    Credits = request.Credits,
-                    ProgramCharacteristics = request.ProgramCharacteristics != null
-                        ? new ProgramCharacteristics
-                        {
-                            Area = request.ProgramCharacteristics.Area != null
-                                ? new Area
-                                {
-                                    Object = request.ProgramCharacteristics.Area.Object,
-                                    Aim = request.ProgramCharacteristics.Area.Aim,
-                                    Theory = request.ProgramCharacteristics.Area.Theory,
-                                    Methods = request.ProgramCharacteristics.Area.Methods,
-                                    Instruments = request.ProgramCharacteristics.Area.Instruments
-                                }
-                                : null,
-                            Focus = request.ProgramCharacteristics.Focus,
-                            Features = request.ProgramCharacteristics.Features
-                        }
-                        : null,
-                    ProgramCompetence = request.ProgramCompetence != null
-                        ? new ProgramCompetence
-                        {
-                            OverallCompetence = request.ProgramCompetence.OverallCompetence,
-                            SpecialCompetence = request.ProgramCompetence.SpecialCompetence,
-                            IntegralCompetence = request.ProgramCompetence.IntegralCompetence
-                        }
-                        : null,
-                    Results = request.Results,
-                    LinkFaculty = request.LinkFaculty,
-                    Components = request.Components,
-                    Jobs = request.Jobs,
-                    Accredited = request.Accredited,
-                    ProgramDocumentId = 0 // Временно, будет заполнено сервисом
-                };
+                    _logger.LogWarning("Invalid program data: {ErrorMessage}.", errorMessage);
+                    return BadRequest(errorMessage);
+                }
 
-                // Обработка файла, если он есть
+                var program = MapToProgramModel(request);
+                string? filePath = null;
+                string? contentType = null;
+                long fileSize = 0;
+
                 if (request.File != null && request.File.Length > 0)
                 {
-                    if (!Directory.Exists(_uploadFolder))
-                        Directory.CreateDirectory(_uploadFolder);
-
-                    var fileName = Guid.NewGuid().ToString() + Path.GetExtension(request.File.FileName);
-                    var filePath = Path.Combine(_uploadFolder, fileName);
-
-                    using (var stream = new FileStream(filePath, FileMode.Create))
-                    {
-                        await request.File.CopyToAsync(stream);
-                    }
-
-                    // Добавление программы с файлом
-                    await _programService.AddProgram(program, filePath, request.File.ContentType, request.File.Length);
-                }
-                else
-                {
-                    // Добавление программы без файла
-                    await _programService.AddProgram(program, null, null, 0);
+                    (filePath, contentType, fileSize) = await SaveFileAsync(request.File);
                 }
 
+                await _programService.AddProgram(program, filePath, contentType, fileSize);
+                _logger.LogInformation("Program {ProgramName} added with ID {ProgramId}.", program.Name, program.Id);
                 return CreatedAtAction(nameof(GetProgram), new { id = program.Id }, program);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                _logger.LogError(ex, "Failed to add program {ProgramName}.", request.Name);
+                return StatusCode(500, "An error occurred while adding the program.");
             }
         }
 
-
-
-        // PUT: Обновление программы с опциональной заменой файла
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateProgram(int id, [FromForm] ProgramRequestDto request)
         {
-            //if (string.IsNullOrEmpty(request.Name))
-            //{
-            //    return BadRequest("Invalid program data. Name is required.");
-            //}
-
+            _logger.LogInformation("Updating program with ID {ProgramId}.", id);
             try
             {
                 var existingProgram = await _programService.GetProgram(id);
                 if (existingProgram == null)
-                    return NotFound("Program not found.");
-
-                existingProgram.Degree = request.Degree; 
-                existingProgram.Name = request.Name;    
-                existingProgram.NameCode = request.NameCode;
-                existingProgram.FieldOfStudy = request.FieldOfStudy;
-                existingProgram.Speciality = request.Speciality;
-                existingProgram.Form = request.Form;
-                existingProgram.Objects = request.Objects;
-                existingProgram.Directions = request.Directions;
-                existingProgram.Purpose = request.Purpose;
-                existingProgram.Descriptions = request.Descriptions;
-                existingProgram.Years = request.Years;
-                existingProgram.Credits = request.Credits;
-                existingProgram.Results = request.Results;
-                existingProgram.LinkFaculty = request.LinkFaculty;
-                existingProgram.Components = request.Components;
-                existingProgram.Jobs = request.Jobs;
-                existingProgram.Accredited = request.Accredited;
-
-                if (request.ProgramCharacteristics != null)
                 {
-                    existingProgram.ProgramCharacteristics = new ProgramCharacteristics
+                    _logger.LogWarning("Program with ID {ProgramId} not found.", id);
+                    return NotFound("Program not found.");
+                }
+
+                UpdateProgramModel(existingProgram, request);
+                if (request.File != null && request.File.Length > 0)
+                {
+                    var (filePath, contentType, fileSize) = await SaveFileAsync(request.File);
+                    await _programService.UpdateProgramWithDocument(existingProgram, filePath, request.File.FileName, contentType, fileSize);
+                }
+                else
+                {
+                    await _programService.UpdateProgram(existingProgram);
+                }
+
+                _logger.LogInformation("Program with ID {ProgramId} updated successfully.", id);
+                return Ok(existingProgram);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to update program with ID {ProgramId}.", id);
+                return StatusCode(500, "An error occurred while updating the program.");
+            }
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteProgram(int id)
+        {
+            _logger.LogInformation("Deleting program with ID {ProgramId}.", id);
+            try
+            {
+                await _programService.DeleteProgram(id);
+                _logger.LogInformation("Program with ID {ProgramId} deleted successfully.", id);
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                if (ex.Message.Contains("not found"))
+                {
+                    _logger.LogWarning("Program with ID {ProgramId} not found for deletion.", id);
+                    return NotFound("Program not found.");
+                }
+                _logger.LogError(ex, "Failed to delete program with ID {ProgramId}.", id);
+                return StatusCode(500, "An error occurred while deleting the program.");
+            }
+        }
+
+        // Вспомогательные методы
+        private bool IsValidProgramRequest(ProgramRequestDto request, out string errorMessage)
+        {
+            if (string.IsNullOrEmpty(request.Name) || string.IsNullOrEmpty(request.Degree))
+            {
+                errorMessage = "Invalid program data. Name and Degree are required.";
+                return false;
+            }
+            errorMessage = null;
+            return true;
+        }
+
+        private ProgramModel MapToProgramModel(ProgramRequestDto request)
+        {
+            return new ProgramModel
+            {
+                Degree = request.Degree,
+                Name = request.Name,
+                NameCode = request.NameCode,
+                FieldOfStudy = request.FieldOfStudy != null
+                    ? new FieldOfStudy { Code = request.FieldOfStudy.Code, Name = request.FieldOfStudy.Name }
+                    : null,
+                Speciality = request.Speciality != null
+                    ? new Speciality { Code = request.Speciality.Code, Name = request.Speciality.Name, FieldCode = request.Speciality.FieldCode }
+                    : null,
+                Form = request.Form,
+                Objects = request.Objects,
+                Directions = request.Directions,
+                Descriptions = request.Descriptions,
+                Purpose = request.Purpose,
+                Years = request.Years,
+                Credits = request.Credits,
+                ProgramCharacteristics = request.ProgramCharacteristics != null
+                    ? new ProgramCharacteristics
                     {
                         Area = request.ProgramCharacteristics.Area != null
                             ? new Area
@@ -217,92 +214,93 @@ namespace OntuPhdApi.Controllers
                                 Methods = request.ProgramCharacteristics.Area.Methods,
                                 Instruments = request.ProgramCharacteristics.Area.Instruments
                             }
-                            : null, 
+                            : null,
                         Focus = request.ProgramCharacteristics.Focus,
                         Features = request.ProgramCharacteristics.Features
-                    };
-                }
-                else
-                {
-                    existingProgram.ProgramCharacteristics = null; 
-                }
-
-                
-                if (request.ProgramCompetence != null)
-                {
-                    existingProgram.ProgramCompetence = new ProgramCompetence
+                    }
+                    : null,
+                ProgramCompetence = request.ProgramCompetence != null
+                    ? new ProgramCompetence
                     {
                         OverallCompetence = request.ProgramCompetence.OverallCompetence,
                         SpecialCompetence = request.ProgramCompetence.SpecialCompetence,
                         IntegralCompetence = request.ProgramCompetence.IntegralCompetence
-                    };
-                }
-                else
-                {
-                    existingProgram.ProgramCompetence = null; 
-                }
-
-
-
-                if (request.File != null && request.File.Length > 0)
-                {
-                    var uploadFolder = Path.Combine(Directory.GetCurrentDirectory(), "Files/Uploads/Programs");
-                    if (!Directory.Exists(uploadFolder))
-                        Directory.CreateDirectory(uploadFolder);
-
-                    var originalFileName = Path.GetFileNameWithoutExtension(request.File.FileName);
-                    var extension = Path.GetExtension(request.File.FileName);
-                    var uniqueSuffix = DateTime.Now.ToString("yyyyMMddHHmmss");
-                    var fileName = $"{originalFileName}_{uniqueSuffix}{extension}";
-                    var filePath = Path.Combine(uploadFolder, fileName);
-
-                    using (var stream = new FileStream(filePath, FileMode.Create))
-                    {
-                        await request.File.CopyToAsync(stream);
                     }
-
-                    await _programService.UpdateProgramWithDocument(existingProgram, filePath, request.File.FileName, request.File.ContentType, request.File.Length);
-                }
-                else
-                {
-                    existingProgram.ProgramDocumentId = null;
-                    await _programService.UpdateProgram(existingProgram);
-                }
-
-
-                return Ok(existingProgram);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
+                    : null,
+                Results = request.Results,
+                LinkFaculty = request.LinkFaculty,
+                Components = request.Components,
+                Jobs = request.Jobs,
+                Accredited = request.Accredited,
+                ProgramDocumentId = 0 // Временно, будет заполнено сервисом
+            };
         }
 
-
-
-
-
-
-
-
-
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteProgram(int id)
+        private void UpdateProgramModel(ProgramModel program, ProgramRequestDto request)
         {
-            try
-            {
-                await _programService.DeleteProgram(id);
-                return NoContent(); // 204 - Успешное удаление
-            }
-            catch (Exception ex)
-            {
-                if (ex.Message == "Program not found.")
-                    return NotFound("Program not found.");
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
+            program.Degree = request.Degree;
+            program.Name = request.Name;
+            program.NameCode = request.NameCode;
+            program.FieldOfStudy = request.FieldOfStudy;
+            program.Speciality = request.Speciality;
+            program.Form = request.Form;
+            program.Objects = request.Objects;
+            program.Directions = request.Directions;
+            program.Descriptions = request.Descriptions;
+            program.Purpose = request.Purpose;
+            program.Years = request.Years;
+            program.Credits = request.Credits;
+            program.Results = request.Results;
+            program.LinkFaculty = request.LinkFaculty;
+            program.Components = request.Components;
+            program.Jobs = request.Jobs;
+            program.Accredited = request.Accredited;
+            program.ProgramCharacteristics = request.ProgramCharacteristics != null
+                ? new ProgramCharacteristics
+                {
+                    Area = request.ProgramCharacteristics.Area != null
+                        ? new Area
+                        {
+                            Object = request.ProgramCharacteristics.Area.Object,
+                            Aim = request.ProgramCharacteristics.Area.Aim,
+                            Theory = request.ProgramCharacteristics.Area.Theory,
+                            Methods = request.ProgramCharacteristics.Area.Methods,
+                            Instruments = request.ProgramCharacteristics.Area.Instruments
+                        }
+                        : null,
+                    Focus = request.ProgramCharacteristics.Focus,
+                    Features = request.ProgramCharacteristics.Features
+                }
+                : null;
+            program.ProgramCompetence = request.ProgramCompetence != null
+                ? new ProgramCompetence
+                {
+                    OverallCompetence = request.ProgramCompetence.OverallCompetence,
+                    SpecialCompetence = request.ProgramCompetence.SpecialCompetence,
+                    IntegralCompetence = request.ProgramCompetence.IntegralCompetence
+                }
+                : null;
         }
 
+        private async Task<(string FilePath, string ContentType, long FileSize)> SaveFileAsync(IFormFile file)
+        {
+            if (!Directory.Exists(_uploadFolder))
+            {
+                Directory.CreateDirectory(_uploadFolder);
+            }
 
+            var originalFileName = Path.GetFileNameWithoutExtension(file.FileName);
+            var extension = Path.GetExtension(file.FileName);
+            var uniqueSuffix = DateTime.Now.ToString("yyyyMMddHHmmss");
+            var fileName = $"{originalFileName}_{uniqueSuffix}{extension}";
+            var filePath = Path.Combine(_uploadFolder, fileName);
 
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            return (filePath, file.ContentType, file.Length);
+        }
     }
 }

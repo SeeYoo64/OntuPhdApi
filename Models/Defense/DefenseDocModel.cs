@@ -10,7 +10,7 @@
         public DateTime DateOfDefense { get; set; }
         public string Address { get; set; }
         public string Description { get; set; }
-        public List<Files> Files { get; set; }
+        public List<FilesDefense> FilesDefense { get; set; }
         public DateTime DateOfPublication { get; set; }
     }
 }

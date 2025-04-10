@@ -17,12 +17,12 @@ namespace OntuPhdApi.Models.Defense
         public string NameOfCompositionOfRada { get; set; }
         public string Placeholder { get; set; }
         public List<CompositionOfRada> Members { get; set; }
-        public List<Files> Files { get; set; }
+        public List<FilesDefense> FilesDefense { get; set; }
         public DateTime DateOfPublication {get; set;}
 
     }
 
-    public class Files
+    public class FilesDefense
     {
         public string Name { get; set; }
         public string Link { get; set; }

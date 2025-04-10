@@ -47,7 +47,7 @@ namespace OntuPhdApi.Services.Defense
                                 Message = reader.IsDBNull(6) ? null : reader.GetString(6),
                                 Placeholder = reader.IsDBNull(7) ? null : reader.GetString(7),
                                 Members = reader.IsDBNull(8) ? null : JsonSerializer.Deserialize<List<CompositionOfRada>>(reader.GetString(8), jsonOptions),
-                                Files = JsonSerializer.Deserialize<List<Files>>(reader.GetString(9), jsonOptions),
+                                FilesDefense = JsonSerializer.Deserialize<List<FilesDefense>>(reader.GetString(9), jsonOptions),
                                 DateOfPublication = reader.GetDateTime(10),
                                 ProgramId = reader.GetInt32(11)
                             });
@@ -125,7 +125,7 @@ namespace OntuPhdApi.Services.Defense
                                     Message = reader.IsDBNull(6) ? null : reader.GetString(6),
                                     Placeholder = reader.IsDBNull(7) ? null : reader.GetString(7),
                                     Members = reader.IsDBNull(8) ? null : JsonSerializer.Deserialize<List<CompositionOfRada>>(reader.GetString(8), jsonOptions),
-                                    Files = JsonSerializer.Deserialize<List<Files>>(reader.GetString(9), jsonOptions),
+                                    FilesDefense = JsonSerializer.Deserialize<List<FilesDefense>>(reader.GetString(9), jsonOptions),
                                     DateOfPublication = reader.GetDateTime(10),
                                     ProgramId = reader.GetInt32(11)
                                 };
@@ -204,8 +204,8 @@ namespace OntuPhdApi.Services.Defense
                                     Placeholder = reader.IsDBNull(7) ? null : reader.GetString(7),
                                     Members = reader.IsDBNull(8) ? null :
                                         JsonSerializer.Deserialize<List<CompositionOfRada>>(reader.GetString(8), jsonOptions),
-                                    Files = reader.IsDBNull(9) ? new List<Files>() :
-                                        JsonSerializer.Deserialize<List<Files>>(reader.GetString(9), jsonOptions),
+                                    FilesDefense = reader.IsDBNull(9) ? new List<FilesDefense>() :
+                                        JsonSerializer.Deserialize<List<FilesDefense>>(reader.GetString(9), jsonOptions),
                                     DateOfPublication = reader.GetDateTime(10),
                                     ProgramId = reader.GetInt32(11),
                                     ProgramInfo = new ProgramDefense

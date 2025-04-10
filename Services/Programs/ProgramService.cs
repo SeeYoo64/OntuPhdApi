@@ -1,7 +1,10 @@
-﻿using Npgsql;
+﻿using Microsoft.Extensions.Logging;
+using Npgsql;
 using NpgsqlTypes;
 using OntuPhdApi.Controllers;
 using OntuPhdApi.Models.Programs;
+using OntuPhdApi.Repositories;
+using OntuPhdApi.Services.Files;
 using System.Text.Json;
 
 namespace OntuPhdApi.Services.Programs
@@ -9,560 +12,225 @@ namespace OntuPhdApi.Services.Programs
     public class ProgramService : IProgramService
     {
 
+        private readonly IProgramRepository _programRepository;
+        private readonly IProgramFileService _fileService;
+        private readonly ILogger<ProgramService> _logger;
         private readonly string _connectionString;
 
-        public ProgramService(IConfiguration configuration)
+        public ProgramService(
+            IProgramRepository programRepository,
+            IProgramFileService fileService,
+            IConfiguration configuration,
+            ILogger<ProgramService> logger)
         {
-        
+            _programRepository = programRepository;
+            _fileService = fileService;
             _connectionString = configuration.GetConnectionString("DefaultConnection");
-
+            _logger = logger;
         }
-        public List<ProgramModel> GetPrograms()
+
+
+        public async Task<List<ProgramModel>> GetPrograms()
         {
-            var programs = new List<ProgramModel>();
-            var jsonOptions = new JsonSerializerOptions
+            try
             {
-                PropertyNameCaseInsensitive = true
-            };
-            using (var connection = new NpgsqlConnection(_connectionString))
-            {
-                connection.Open();
-                using (var cmd = new NpgsqlCommand(
-                "SELECT Id, Degree, Name, Name_Code, Field_Of_Study, Speciality, Form, Purpose, Years, Credits, " +
-                "Program_Characteristics, Program_Competence, Results, Link_Faculty, programdocumentid, Accredited, Directions, Objects " +
-                "FROM Program", connection))
-
-                using (var reader = cmd.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        try
-                        {
-                            var program = new ProgramModel
-                            {
-                                Id = reader.GetInt32(0),
-                                Degree = reader.GetString(1),
-                                Name = reader.GetString(2),
-                                NameCode = reader.IsDBNull(3) ? null : reader.GetString(3),
-                                FieldOfStudy = reader.IsDBNull(4) ? null : JsonSerializer.Deserialize<FieldOfStudy>(reader.GetString(4), jsonOptions),
-                                Speciality = reader.IsDBNull(5) ? null : JsonSerializer.Deserialize<Speciality>(reader.GetString(5), jsonOptions),
-                                Form = reader.IsDBNull(6) ? null : JsonSerializer.Deserialize<List<string>>(reader.GetString(6), jsonOptions),
-                                Purpose = reader.IsDBNull(7) ? null : reader.GetString(7),
-                                Years = reader.IsDBNull(8) ? (int?)null : reader.GetInt32(8),
-                                Credits = reader.IsDBNull(9) ? (int?)null : reader.GetInt32(9),
-                                ProgramCharacteristics = reader.IsDBNull(10) ? null : JsonSerializer.Deserialize<ProgramCharacteristics>(reader.GetString(10), jsonOptions),
-                                ProgramCompetence = reader.IsDBNull(11) ? null : JsonSerializer.Deserialize<ProgramCompetence>(reader.GetString(11), jsonOptions),
-                                Results = reader.IsDBNull(12) ? null : JsonSerializer.Deserialize<List<string>>(reader.GetString(12), jsonOptions),
-                                LinkFaculty = reader.IsDBNull(13) ? null : reader.GetString(13),
-                                ProgramDocumentId = reader.IsDBNull(14) ? 0 : reader.GetInt32(14),
-                                Accredited = reader.GetBoolean(15),
-                                Directions = reader.IsDBNull(16) ? null : JsonSerializer.Deserialize<List<string>>(reader.GetString(16), jsonOptions),
-                                Objects = reader.IsDBNull(17) ? null : reader.GetString(17),
-                        //        Components = new List<ProgramComponent>(),
-                        //        Jobs = new List<Job>()
-                            };
-
-                            programs.Add(program);
-                        }
-                        catch (JsonException ex)
-                        {
-
-                            Console.WriteLine($"Error deserializing program with ID {reader.GetInt32(0)}: {ex.Message}");
-                        }
-                    }
-                }
+                _logger.LogInformation("Fetching all programs from the repository.");
+                var programs = await _programRepository.GetAllProgramsAsync();
 
                 foreach (var program in programs)
                 {
-
-                    using (var cmd = new NpgsqlCommand(
-                        "SELECT Id, ComponentType, ComponentName, ComponentCredits, ComponentHours, ControlForm " +
-                        "FROM programcomponents " +
-                        "WHERE program_id = @programId", connection))
-                    {
-                        cmd.Parameters.AddWithValue("programId", program.Id);
-                        using var reader = cmd.ExecuteReader();
-                        while (reader.Read())
-                        {
-                            program.Components.Add(new ProgramComponent
-                            {
-                                Id = reader.GetInt32(0),
-                                ProgramId = program.Id,
-                                ComponentType = reader.GetString(1),
-                                ComponentName = reader.GetString(2),
-                                ComponentCredits = reader.GetInt32(3),
-                                ComponentHours = reader.GetInt32(4),
-                                ControlForm = reader.IsDBNull(5) ? null : JsonSerializer.Deserialize<List<string>>(reader.GetString(5), jsonOptions) ?? throw new Exception($"Failed to deserialize ControlForm for component ID {reader.GetInt32(0)}")
-                            });
-                        }
-                    }
-
-                    using (var cmd = new NpgsqlCommand(
-                        "SELECT Id, Code, Title " +
-                        "FROM Job " +
-                        "WHERE program_id = @programId", connection))
-                    {
-                        cmd.Parameters.AddWithValue("programId", program.Id);
-                        using var reader = cmd.ExecuteReader();
-                        while (reader.Read())
-                        {
-                            program.Jobs.Add(new Job
-                            {
-                                Id = reader.GetInt32(0),
-                                Code = reader.GetString(1),
-                                Title = reader.GetString(2)
-                            });
-                        }
-                    }
+                    _logger.LogDebug("Fetching components and jobs for program ID {ProgramId}", program.Id);
+                    program.Components = await _programRepository.GetProgramComponentsAsync(program.Id);
+                    program.Jobs = await _programRepository.GetProgramJobsAsync(program.Id);
                 }
+
+                _logger.LogInformation("Successfully retrieved {ProgramCount} programs.", programs.Count);
+                // Сортировка по Degrees - phd -> everything else
+                programs = programs
+                    .OrderBy(r => r.Degree switch {
+                        "phd" => 1,
+                        _ => 2
+                    })
+                    .ThenBy(r => r.Id)
+                    .ToList();
+                return programs;
             }
-            return programs;
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to retrieve programs.");
+                throw; // i can return null/error depends on needs
+            }
         }
 
         public async Task<ProgramModel> GetProgram(int id)
         {
-            ProgramModel program = null;
-            var jsonOptions = new JsonSerializerOptions
+            _logger.LogInformation("Fetching program with ID {ProgramId}.", id);
+
+            try
             {
-                PropertyNameCaseInsensitive = true
-            };
-
-            using (var connection = new NpgsqlConnection(_connectionString))
-            {
-                await connection.OpenAsync();
-
-                using (var cmd = new NpgsqlCommand(
-                    "SELECT p.Id, p.Degree, p.Name, p.Name_Code, p.Field_Of_Study, p.Speciality, p.Form, p.Purpose, p.Years, p.Credits, " +
-                    "p.Program_Characteristics, p.Program_Competence, p.Results, p.Link_Faculty, p.programdocumentid, p.Accredited, p.Objects, p.Directions, " +
-                    "p.Descriptions, d.FileName, d.FilePath " +
-                    "FROM Program p " +
-                    "LEFT JOIN Programdocuments d ON p.programdocumentid = d.Id " +
-                    "WHERE p.Id = @id", connection))
+                var program = await _programRepository.GetProgramByIdAsync(id);
+                if (program == null)
                 {
-                    cmd.Parameters.AddWithValue("id", id);
-                    using var reader = await cmd.ExecuteReaderAsync();
-                    if (await reader.ReadAsync())
-                    {
-                        try
-                        {
-                            program = new ProgramModel
-                            {
-                                Id = reader.GetInt32(0),
-                                Degree = reader.GetString(1),
-                                Name = reader.GetString(2),
-                                NameCode = reader.IsDBNull(3) ? null : reader.GetString(3),
-                                FieldOfStudy = reader.IsDBNull(4) ? null : JsonSerializer.Deserialize<FieldOfStudy>(reader.GetString(4), jsonOptions),
-                                Speciality = reader.IsDBNull(5) ? null : JsonSerializer.Deserialize<Speciality>(reader.GetString(5), jsonOptions),
-                                Form = reader.IsDBNull(6) ? null : JsonSerializer.Deserialize<List<string>>(reader.GetString(6), jsonOptions),
-                                Purpose = reader.IsDBNull(7) ? null : reader.GetString(7),
-                                Descriptions = reader.IsDBNull(18) ? null : reader.GetString(18),
-                                Years = reader.IsDBNull(8) ? (int?)null : reader.GetInt32(8),
-                                Credits = reader.IsDBNull(9) ? (int?)null : reader.GetInt32(9),
-                                ProgramCharacteristics = reader.IsDBNull(10) ? null : JsonSerializer.Deserialize<ProgramCharacteristics>(reader.GetString(10), jsonOptions),
-                                ProgramCompetence = reader.IsDBNull(11) ? null : JsonSerializer.Deserialize<ProgramCompetence>(reader.GetString(11), jsonOptions),
-                                Results = reader.IsDBNull(12) ? null : JsonSerializer.Deserialize<List<string>>(reader.GetString(12), jsonOptions),
-                                LinkFaculty = reader.IsDBNull(13) ? null : reader.GetString(13),
-                                ProgramDocumentId = reader.IsDBNull(14) ? 0 : reader.GetInt32(14),
-                                Accredited = reader.GetBoolean(15),
-                                Objects = reader.IsDBNull(16) ? null : reader.GetString(16),
-                                Directions = reader.IsDBNull(17) ? null : JsonSerializer.Deserialize<List<string>>(reader.GetString(17), jsonOptions),
-                               // Components = new List<ProgramComponent>(),
-                               // Jobs = new List<Job>()
-                            };
-                        }
-                        catch (JsonException ex)
-                        {
-                            Console.WriteLine($"Error deserializing program with ID {id}: {ex.Message}");
-                            throw;
-                        }
-                    }
-                    else
-                    {
-                        return null; 
-                    }
+                    _logger.LogWarning("Program with ID {ProgramId} not found.", id);
+                    return null;
                 }
 
-                using (var cmd = new NpgsqlCommand(
-                    "SELECT Id, ComponentType, ComponentName, ComponentCredits, ComponentHours, ControlForm " +
-                    "FROM programcomponents " +
-                    "WHERE program_id = @programId", connection))
-                {
-                    cmd.Parameters.AddWithValue("programId", program.Id);
-                    using var reader = await cmd.ExecuteReaderAsync();
-                    while (await reader.ReadAsync())
-                    {
-                        program.Components.Add(new ProgramComponent
-                        {
-                            Id = reader.GetInt32(0),
-                            ProgramId = program.Id,
-                            ComponentType = reader.GetString(1),
-                            ComponentName = reader.GetString(2),
-                            ComponentCredits = reader.GetInt32(3),
-                            ComponentHours = reader.GetInt32(4),
-                            ControlForm = reader.IsDBNull(5) ? null : JsonSerializer.Deserialize<List<string>>(reader.GetString(5), jsonOptions)
-                        });
-                    }
-                }
+                _logger.LogDebug("Fetching components and jobs for program ID {ProgramId}.", id);
+                program.Components = await _programRepository.GetProgramComponentsAsync(id);
+                program.Jobs = await _programRepository.GetProgramJobsAsync(id);
 
-                using (var cmd = new NpgsqlCommand(
-                    "SELECT Id, Code, Title " +
-                    "FROM Job " +
-                    "WHERE program_id = @programId", connection))
-                {
-                    cmd.Parameters.AddWithValue("programId", program.Id);
-                    using var reader = await cmd.ExecuteReaderAsync();
-                    while (await reader.ReadAsync())
-                    {
-                        program.Jobs.Add(new Job
-                        {
-                            Id = reader.GetInt32(0),
-                            Code = reader.GetString(1),
-                            Title = reader.GetString(2)
-                        });
-                    }
-                }
-
+                _logger.LogInformation("Successfully retrieved program with ID {ProgramId}.", id);
                 return program;
             }
-        }
-
-        public List<ProgramsDegreeDto> GetProgramsDegrees(DegreeType? degree)
-        {
-            var programs = new List<ProgramsDegreeDto>();
-            var jsonOptions = new JsonSerializerOptions
+            catch (Exception ex)
             {
-                PropertyNameCaseInsensitive = true
-            };
-
-            using (var connection = new NpgsqlConnection(_connectionString))
-            {
-                connection.Open();
-
-                var query = "SELECT Id, Degree, Name, Field_Of_Study, Speciality FROM Program";
-                if (degree.HasValue) 
-                {
-                    query += " WHERE Degree = @degree";
-                }
-
-                using (var cmd = new NpgsqlCommand(query, connection))
-                {
-                    if (degree.HasValue)
-                    {
-                        cmd.Parameters.AddWithValue("degree", degree.Value.ToString());
-                    }
-
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            programs.Add(new ProgramsDegreeDto
-                            {
-                                Id = reader.GetInt32(0),
-                                Degree = reader.GetString(1), 
-                                Name = reader.GetString(2),
-                                FieldOfStudy = reader.IsDBNull(3) ? null : JsonSerializer.Deserialize<FieldOfStudy>(reader.GetString(3), jsonOptions),
-                                Speciality = reader.IsDBNull(4) ? null : JsonSerializer.Deserialize<ShortSpeciality>(reader.GetString(4), jsonOptions)
-                            });
-                        }
-                    }
-                }
+                _logger.LogError(ex, "Failed to retrieve program with ID {ProgramId}.", id);
+                throw; // Или вернуть null, в зависимости от требований API
             }
-
-            return programs;
         }
+
+        public async Task<List<ProgramsDegreeDto>> GetProgramsDegrees(DegreeType? degree)
+        {
+            _logger.LogInformation("Fetching programs for degree {Degree}.", degree?.ToString() ?? "all");
+
+            try
+            {
+                var programs = await _programRepository.GetProgramsByDegreeAsync(degree);
+                _logger.LogInformation("Successfully retrieved {ProgramCount} programs for degree {Degree}.", programs.Count, degree?.ToString() ?? "all");
+                return programs;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to retrieve programs for degree {Degree}.", degree);
+                throw;
+            }
+        }
+
 
         public async Task AddProgram(ProgramModel program, string? filePath, string? contentType, long fileSize)
         {
+            _logger.LogInformation("Adding new program {ProgramName}.", program.Name);
+
             using (var connection = new NpgsqlConnection(_connectionString))
             {
                 await connection.OpenAsync();
-
-                // Сохранение документа, если файл передан
-                int? documentId = null;
-                if (!string.IsNullOrEmpty(filePath) && fileSize > 0)
+                using (var transaction = await connection.BeginTransactionAsync())
                 {
-                    var documentQuery = @"
-                INSERT INTO Programdocuments (FileName, FilePath, FileSize, ContentType) 
-                VALUES (@FileName, @FilePath, @FileSize, @ContentType) 
-                RETURNING Id";
-
-                    using (var cmd = new NpgsqlCommand(documentQuery, connection))
+                    try
                     {
-                        cmd.Parameters.AddWithValue("FileName", program.Name + (Path.GetExtension(filePath) ?? ".unknown"));
-                        cmd.Parameters.AddWithValue("FilePath", filePath);
-                        cmd.Parameters.AddWithValue("FileSize", fileSize);
-                        cmd.Parameters.AddWithValue("ContentType", contentType ?? "application/octet-stream");
-                        documentId = (int)await cmd.ExecuteScalarAsync();
+                        // Сохранение файла, если он есть
+                        int documentId = await _fileService.SaveProgramFileAsync(program.Name, filePath, contentType, fileSize, connection, transaction);
+                        program.ProgramDocumentId = documentId == 0 ? null : documentId;
+
+                        // Сохранение программы
+                        program.Id = await _programRepository.InsertProgramAsync(program, connection, transaction);
+
+                        await transaction.CommitAsync();
+                        _logger.LogInformation("Program {ProgramName} added with ID {ProgramId} and document ID {DocumentId}.",
+                            program.Name, program.Id, program.ProgramDocumentId);
+                    }
+                    catch (Exception ex)
+                    {
+                        await transaction.RollbackAsync();
+                        _logger.LogError(ex, "Failed to add program {ProgramName}. Rolling back transaction.", program.Name);
+                        throw;
                     }
                 }
-
-                // Сохранение программы со всеми полями
-                var programQuery = @"
-            INSERT INTO Program (
-                Degree, Name, Name_Code, Field_Of_Study, Speciality, Form, Objects, Directions, 
-                Descriptions, Purpose, Years, Credits, Program_Characteristics, Program_Competence, 
-                Results, Link_Faculty, ProgramDocumentId, Accredited
-            ) 
-            VALUES (
-                @Degree, @Name, @NameCode, @FieldOfStudy, @Speciality, @Form, @Objects, @Directions, 
-                @Descriptions, @Purpose, @Years, @Credits, @ProgramCharacteristics, @ProgramCompetence, 
-                @Results, @LinkFaculty, @ProgramDocumentId, @Accredited
-            ) 
-            RETURNING Id";
-
-                using (var cmd = new NpgsqlCommand(programQuery, connection))
-                {
-                    cmd.Parameters.AddWithValue("Degree", program.Degree ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("Name", program.Name ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("NameCode", program.NameCode ?? (object)DBNull.Value);
-                    cmd.Parameters.Add(new NpgsqlParameter("FieldOfStudy", NpgsqlDbType.Jsonb)
-                    {
-                        Value = program.FieldOfStudy != null ? JsonSerializer.Serialize(program.FieldOfStudy) : DBNull.Value
-                    });
-                    cmd.Parameters.Add(new NpgsqlParameter("Speciality", NpgsqlDbType.Jsonb)
-                    {
-                        Value = program.Speciality != null ? JsonSerializer.Serialize(program.Speciality) : DBNull.Value
-                    });
-                    cmd.Parameters.Add(new NpgsqlParameter("Form", NpgsqlDbType.Jsonb)
-                    {
-                        Value = program.Form != null ? JsonSerializer.Serialize(program.Form) : DBNull.Value
-                    });
-                    cmd.Parameters.AddWithValue("Objects", program.Objects ?? (object)DBNull.Value);
-                    cmd.Parameters.Add(new NpgsqlParameter("Directions", NpgsqlDbType.Jsonb)
-                    {
-                        Value = program.Directions != null ? JsonSerializer.Serialize(program.Directions) : DBNull.Value
-                    });
-                    cmd.Parameters.AddWithValue("Descriptions", program.Descriptions ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("Purpose", program.Purpose ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("Years", program.Years.HasValue ? program.Years.Value : (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("Credits", program.Credits.HasValue ? program.Credits.Value : (object)DBNull.Value);
-                    cmd.Parameters.Add(new NpgsqlParameter("ProgramCharacteristics", NpgsqlDbType.Jsonb)
-                    {
-                        Value = program.ProgramCharacteristics != null ? JsonSerializer.Serialize(program.ProgramCharacteristics) : DBNull.Value
-                    });
-                    cmd.Parameters.Add(new NpgsqlParameter("ProgramCompetence", NpgsqlDbType.Jsonb)
-                    {
-                        Value = program.ProgramCompetence != null ? JsonSerializer.Serialize(program.ProgramCompetence) : DBNull.Value
-                    });
-                    cmd.Parameters.Add(new NpgsqlParameter("Results", NpgsqlDbType.Jsonb)
-                    {
-                        Value = program.Results != null ? JsonSerializer.Serialize(program.Results) : DBNull.Value
-                    });
-                    cmd.Parameters.AddWithValue("LinkFaculty", program.LinkFaculty ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("ProgramDocumentId", documentId.HasValue ? documentId.Value : (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("Accredited", program.Accredited);
-
-                    program.Id = (int)await cmd.ExecuteScalarAsync();
-                }
-
-                program.ProgramDocumentId = documentId; // Может быть null, если файл не передан
             }
         }
 
         public async Task UpdateProgram(ProgramModel program)
         {
-            using (var connection = new NpgsqlConnection(_connectionString))
+            _logger.LogInformation("Updating program {ProgramName} with ID {ProgramId}.", program.Name, program.Id);
+
+            try
             {
-                await connection.OpenAsync();
-                var query = @"
-            UPDATE Program
-            SET Degree = @Degree, 
-                Name = @Name, 
-                Name_Code = @NameCode, 
-                Purpose = @Purpose, 
-                Years = @Years, 
-                Credits = @Credits, 
-                Link_Faculty = @LinkFaculty, 
-                Accredited = @Accredited,
-                Form = @Form,
-                Directions = @Directions,
-                Results = @Results,
-                Objects = @Objects,
-                Descriptions = @Descriptions,
-                Field_Of_Study = @FieldOfStudy,
-                Speciality = @Speciality,
-                Program_characteristics = @ProgramCharacteristic,
-                ProgramDocumentId = @ProgramDocumentId
-                WHERE Id = @Id";
-                using (var cmd = new NpgsqlCommand(query, connection))
-                {
-                    cmd.Parameters.AddWithValue("Id", program.Id);
-                    cmd.Parameters.AddWithValue("Degree", program.Degree ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("Name", program.Name ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("NameCode", program.NameCode ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("Descriptions", program.Descriptions ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("Purpose", program.Purpose ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("Years", program.Years ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("Credits", program.Credits ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("LinkFaculty", program.LinkFaculty ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("Accredited", program.Accredited);
-                    cmd.Parameters.AddWithValue("Objects", program.Objects ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("ProgramDocumentId", program.ProgramDocumentId ?? (object)DBNull.Value);
+                // Обновление программы в базе данных
+                await _programRepository.UpdateProgramAsync(program);
 
-                    // JSONB поля
-                    var formJson = program.Form != null ? JsonSerializer.Serialize(program.Form) : null;
-                    cmd.Parameters.Add(new NpgsqlParameter("Form", NpgsqlDbType.Jsonb) { Value = formJson ?? (object)DBNull.Value });
-
-                    var directionsJson = program.Directions != null ? JsonSerializer.Serialize(program.Directions) : null;
-                    cmd.Parameters.Add(new NpgsqlParameter("Directions", NpgsqlDbType.Jsonb) { Value = directionsJson ?? (object)DBNull.Value });
-
-                    var resultsJson = program.Results != null ? JsonSerializer.Serialize(program.Results) : null;
-                    cmd.Parameters.Add(new NpgsqlParameter("Results", NpgsqlDbType.Jsonb) { Value = resultsJson ?? (object)DBNull.Value });
-
-                    var fieldOfStudyJson = program.FieldOfStudy != null ? JsonSerializer.Serialize(program.FieldOfStudy) : null;
-                    cmd.Parameters.Add(new NpgsqlParameter("FieldOfStudy", NpgsqlDbType.Jsonb) { Value = fieldOfStudyJson ?? (object)DBNull.Value });
-
-                    var specialityJson = program.Speciality != null ? JsonSerializer.Serialize(program.Speciality) : null;
-                    cmd.Parameters.Add(new NpgsqlParameter("Speciality", NpgsqlDbType.Jsonb) { Value = specialityJson ?? (object)DBNull.Value });
-
-                    var programCharacteristicJson = program.ProgramCharacteristics != null ? JsonSerializer.Serialize(program.ProgramCharacteristics) : null;
-                    cmd.Parameters.Add(new NpgsqlParameter("ProgramCharacteristic", NpgsqlDbType.Jsonb) { Value= programCharacteristicJson ?? (object) DBNull.Value });
-
-                    await cmd.ExecuteNonQueryAsync();
-                }
+                _logger.LogInformation("Program {ProgramName} with ID {ProgramId} updated successfully.", program.Name, program.Id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to update program {ProgramName} with ID {ProgramId}.", program.Name, program.Id);
+                throw;
             }
         }
 
         public async Task UpdateProgramWithDocument(ProgramModel program, string filePath, string fileName, string contentType, long fileSize)
         {
+            _logger.LogInformation("Updating program {ProgramName} with ID {ProgramId} and new file.", program.Name, program.Id);
+
             using (var connection = new NpgsqlConnection(_connectionString))
             {
                 await connection.OpenAsync();
-
-                // Удаление старого документа (если был)
-                if (program.ProgramDocumentId != 0)
+                using (var transaction = await connection.BeginTransactionAsync())
                 {
-                    var deleteQuery = "DELETE FROM ProgramDocuments WHERE Id = @Id";
-                    using (var cmd = new NpgsqlCommand(deleteQuery, connection))
+                    try
                     {
-                        cmd.Parameters.AddWithValue("Id", program.ProgramDocumentId);
-                        await cmd.ExecuteNonQueryAsync();
+                        // Обновление файла
+                        var (newFilePath, documentId) = await _fileService.UpdateProgramFileAsync(
+                            program.ProgramDocumentId ?? 0, fileName, filePath, contentType, fileSize, connection, transaction);
+                        program.ProgramDocumentId = documentId;
+
+                        // Обновление программы
+                        await _programRepository.UpdateProgramAsync(program, connection, transaction);
+
+                        await transaction.CommitAsync();
+                        _logger.LogInformation("Program {ProgramName} with ID {ProgramId} updated with new document ID {DocumentId}.",
+                            program.Name, program.Id, documentId);
+                    }
+                    catch (Exception ex)
+                    {
+                        await transaction.RollbackAsync();
+                        _logger.LogError(ex, "Failed to update program {ProgramName} with ID {ProgramId}. Rolling back transaction.", program.Name, program.Id);
+                        throw;
                     }
                 }
-
-                // Сохранение нового документа
-                var documentQuery = "INSERT INTO ProgramDocuments (FileName, FilePath, FileSize, ContentType) " +
-                    "VALUES (@FileName, @FilePath, @FileSize, @ContentType) RETURNING Id";
-                int documentId;
-                using (var cmd = new NpgsqlCommand(documentQuery, connection))
-                {
-                    cmd.Parameters.AddWithValue("FileName", fileName);
-                    cmd.Parameters.AddWithValue("FilePath", filePath);
-                    cmd.Parameters.AddWithValue("FileSize", fileSize);
-                    cmd.Parameters.AddWithValue("ContentType", contentType);
-                    
-
-                    documentId = (int)await cmd.ExecuteScalarAsync();
-                    Console.WriteLine(documentId);
-                }
-
-                // Обновление программы
-                var query = @"
-            UPDATE Program
-            SET Degree = @Degree, 
-                Name = @Name, 
-                Name_Code = @NameCode, 
-                Purpose = @Purpose, 
-                Years = @Years, 
-                Credits = @Credits, 
-                Link_Faculty = @LinkFaculty, 
-                Accredited = @Accredited,
-                Form = @Form,
-                Directions = @Directions,
-                Results = @Results,
-                Objects = @Objects,
-                Descriptions = @Descriptions,
-                Field_Of_Study = @FieldOfStudy,
-                ProgramDocumentId = @ProgramDocumentId,
-                Speciality = @Speciality,
-                Program_Characteristics = @ProgramCharacteristic 
-            WHERE Id = @Id";
-                using (var cmd = new NpgsqlCommand(query, connection))
-                {
-                    cmd.Parameters.AddWithValue("Id", program.Id);
-                    cmd.Parameters.AddWithValue("Degree", program.Degree ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("Name", program.Name ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("NameCode", program.NameCode ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("Descriptions", program.Descriptions ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("Purpose", program.Purpose ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("Years", program.Years ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("Credits", program.Credits ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("LinkFaculty", program.LinkFaculty ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("Accredited", program.Accredited);
-                    cmd.Parameters.AddWithValue("Objects", program.Objects ?? (object)DBNull.Value);
-
-                    // JSONB поля
-                    var formJson = program.Form != null ? JsonSerializer.Serialize(program.Form) : null;
-                    cmd.Parameters.Add(new NpgsqlParameter("Form", NpgsqlDbType.Jsonb) { Value = formJson ?? (object)DBNull.Value });
-
-                    var directionsJson = program.Directions != null ? JsonSerializer.Serialize(program.Directions) : null;
-                    cmd.Parameters.Add(new NpgsqlParameter("Directions", NpgsqlDbType.Jsonb) { Value = directionsJson ?? (object)DBNull.Value });
-
-                    var resultsJson = program.Results != null ? JsonSerializer.Serialize(program.Results) : null;
-                    cmd.Parameters.Add(new NpgsqlParameter("Results", NpgsqlDbType.Jsonb) { Value = resultsJson ?? (object)DBNull.Value });
-
-                    var fieldOfStudyJson = program.FieldOfStudy != null ? JsonSerializer.Serialize(program.FieldOfStudy) : null;
-                    cmd.Parameters.Add(new NpgsqlParameter("FieldOfStudy", NpgsqlDbType.Jsonb) { Value = fieldOfStudyJson ?? (object)DBNull.Value });
-
-                    var specialityJson = program.Speciality != null ? JsonSerializer.Serialize(program.Speciality) : null;
-                    cmd.Parameters.Add(new NpgsqlParameter("Speciality", NpgsqlDbType.Jsonb) { Value = specialityJson ?? (object)DBNull.Value });
-
-                    var programCharacteristicJson = program.ProgramCharacteristics != null ? JsonSerializer.Serialize(program.ProgramCharacteristics) : null;
-                    cmd.Parameters.Add(new NpgsqlParameter("ProgramCharacteristic", NpgsqlDbType.Jsonb) { Value = programCharacteristicJson ?? (object)DBNull.Value });
-
-                    cmd.Parameters.AddWithValue("ProgramDocumentId", documentId);
-
-                    await cmd.ExecuteNonQueryAsync();
-                }
-
             }
         }
-
 
 
         public async Task DeleteProgram(int id)
         {
+            _logger.LogInformation("Deleting program with ID {ProgramId}.", id);
+
             using (var connection = new NpgsqlConnection(_connectionString))
             {
                 await connection.OpenAsync();
-
-                // Получаем информацию о programdocument, чтобы удалить файл с диска
-                string filePath = null;
-                var selectDocQuery = "SELECT FilePath FROM programdocuments WHERE Id = (SELECT programdocumentid FROM Program WHERE Id = @Id)";
-                using (var cmd = new NpgsqlCommand(selectDocQuery, connection))
+                using (var transaction = await connection.BeginTransactionAsync())
                 {
-                    cmd.Parameters.AddWithValue("Id", id);
-                    var result = await cmd.ExecuteScalarAsync();
-                    filePath = result as string;
-                }
+                    try
+                    {
+                        // Получаем программу для получения ProgramDocumentId
+                        var program = await _programRepository.GetProgramByIdAsync(id);
+                        if (program == null)
+                        {
+                            _logger.LogWarning("Program with ID {ProgramId} not found for deletion.", id);
+                            throw new Exception($"Program with ID {id} not found.");
+                        }
 
-                // Удаляем запись из таблицы programdocuments
-                var deleteDocQuery = "DELETE FROM programdocuments WHERE Id = (SELECT programdocumentid FROM Program WHERE Id = @Id)";
-                using (var cmd = new NpgsqlCommand(deleteDocQuery, connection))
-                {
-                    cmd.Parameters.AddWithValue("Id", id);
-                    await cmd.ExecuteNonQueryAsync();
-                }
+                        // Удаляем файл, если он есть
+                        if (program.ProgramDocumentId.HasValue && program.ProgramDocumentId != 0)
+                        {
+                            await _fileService.DeleteProgramFileAsync(program.ProgramDocumentId.Value, connection, transaction);
+                        }
 
-                // Удаляем программу из таблицы Program
-                var deleteProgramQuery = "DELETE FROM Program WHERE Id = @Id";
-                using (var cmd = new NpgsqlCommand(deleteProgramQuery, connection))
-                {
-                    cmd.Parameters.AddWithValue("Id", id);
-                    var rowsAffected = await cmd.ExecuteNonQueryAsync();
+                        // Удаляем программу
+                        await _programRepository.DeleteProgramAsync(id, connection, transaction);
 
-                    if (rowsAffected == 0)
-                        throw new Exception("Program not found.");
-                }
-
-                // Удаляем файл с диска, если он существует
-                if (!string.IsNullOrEmpty(filePath) && File.Exists(filePath))
-                {
-                    File.Delete(filePath);
+                        await transaction.CommitAsync();
+                        _logger.LogInformation("Program with ID {ProgramId} and associated file (if any) deleted.", id);
+                    }
+                    catch (Exception ex)
+                    {
+                        await transaction.RollbackAsync();
+                        _logger.LogError(ex, "Failed to delete program with ID {ProgramId}. Rolling back transaction.", id);
+                        throw;
+                    }
                 }
             }
         }
-
 
     }
 }
