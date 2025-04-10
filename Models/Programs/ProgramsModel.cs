@@ -31,7 +31,7 @@ namespace OntuPhdApi.Models.Programs
 
         [Column(TypeName = "jsonb")]
         [JsonPropertyName("form")]
-        public List<string> Form { get; set; }
+        public List<string>? Form { get; set; }
 
         [JsonPropertyName("objects")]
         public string? Objects { get; set; }
@@ -183,7 +183,7 @@ namespace OntuPhdApi.Models.Programs
 
         [Column(TypeName = "jsonb")]
         [JsonPropertyName("features")]
-        public List<string>? Features { get; set; }
+        public string? Features { get; set; }
     }
 
     public class Area

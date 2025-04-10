@@ -188,8 +188,6 @@ namespace OntuPhdApi.Controllers
         }
 
 
-
-
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProgram(int id)
         {
