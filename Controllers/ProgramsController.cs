@@ -231,12 +231,8 @@ namespace OntuPhdApi.Controllers
                 Degree = request.Degree,
                 Name = request.Name,
                 NameCode = request.NameCode,
-                FieldOfStudy = request.FieldOfStudy != null
-                    ? new FieldOfStudy { Code = request.FieldOfStudy.Code, Name = request.FieldOfStudy.Name }
-                    : null,
-                Speciality = request.Speciality != null
-                    ? new Speciality { Code = request.Speciality.Code, Name = request.Speciality.Name, FieldCode = request.Speciality.FieldCode }
-                    : null,
+                FieldOfStudy = IsEmptyFieldOfStudy(request.FieldOfStudy) ? null : request.FieldOfStudy,
+                Speciality = IsEmptySpeciality(request.Speciality) ? null : request.Speciality,
                 Form = request.Form,
                 Objects = request.Objects,
                 Directions = request.Directions,
@@ -244,31 +240,13 @@ namespace OntuPhdApi.Controllers
                 Purpose = request.Purpose,
                 Years = request.Years,
                 Credits = request.Credits,
-                ProgramCharacteristics = request.ProgramCharacteristics != null
-                    ? new ProgramCharacteristics
-                    {
-                        Area = request.ProgramCharacteristics.Area != null
-                            ? new Area
-                            {
-                                Object = request.ProgramCharacteristics.Area.Object,
-                                Aim = request.ProgramCharacteristics.Area.Aim,
-                                Theory = request.ProgramCharacteristics.Area.Theory,
-                                Methods = request.ProgramCharacteristics.Area.Methods,
-                                Instruments = request.ProgramCharacteristics.Area.Instruments
-                            }
-                            : null,
-                        Focus = request.ProgramCharacteristics.Focus,
-                        Features = request.ProgramCharacteristics.Features
-                    }
-                    : null,
-                ProgramCompetence = request.ProgramCompetence != null
-                    ? new ProgramCompetence
-                    {
-                        OverallCompetence = request.ProgramCompetence.OverallCompetence,
-                        SpecialCompetence = request.ProgramCompetence.SpecialCompetence,
-                        IntegralCompetence = request.ProgramCompetence.IntegralCompetence
-                    }
-                    : null,
+                ProgramCharacteristics = IsEmptyProgramCharacteristics(request.ProgramCharacteristics) ? null : request.ProgramCharacteristics,
+                ProgramCompetence = IsEmptyProgramCompetence(request.ProgramCompetence) ? null : new ProgramCompetence
+                {
+                    OverallCompetence = request.ProgramCompetence?.OverallCompetence,
+                    SpecialCompetence = request.ProgramCompetence?.SpecialCompetence,
+                    IntegralCompetence = request.ProgramCompetence?.IntegralCompetence
+                },
                 Results = request.Results,
                 LinkFaculty = request.LinkFaculty,
                 Components = request.Components,
@@ -289,14 +267,53 @@ namespace OntuPhdApi.Controllers
             return true;
         }
 
+        private bool IsEmptyFieldOfStudy(FieldOfStudy? fieldOfStudy)
+        {
+            return fieldOfStudy == null ||
+                   (string.IsNullOrEmpty(fieldOfStudy.Name) && string.IsNullOrEmpty(fieldOfStudy.Code));
+        }
+
+        private bool IsEmptySpeciality(Speciality? speciality)
+        {
+            return speciality == null ||
+                   (string.IsNullOrEmpty(speciality.Name) &&
+                    string.IsNullOrEmpty(speciality.Code) &&
+                    string.IsNullOrEmpty(speciality.FieldCode));
+        }
+
+        private bool IsEmptyArea(Area? area)
+        {
+            return area == null ||
+                   (string.IsNullOrEmpty(area.Aim) &&
+                    string.IsNullOrEmpty(area.Object) &&
+                    string.IsNullOrEmpty(area.Theory) &&
+                    string.IsNullOrEmpty(area.Methods) &&
+                    string.IsNullOrEmpty(area.Instruments));
+        }
+
+        private bool IsEmptyProgramCharacteristics(ProgramCharacteristics? programCharacteristics)
+        {
+            return programCharacteristics == null ||
+                   (IsEmptyArea(programCharacteristics.Area) &&
+                    string.IsNullOrEmpty(programCharacteristics.Focus) &&
+                    string.IsNullOrEmpty(programCharacteristics.Features));
+        }
+
+        private bool IsEmptyProgramCompetence(ProgramCompetence? programCompetence)
+        {
+            return programCompetence == null ||
+                   (string.IsNullOrEmpty(programCompetence.IntegralCompetence) &&
+                    (programCompetence.OverallCompetence == null || !programCompetence.OverallCompetence.Any()) &&
+                    (programCompetence.SpecialCompetence == null || !programCompetence.SpecialCompetence.Any()));
+        }
 
         private void UpdateProgramModel(ProgramModel program, ProgramRequestDto request)
         {
             program.Degree = request.Degree;
             program.Name = request.Name;
             program.NameCode = request.NameCode ?? null;
-            program.FieldOfStudy = request.FieldOfStudy ?? null;
-            program.Speciality = request.Speciality ?? null;
+            program.FieldOfStudy = IsEmptyFieldOfStudy(request.FieldOfStudy) ? null : request.FieldOfStudy;
+            program.Speciality = IsEmptySpeciality(request.Speciality) ? null : request.Speciality;
             program.Form = request.Form ?? null;
             program.Objects = request.Objects ?? null;
             program.Directions = request.Directions ?? null;
@@ -308,32 +325,13 @@ namespace OntuPhdApi.Controllers
             program.LinkFaculty = request.LinkFaculty ?? null;
             program.Accredited = request.Accredited;
 
-            program.ProgramCharacteristics = request.ProgramCharacteristics != null
-                ? new ProgramCharacteristics
-                {
-                    Area = request.ProgramCharacteristics.Area != null
-                        ? new Area
-                        {
-                            Object = request.ProgramCharacteristics.Area.Object,
-                            Aim = request.ProgramCharacteristics.Area.Aim,
-                            Theory = request.ProgramCharacteristics.Area.Theory,
-                            Methods = request.ProgramCharacteristics.Area.Methods,
-                            Instruments = request.ProgramCharacteristics.Area.Instruments
-                        }
-                        : null,
-                    Focus = request.ProgramCharacteristics.Focus,
-                    Features = request.ProgramCharacteristics.Features
-                }
-                : null;
-
-            program.ProgramCompetence = request.ProgramCompetence != null
-                ? new ProgramCompetence
-                {
-                    OverallCompetence = request.ProgramCompetence.OverallCompetence,
-                    SpecialCompetence = request.ProgramCompetence.SpecialCompetence,
-                    IntegralCompetence = request.ProgramCompetence.IntegralCompetence
-                }
-                : null;
+            program.ProgramCharacteristics = IsEmptyProgramCharacteristics(request.ProgramCharacteristics) ? null : request.ProgramCharacteristics;
+            program.ProgramCompetence = IsEmptyProgramCompetence(request.ProgramCompetence) ? null : new ProgramCompetence
+            {
+                OverallCompetence = request.ProgramCompetence?.OverallCompetence,
+                SpecialCompetence = request.ProgramCompetence?.SpecialCompetence,
+                IntegralCompetence = request.ProgramCompetence?.IntegralCompetence
+            };
         }
 
 

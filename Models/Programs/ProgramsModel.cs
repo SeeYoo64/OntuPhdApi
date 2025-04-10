@@ -23,11 +23,11 @@ namespace OntuPhdApi.Models.Programs
 
         [Column(TypeName = "jsonb")]
         [JsonPropertyName("fieldOfStudy")]
-        public FieldOfStudy FieldOfStudy { get; set; }
+        public FieldOfStudy? FieldOfStudy { get; set; }
 
         [Column(TypeName = "jsonb")]
         [JsonPropertyName("speciality")]
-        public Speciality Speciality { get; set; }
+        public Speciality? Speciality { get; set; }
 
         [Column(TypeName = "jsonb")]
         [JsonPropertyName("form")]
@@ -153,18 +153,15 @@ namespace OntuPhdApi.Models.Programs
         [JsonPropertyName("componentHours")]
         public int? ComponentHours { get; set; }
 
-        [Column(TypeName = "jsonb")]
         [JsonPropertyName("controlForm")]
         public List<string>? ControlForm { get; set; }
     }
 
     public class ProgramCompetence
     {
-        [Column(TypeName = "jsonb")]
         [JsonPropertyName("overallCompetence")]
         public List<string>? OverallCompetence { get; set; }
 
-        [Column(TypeName = "jsonb")]
         [JsonPropertyName("specialCompetence")]
         public List<string>? SpecialCompetence { get; set; }
 
@@ -174,14 +171,12 @@ namespace OntuPhdApi.Models.Programs
 
     public class ProgramCharacteristics
     {
-        [Column(TypeName = "jsonb")]
         [JsonPropertyName("area")]
         public Area? Area { get; set; }
 
         [JsonPropertyName("focus")]
         public string? Focus { get; set; }
 
-        [Column(TypeName = "jsonb")]
         [JsonPropertyName("features")]
         public string? Features { get; set; }
     }
