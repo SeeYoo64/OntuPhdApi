@@ -1,11 +1,14 @@
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Npgsql;
 using OntuPhdApi.Data;
+using OntuPhdApi.Middleware;
 using OntuPhdApi.Repositories;
 using OntuPhdApi.Services;
 using OntuPhdApi.Services.ApplyDocuments;
+using OntuPhdApi.Services.Authorization;
 using OntuPhdApi.Services.Defense;
 using OntuPhdApi.Services.Documents;
 using OntuPhdApi.Services.Employees;
@@ -64,7 +67,7 @@ internal class Program
 
         builder.Services.AddScoped<ISpecialityNFieldsService, SpecialityNFieldsService>();
 
-
+        builder.Services.AddScoped<ISessionService, SessionService>();
 
 
         builder.Services.AddCors(options =>
@@ -85,6 +88,7 @@ internal class Program
                 Version = "v1",
                 Description = "HELLO HI ^_^ HIIIIII HELLOO "
             });
+            c.OperationFilter<CookieHeaderOperationFilter>();
         });
 
         var app = builder.Build();
@@ -92,6 +96,7 @@ internal class Program
 
         // Middleware
         app.UseRouting();
+        app.UseSessionMiddleware();
 
         app.UseSwagger();
         app.UseSwaggerUI(c =>

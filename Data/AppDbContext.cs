@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Reflection.Emit;
 using Microsoft.EntityFrameworkCore;
+using OntuPhdApi.Models.Authorization;
 using OntuPhdApi.Models.Programs;
 
 namespace OntuPhdApi.Data
@@ -12,7 +13,22 @@ namespace OntuPhdApi.Data
         public DbSet<ProgramModel> Programs { get; set; }
         public DbSet<ProgramDocument> ProgramDocuments { get; set; }
 
+        public DbSet<User> Users { get; set; }
+        public DbSet<Account> Accounts { get; set; }
+        public DbSet<Session> Sessions { get; set; }
+        public DbSet<VerificationToken> VerificationTokens { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+
+            ConfigureAuthEntities(modelBuilder);
+
+            ConfigureProgramModel(modelBuilder);
+
+            ConfigureProgramDocument(modelBuilder);
+
+        }
+
+        private void ConfigureProgramModel(ModelBuilder modelBuilder)
         {
             // Конфигурация для ProgramModel
             modelBuilder.Entity<ProgramModel>(entity =>
@@ -45,7 +61,10 @@ namespace OntuPhdApi.Data
                       .HasForeignKey(p => p.ProgramDocumentId)
                       .OnDelete(DeleteBehavior.SetNull);
             });
+        }
 
+        private void ConfigureProgramDocument(ModelBuilder modelBuilder)
+        {
             // Конфигурация для ProgramDocument
             modelBuilder.Entity<ProgramDocument>(entity =>
             {
@@ -59,5 +78,94 @@ namespace OntuPhdApi.Data
                 entity.Property(e => e.ContentType).HasColumnName("contenttype");
             });
         }
+
+
+
+
+        private void ConfigureAuthEntities(ModelBuilder modelBuilder)
+        {
+            ConfigureUser(modelBuilder);
+            ConfigureAccount(modelBuilder);
+            ConfigureSession(modelBuilder);
+            ConfigureVerificationToken(modelBuilder);
+        }
+
+        private void ConfigureUser(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<User>(entity =>
+            {
+                entity.ToTable("users");
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasColumnName("id");
+                entity.Property(e => e.Name).HasColumnName("name").HasMaxLength(255);
+                entity.Property(e => e.Email).HasColumnName("email").HasMaxLength(255);
+                entity.Property(e => e.EmailVerified).HasColumnName("email_verified");
+                entity.Property(e => e.Image).HasColumnName("image");
+            });
+        }
+
+        private void ConfigureAccount(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Account>(entity =>
+            {
+                entity.ToTable("accounts");
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasColumnName("id");
+                entity.Property(e => e.UserId).HasColumnName("user_id");
+                entity.Property(e => e.Type).HasColumnName("type").IsRequired().HasMaxLength(255);
+                entity.Property(e => e.Provider).HasColumnName("provider").IsRequired().HasMaxLength(255);
+                entity.Property(e => e.ProviderAccountId).HasColumnName("provider_account_id").IsRequired().HasMaxLength(255);
+                entity.Property(e => e.RefreshToken).HasColumnName("refresh_token");
+                entity.Property(e => e.AccessToken).HasColumnName("access_token");
+                entity.Property(e => e.ExpiresAt).HasColumnName("expires_at");
+                entity.Property(e => e.IdToken).HasColumnName("id_token");
+                entity.Property(e => e.Scope).HasColumnName("scope");
+                entity.Property(e => e.SessionState).HasColumnName("session_state");
+                entity.Property(e => e.TokenType).HasColumnName("token_type");
+                entity.HasOne(a => a.User)
+                      .WithMany(u => u.Accounts)
+                      .HasForeignKey(a => a.UserId)
+                      .HasConstraintName("fk_auth_accounts_user_id")
+                      .OnDelete(DeleteBehavior.Cascade);
+                entity.HasIndex(a => new { a.Provider, a.ProviderAccountId })
+                      .HasDatabaseName("idx_auth_accounts_provider_provider_account_id")
+                      .IsUnique();
+            });
+        }
+
+        private void ConfigureSession(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Session>(entity =>
+            {
+                entity.ToTable("sessions");
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasColumnName("id");
+                entity.Property(e => e.UserId).HasColumnName("user_id");
+                entity.Property(e => e.Expires).HasColumnName("expires").IsRequired();
+                entity.Property(e => e.SessionToken).HasColumnName("session_token").IsRequired().HasMaxLength(255);
+                entity.HasOne(s => s.User);
+          //            .WithMany(u => s.Sessions)
+         //             .HasForeignKey(s => s.UserId)
+         //             .HasConstraintName("fk_auth_sessions_user_id")
+        //              .OnDelete(DeleteBehavior.Cascade);
+                entity.HasIndex(s => s.SessionToken)
+                      .HasDatabaseName("idx_auth_sessions_session_token")
+                      .IsUnique();
+            });
+        }
+
+        private void ConfigureVerificationToken(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<VerificationToken>(entity =>
+            {
+                entity.ToTable("verification_token");
+                entity.HasKey(vt => new { vt.Identifier, vt.Token });
+                entity.Property(vt => vt.Identifier).HasColumnName("identifier").IsRequired();
+                entity.Property(vt => vt.Token).HasColumnName("token").IsRequired();
+                entity.Property(vt => vt.Expires).HasColumnName("expires").IsRequired();
+            });
+        }
+
+
     }
 }
