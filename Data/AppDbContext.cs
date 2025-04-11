@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Reflection.Emit;
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using OntuPhdApi.Models.Authorization;
 using OntuPhdApi.Models.Programs;
@@ -12,74 +13,143 @@ namespace OntuPhdApi.Data
 
         public DbSet<ProgramModel> Programs { get; set; }
         public DbSet<ProgramDocument> ProgramDocuments { get; set; }
-
-        public DbSet<User> Users { get; set; }
+        public DbSet<ProgramComponent> ProgramComponents { get; set; }
+        public DbSet<Job> Jobs { get; set; }
+        public DbSet<VerificationToken> VerificationTokens { get; set; }
         public DbSet<Account> Accounts { get; set; }
         public DbSet<Session> Sessions { get; set; }
-        public DbSet<VerificationToken> VerificationTokens { get; set; }
+        public DbSet<User> Users { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-
+            base.OnModelCreating(modelBuilder);
             ConfigureAuthEntities(modelBuilder);
 
             ConfigureProgramModel(modelBuilder);
 
             ConfigureProgramDocument(modelBuilder);
-
+            ConfigureProgramJobs(modelBuilder);
+            ConfigureProgramComponent(modelBuilder);    
         }
 
         private void ConfigureProgramModel(ModelBuilder modelBuilder)
         {
-            // Конфигурация для ProgramModel
+            base.OnModelCreating(modelBuilder);
+            // Конфигурация ProgramModel
             modelBuilder.Entity<ProgramModel>(entity =>
             {
-                entity.ToTable("program");
+                // Первичный ключ
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.Id).HasColumnName("id");
-                entity.Property(e => e.Degree).HasColumnName("degree");
-                entity.Property(e => e.Name).HasColumnName("name");
-                entity.Property(e => e.NameCode).HasColumnName("name_code");
-                entity.Property(e => e.FieldOfStudy).HasColumnName("field_of_study").HasColumnType("jsonb");
-                entity.Property(e => e.Speciality).HasColumnName("speciality").HasColumnType("jsonb");
-                entity.Property(e => e.Form).HasColumnName("form").HasColumnType("jsonb");
-                entity.Property(e => e.Objects).HasColumnName("objects");
-                entity.Property(e => e.Directions).HasColumnName("directions").HasColumnType("jsonb");
-                entity.Property(e => e.Descriptions).HasColumnName("descriptions");
-                entity.Property(e => e.Purpose).HasColumnName("purpose");
-                entity.Property(e => e.Years).HasColumnName("years");
-                entity.Property(e => e.Credits).HasColumnName("credits");
-                entity.Property(e => e.ProgramCharacteristics).HasColumnName("program_characteristics").HasColumnType("jsonb");
-                entity.Property(e => e.ProgramCompetence).HasColumnName("program_competence").HasColumnType("jsonb");
-                entity.Property(e => e.Results).HasColumnName("results").HasColumnType("jsonb");
-                entity.Property(e => e.LinkFaculty).HasColumnName("link_faculty");
-                entity.Property(e => e.ProgramDocumentId).HasColumnName("programdocumentid");
-                entity.Property(e => e.Accredited).HasColumnName("accredited");
 
-                // Связь с ProgramDocument
-                entity.HasOne(p => p.ProgramDocument)
-                      .WithMany()
-                      .HasForeignKey(p => p.ProgramDocumentId)
+                // Обязательные поля
+                entity.Property(e => e.Name).IsRequired();
+                entity.Property(e => e.Degree).IsRequired();
+
+                // Поля с типом jsonb
+                entity.Property(e => e.FieldOfStudy)
+                      .HasColumnType("jsonb")
+                      .HasConversion(
+                          v => v == null ? null : JsonSerializer.Serialize(v, new JsonSerializerOptions()),
+                          v => v == null ? null : JsonSerializer.Deserialize<FieldOfStudy>(v, new JsonSerializerOptions()));
+
+                entity.Property(e => e.Speciality)
+                      .HasColumnType("jsonb")
+                      .HasConversion(
+                          v => v == null ? null : JsonSerializer.Serialize(v, new JsonSerializerOptions()),
+                          v => v == null ? null : JsonSerializer.Deserialize<Speciality>(v, new JsonSerializerOptions()));
+
+                entity.Property(e => e.Form)
+                      .HasColumnType("jsonb")
+                      .HasConversion(
+                          v => v == null ? null : JsonSerializer.Serialize(v, new JsonSerializerOptions()),
+                          v => v == null ? null : JsonSerializer.Deserialize<List<string>>(v, new JsonSerializerOptions()));
+
+                entity.Property(e => e.Directions)
+                      .HasColumnType("jsonb")
+                      .HasConversion(
+                          v => v == null ? null : JsonSerializer.Serialize(v, new JsonSerializerOptions()),
+                          v => v == null ? null : JsonSerializer.Deserialize<List<string>>(v, new JsonSerializerOptions()));
+
+                entity.Property(e => e.ProgramCharacteristics)
+                      .HasColumnType("jsonb")
+                      .HasConversion(
+                          v => v == null ? null : JsonSerializer.Serialize(v, new JsonSerializerOptions()),
+                          v => v == null ? null : JsonSerializer.Deserialize<ProgramCharacteristics>(v, new JsonSerializerOptions()));
+
+                entity.Property(e => e.ProgramCompetence)
+                      .HasColumnType("jsonb")
+                      .HasConversion(
+                          v => v == null ? null : JsonSerializer.Serialize(v, new JsonSerializerOptions()),
+                          v => v == null ? null : JsonSerializer.Deserialize<ProgramCompetence>(v, new JsonSerializerOptions()));
+
+                entity.Property(e => e.Results)
+                      .HasColumnType("jsonb")
+                      .HasConversion(
+                          v => v == null ? null : JsonSerializer.Serialize(v, new JsonSerializerOptions()),
+                          v => v == null ? null : JsonSerializer.Deserialize<List<string>>(v, new JsonSerializerOptions()));
+
+                // Связь один-к-одному с ProgramDocument
+                entity.HasOne(e => e.ProgramDocument)
+                      .WithOne()
+                      .HasForeignKey<ProgramModel>(e => e.ProgramDocumentId)
                       .OnDelete(DeleteBehavior.SetNull);
+
+                // Связь один-ко-многим с ProgramComponent
+                entity.HasMany(e => e.Components)
+                      .WithOne(e => e.ProgramModel)
+                      .HasForeignKey(e => e.ProgramId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                // Связь один-ко-многим с Job
+                entity.HasMany(e => e.Jobs)
+                      .WithOne(e => e.ProgramModel)
+                      .HasForeignKey(e => e.ProgramId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
+        }
+
+        private void ConfigureProgramComponent(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<ProgramComponent>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.ComponentType).IsRequired();
+                entity.Property(e => e.ComponentName).IsRequired();
+
+                entity.Property(e => e.ControlForm)
+                      .HasColumnType("jsonb")
+                      .HasConversion(
+                          v => v == null ? null : JsonSerializer.Serialize(v, new JsonSerializerOptions()),
+                          v => v == null ? null : JsonSerializer.Deserialize<List<string>>(v, new JsonSerializerOptions()));
+            });
+        }
+
+        private void ConfigureProgramJobs(ModelBuilder modelBuilder)
+        {
+            // Конфигурация для Job
+            modelBuilder.Entity<Job>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Code).IsRequired();
+                entity.Property(e => e.Title).IsRequired();
+
+                // Поле ProgramModel в Job не нужно хранить в базе, оно уже связано через ProgramId
+                entity.Ignore(e => e.ProgramModel);
             });
         }
 
         private void ConfigureProgramDocument(ModelBuilder modelBuilder)
         {
-            // Конфигурация для ProgramDocument
+            // Конфигурация ProgramDocument
             modelBuilder.Entity<ProgramDocument>(entity =>
             {
-                entity.ToTable("programdocuments");
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.Id).HasColumnName("id");
-                entity.Property(e => e.FileName).HasColumnName("filename");
-                entity.Property(e => e.FilePath).HasColumnName("filepath");
-                entity.Property(e => e.UploadDate).HasColumnName("uploaddate");
-                entity.Property(e => e.FileSize).HasColumnName("filesize");
-                entity.Property(e => e.ContentType).HasColumnName("contenttype");
+                entity.Property(e => e.FileName).IsRequired();
+                entity.Property(e => e.FilePath).IsRequired();
+                entity.Property(e => e.UploadDate).IsRequired();
+                entity.Property(e => e.FileSize).IsRequired();
+                entity.Property(e => e.ContentType).IsRequired();
             });
         }
-
-
 
 
         private void ConfigureAuthEntities(ModelBuilder modelBuilder)
@@ -94,75 +164,65 @@ namespace OntuPhdApi.Data
         {
             modelBuilder.Entity<User>(entity =>
             {
-                entity.ToTable("users");
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.Id).HasColumnName("id");
-                entity.Property(e => e.Name).HasColumnName("name").HasMaxLength(255);
-                entity.Property(e => e.Email).HasColumnName("email").HasMaxLength(255);
-                entity.Property(e => e.EmailVerified).HasColumnName("email_verified");
-                entity.Property(e => e.Image).HasColumnName("image");
+
+                // Поля
+                entity.Property(e => e.Name).HasMaxLength(255);
+                entity.Property(e => e.Email).HasMaxLength(255);
             });
         }
 
         private void ConfigureAccount(ModelBuilder modelBuilder)
         {
+            // Конфигурация Account
             modelBuilder.Entity<Account>(entity =>
             {
-                entity.ToTable("accounts");
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.Id).HasColumnName("id");
-                entity.Property(e => e.UserId).HasColumnName("user_id");
-                entity.Property(e => e.Type).HasColumnName("type").IsRequired().HasMaxLength(255);
-                entity.Property(e => e.Provider).HasColumnName("provider").IsRequired().HasMaxLength(255);
-                entity.Property(e => e.ProviderAccountId).HasColumnName("provider_account_id").IsRequired().HasMaxLength(255);
-                entity.Property(e => e.RefreshToken).HasColumnName("refresh_token");
-                entity.Property(e => e.AccessToken).HasColumnName("access_token");
-                entity.Property(e => e.ExpiresAt).HasColumnName("expires_at");
-                entity.Property(e => e.IdToken).HasColumnName("id_token");
-                entity.Property(e => e.Scope).HasColumnName("scope");
-                entity.Property(e => e.SessionState).HasColumnName("session_state");
-                entity.Property(e => e.TokenType).HasColumnName("token_type");
-                entity.HasOne(a => a.User)
+
+                // Поля
+                entity.Property(e => e.Type).HasMaxLength(255).IsRequired();
+                entity.Property(e => e.Provider).HasMaxLength(255).IsRequired();
+                entity.Property(e => e.ProviderAccountId).HasMaxLength(255).IsRequired();
+
+                // Связь с User
+                entity.HasOne(e => e.User)
                       .WithMany(u => u.Accounts)
-                      .HasForeignKey(a => a.UserId)
-                      .HasConstraintName("fk_auth_accounts_user_id")
+                      .HasForeignKey(e => e.UserId)
                       .OnDelete(DeleteBehavior.Cascade);
-                entity.HasIndex(a => new { a.Provider, a.ProviderAccountId })
-                      .HasDatabaseName("idx_auth_accounts_provider_provider_account_id")
-                      .IsUnique();
             });
         }
 
         private void ConfigureSession(ModelBuilder modelBuilder)
         {
+            // Конфигурация Session
             modelBuilder.Entity<Session>(entity =>
             {
-                entity.ToTable("sessions");
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.Id).HasColumnName("id");
-                entity.Property(e => e.UserId).HasColumnName("user_id");
-                entity.Property(e => e.Expires).HasColumnName("expires").IsRequired();
-                entity.Property(e => e.SessionToken).HasColumnName("session_token").IsRequired().HasMaxLength(255);
-                entity.HasOne(s => s.User);
-          //            .WithMany(u => s.Sessions)
-         //             .HasForeignKey(s => s.UserId)
-         //             .HasConstraintName("fk_auth_sessions_user_id")
-        //              .OnDelete(DeleteBehavior.Cascade);
-                entity.HasIndex(s => s.SessionToken)
-                      .HasDatabaseName("idx_auth_sessions_session_token")
-                      .IsUnique();
+
+                // Поля
+                entity.Property(e => e.SessionToken).HasMaxLength(255).IsRequired();
+                entity.Property(e => e.Expires).IsRequired();
+
+                // Связь с User
+                entity.HasOne(e => e.User)
+                      .WithMany(u => u.Sessions)
+                      .HasForeignKey(e => e.UserId)
+                      .OnDelete(DeleteBehavior.Cascade);
             });
         }
 
         private void ConfigureVerificationToken(ModelBuilder modelBuilder)
         {
+            // Конфигурация VerificationToken
             modelBuilder.Entity<VerificationToken>(entity =>
             {
-                entity.ToTable("verification_token");
-                entity.HasKey(vt => new { vt.Identifier, vt.Token });
-                entity.Property(vt => vt.Identifier).HasColumnName("identifier").IsRequired();
-                entity.Property(vt => vt.Token).HasColumnName("token").IsRequired();
-                entity.Property(vt => vt.Expires).HasColumnName("expires").IsRequired();
+                // Составной ключ (identifier, token)
+                entity.HasKey(e => new { e.Identifier, e.Token });
+
+                // Все поля обязательные
+                entity.Property(e => e.Identifier).IsRequired();
+                entity.Property(e => e.Token).IsRequired();
+                entity.Property(e => e.Expires).IsRequired();
             });
         }
 

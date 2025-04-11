@@ -71,9 +71,7 @@ namespace OntuPhdApi.Models.Programs
         [JsonPropertyName("programDocumentId")]
         public int? ProgramDocumentId { get; set; }
 
-        [Column(TypeName = "jsonb")]
-        [JsonPropertyName("programDocument")]
-        public ProgramDocument ProgramDocument { get; set; }
+        public ProgramDocument? ProgramDocument { get; set; }
 
         [JsonIgnore]
         [JsonPropertyName("components")]
@@ -155,6 +153,8 @@ namespace OntuPhdApi.Models.Programs
 
         [JsonPropertyName("controlForm")]
         public List<string>? ControlForm { get; set; }
+        [JsonIgnore]
+        public ProgramModel? ProgramModel { get; set; }
     }
 
     public class ProgramCompetence
@@ -209,5 +209,11 @@ namespace OntuPhdApi.Models.Programs
 
         [JsonPropertyName("title")]
         public string Title { get; set; }
+        [JsonIgnore]
+        public int ProgramId { get; set; }
+        [JsonIgnore]
+        [Column(TypeName = "jsonb")]
+        [JsonPropertyName("programDocument")]
+        public ProgramModel ProgramModel { get; set; }
     }
 }

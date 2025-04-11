@@ -65,7 +65,7 @@ namespace OntuPhdApi.Services.Defense
 
                     using (var cmd = new NpgsqlCommand(
                         "SELECT Id, Name, Degree, Field_of_study, Speciality " +
-                        "FROM Program " +
+                        "FROM Programs " +
                         "WHERE id = @programId", connection))
                     {
                         cmd.Parameters.AddWithValue("programId", defense.ProgramId);
@@ -139,7 +139,7 @@ namespace OntuPhdApi.Services.Defense
                 }
                 using (var cmd = new NpgsqlCommand(
                 "SELECT Id, Name, Degree, Field_of_study, Speciality " +
-                "FROM Program " +
+                "FROM Programs " +
                 "WHERE id = @programId", connection))
                 {
                     cmd.Parameters.AddWithValue("programId", defense.ProgramId);
@@ -182,7 +182,7 @@ namespace OntuPhdApi.Services.Defense
                     d.members, d.files, d.date_of_publication, d.program_id,
                     p.Name, p.Degree, p.Field_of_study, p.Speciality
                     FROM Defense d
-                    JOIN Program p ON d.program_id = p.Id
+                    JOIN Programs p ON d.program_id = p.Id
                     WHERE p.Degree = @degree", connection))
                 {
                     cmd.Parameters.AddWithValue("degree", degree);
