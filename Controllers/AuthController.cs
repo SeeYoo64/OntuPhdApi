@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OntuPhdApi.Data;
 using OntuPhdApi.Models.Authorization;
@@ -12,86 +14,124 @@ namespace OntuPhdApi.Controllers
     {
 
         private readonly AppDbContext _context;
-        private readonly ISessionService _sessionService;
+        private readonly IAuthService _authService;
 
-        public AuthController(AppDbContext context, ISessionService sessionService)
+        public AuthController(AppDbContext context, IAuthService authService)
         {
             _context = context;
-            _sessionService = sessionService;
+            _authService = authService;
         }
 
         // POST: /api/auth/signin
         [HttpPost("signin")]
         public async Task<IActionResult> SignIn([FromBody] SignInRequest request)
         {
-            // Example: login throw email (can be extended for OAuth)
+            if (string.IsNullOrEmpty(request.Email))
+            {
+                return BadRequest(new { message = "Email is required" });
+            }
+
+            // Поиск или создание пользователя
             var user = await _context.Users
                 .FirstOrDefaultAsync(u => u.Email == request.Email);
 
             if (user == null)
             {
-                // Creating short User, if he doesnt exist
                 user = new User
                 {
                     Email = request.Email,
                     Name = request.Name ?? "User",
-                    EmailVerified = null // for OAuth or verification
+                    EmailVerified = null
                 };
                 _context.Users.Add(user);
                 await _context.SaveChangesAsync();
             }
 
-            // Creating session
-            var sessionToken = await _sessionService.CreateSessionAsync(user.Id);
+            // Генерация токенов
+            var (accessToken, refreshToken) = await _authService.GenerateTokensAsync(user.Id);
 
-            // Installing cookies
-            Response.Cookies.Append("auth.session-token", sessionToken, new CookieOptions
+            return Ok(new
             {
-                HttpOnly = true,
-                Secure = false, // true = only HTTPS
-                SameSite = SameSiteMode.Strict,
-                Expires = DateTimeOffset.UtcNow.AddDays(30)
+                accessToken,
+                refreshToken,
+                user = new { user.Id, user.Name, user.Email },
+                expiresIn = 15 * 60 // В секундах (15 минут)
             });
-
-            return Ok(new { user = new { user.Id, user.Name, user.Email } });
         }
 
         // GET: /api/auth/session
-        [HttpGet("session")]
-        public IActionResult GetSession()
+        [HttpPost("refresh")]
+        public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest request)
         {
-            if (HttpContext.Items["User"] is User user)
+            var user = await _authService.ValidateRefreshTokenAsync(request.RefreshToken);
+            if (user == null)
             {
-                return Ok(new
-                {
-                    user = new { user.Id, user.Name, user.Email },
-                    expires = DateTime.UtcNow.AddDays(30) // Example
-                });
+                return Unauthorized(new { message = "Invalid or expired refresh token" });
             }
 
-            return Ok(new { });
+            // Генерация новых токенов
+            var (accessToken, newRefreshToken) = await _authService.GenerateTokensAsync(user.Id);
+
+            return Ok(new
+            {
+                accessToken,
+                refreshToken = newRefreshToken,
+                user = new { user.Id, user.Name, user.Email },
+                expiresIn = 15 * 60
+            });
         }
 
-        // POST: /api/auth/signout
+
+        [Authorize]
         [HttpPost("signout")]
         public async Task<IActionResult> SignOut()
         {
-            var sessionToken = HttpContext.Request.Cookies["auth.session-token"];
-            if (!string.IsNullOrEmpty(sessionToken))
+            var refreshToken = Request.Headers["Refresh-Token"].ToString();
+            if (!string.IsNullOrEmpty(refreshToken))
             {
-                await _sessionService.DeleteSessionAsync(sessionToken);
-                Response.Cookies.Delete("auth.session-token");
+                await _authService.RevokeRefreshTokenAsync(refreshToken);
             }
 
             return Ok(new { message = "Signed out" });
         }
+
+
+        [Authorize]
+        [HttpGet("me")]
+        public async Task<IActionResult> GetCurrentUser()
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var user = await _context.Users.FindAsync(userId);
+
+            if (user == null)
+            {
+                return NotFound(new { message = "User not found" });
+            }
+
+            return Ok(new
+            {
+                user.Id,
+                user.Name,
+                user.Email
+            });
+        }
+
+
+
+
+
+
     }
 
     public class SignInRequest
     {
         public string? Email { get; set; }
         public string? Name { get; set; }
-        // Can be extended for password or OAuth-token if needed
+    }
+
+    public class RefreshTokenRequest
+    {
+        public string RefreshToken { get; set; } = null!;
     }
 
 }

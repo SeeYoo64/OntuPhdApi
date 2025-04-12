@@ -11,6 +11,5 @@ namespace OntuPhdApi.Models.Authorization
         public string? Image { get; set; }
 
         public ICollection<Account> Accounts { get; set; } = new List<Account>();
-        public ICollection<Session> Sessions { get; set; } = new List<Session>();
     }
 }

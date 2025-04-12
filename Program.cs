@@ -1,10 +1,13 @@
+﻿using System.Text;
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using Npgsql;
 using OntuPhdApi.Data;
-using OntuPhdApi.Middleware;
 using OntuPhdApi.Repositories.Defense;
 using OntuPhdApi.Repositories.Employee;
 using OntuPhdApi.Repositories.Program;
@@ -24,9 +27,31 @@ internal class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
-        // ��� ������� �����!!!!! ���� �� ��������!!!!!!!!!!!!!!!!!!!!!!!! � ����� ������� ���������
-        // ��� ������ ���_�� �٨
+        // ЭТУ СТРОЧКУ УДАЛИ!!!!! ЕСЛИ НЕ РАБОТАЕТ!!!!!!!!!!!!!!!!!!!!!!!! И БУДЕТ ОБРАТНО ЛОКАЛХОСТ
+        // ИЛИ ДОБАВЬ ЧТО_ТО ЕЩЁ
         builder.WebHost.UseUrls("http://0.0.0.0:5124", "https://0.0.0.0:5125");
+
+        // Adding Jwt services
+        builder.Services.AddAuthentication(options =>
+        {
+            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        })
+        .AddJwtBearer(options =>
+        {
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+                ValidIssuer = builder.Configuration["Jwt:Issuer"],
+                ValidAudience = builder.Configuration["Jwt:Audience"],
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
+            };
+        });
+
+        builder.Services.AddAuthorization();
 
 
         // Add services to the container.
@@ -51,7 +76,33 @@ internal class Program
 
         // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
         builder.Services.AddEndpointsApiExplorer();
-        builder.Services.AddSwaggerGen();
+        builder.Services.AddSwaggerGen(options =>
+        {
+            var jwtSecurityScheme = new OpenApiSecurityScheme
+            {
+                BearerFormat = "JWT",
+                Name = "Authorization",
+                In = ParameterLocation.Header,
+                Type = SecuritySchemeType.Http,
+                Scheme = JwtBearerDefaults.AuthenticationScheme,
+                Description = "Enter JWT Accesss Token",
+                Reference = new OpenApiReference
+                {
+                    Id = JwtBearerDefaults.AuthenticationScheme,
+                    Type = ReferenceType.SecurityScheme
+                }
+            };
+
+            options.AddSecurityDefinition("Bearer", jwtSecurityScheme);
+
+            options.AddSecurityRequirement(new OpenApiSecurityRequirement
+            {
+                {jwtSecurityScheme, Array.Empty<string>() }
+            });
+
+
+
+        });
 
         builder.Services.AddScoped<IProgramRepository, ProgramRepository>();
         builder.Services.AddScoped<IProgramService, ProgramService>();
@@ -71,9 +122,7 @@ internal class Program
 
         builder.Services.AddScoped<ISpecialityNFieldsService, SpecialityNFieldsService>();
 
-        builder.Services.AddScoped<ISessionService, SessionService>();
-
-
+        builder.Services.AddScoped<IAuthService, AuthService>();
 
         builder.Services.AddCors(options =>
         {
@@ -91,9 +140,13 @@ internal class Program
             {
                 Title = "OntuPhd API",
                 Version = "v1",
-                Description = "HELLO HI ^_^ HIIIIII HELLOO "
+                Description = """<div style="text-align: center;"><br>  <h2>Hello, FRONTENDERRR! 🌸</h2><br>   """ +
+                "<p>Сидит мать, дочь и сын на кухне ждут отца </p><br>" +
+                "<p> - С кем он щас поздоровается того он и выебет. </p><br>" +
+                "<p>Входит отец на кухню : </p><br>" +
+                "<p> - ВСЕМ ПРИВЕТ! ✨</p><br>" +
+                "<p><small>have fun</small></p><br></div>"
             });
-            c.OperationFilter<CookieHeaderOperationFilter>();
         });
 
         var app = builder.Build();
@@ -101,7 +154,6 @@ internal class Program
 
         // Middleware
         app.UseRouting();
-        app.UseSessionMiddleware();
 
         app.UseSwagger();
         app.UseSwaggerUI(c =>
@@ -112,6 +164,7 @@ internal class Program
 
         // app.UseHttpsRedirection();
 
+        app.UseAuthentication();
         app.UseAuthorization();
         app.MapControllers();
 

@@ -24,7 +24,6 @@ namespace OntuPhdApi.Data
 
         public DbSet<VerificationToken> VerificationTokens { get; set; }
         public DbSet<Account> Accounts { get; set; }
-        public DbSet<Session> Sessions { get; set; }
         public DbSet<User> Users { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -196,7 +195,6 @@ namespace OntuPhdApi.Data
         {
             ConfigureUser(modelBuilder);
             ConfigureAccount(modelBuilder);
-            ConfigureSession(modelBuilder);
             ConfigureVerificationToken(modelBuilder);
         }
 
@@ -232,24 +230,6 @@ namespace OntuPhdApi.Data
             });
         }
 
-        private void ConfigureSession(ModelBuilder modelBuilder)
-        {
-            // Конфигурация Session
-            modelBuilder.Entity<Session>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-
-                // Поля
-                entity.Property(e => e.SessionToken).HasMaxLength(255).IsRequired();
-                entity.Property(e => e.Expires).IsRequired();
-
-                // Связь с User
-                entity.HasOne(e => e.User)
-                      .WithMany(u => u.Sessions)
-                      .HasForeignKey(e => e.UserId)
-                      .OnDelete(DeleteBehavior.Cascade);
-            });
-        }
 
         private void ConfigureVerificationToken(ModelBuilder modelBuilder)
         {
