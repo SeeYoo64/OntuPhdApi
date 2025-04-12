@@ -198,6 +198,30 @@ namespace OntuPhdApi.Migrations
                     b.ToTable("Defenses");
                 });
 
+            modelBuilder.Entity("OntuPhdApi.Models.Employees.EmployeeModel", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("PhotoPath")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Position")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Employees");
+                });
+
             modelBuilder.Entity("OntuPhdApi.Models.Programs.Job", b =>
                 {
                     b.Property<int>("Id")

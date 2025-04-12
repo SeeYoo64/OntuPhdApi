@@ -1,106 +1,132 @@
 ﻿using Npgsql;
 using OntuPhdApi.Models.Employees;
+using OntuPhdApi.Repositories.Employee;
+using OntuPhdApi.Services.Files;
+using OntuPhdApi.Utilities;
 
 namespace OntuPhdApi.Services.Employees
 {
     public class EmployeesService : IEmployeesService
     {
-        private readonly string _connectionString;
+        private readonly IEmployeeRepository _employeeRepository;
+        private readonly IProgramFileService _fileService; 
+        private readonly ILogger<EmployeesService> _logger;
 
-        public EmployeesService(IConfiguration configuration)
+        public EmployeesService(
+            IEmployeeRepository employeeRepository,
+            IProgramFileService fileService,
+            ILogger<EmployeesService> logger)
         {
-            _connectionString = configuration.GetConnectionString("DefaultConnection");
+            _employeeRepository = employeeRepository;
+            _fileService = fileService;
+            _logger = logger;
         }
 
-        public List<EmployeesModel> GetEmployees()
+        public async Task<List<EmployeeModelDto>> GetEmployeesAsync()
         {
-            var employees = new List<EmployeesModel>();
-
-            using (var connection = new NpgsqlConnection(_connectionString))
+            _logger.LogInformation("Fetching all employees.");
+            try
             {
-                connection.Open();
-
-                using (var cmd = new NpgsqlCommand("SELECT Id, Name, Position, Photo FROM Employees", connection))
-                using (var reader = cmd.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        employees.Add(new EmployeesModel
-                        {
-                            Id = reader.GetInt32(0),
-                            Name = reader.GetString(1),
-                            Position = reader.GetString(2),
-                            Photo = reader.GetString(3)
-                        });
-                    }
-                }
+                var employees = await _employeeRepository.GetAllEmployeesAsync();
+                return EmployeeMapper.ToDtoList(employees);
             }
-
-            return employees;
-        }
-        public EmployeesModel GetEmployeeById(int id)
-        {
-            EmployeesModel employee = null;
-
-            using (var connection = new NpgsqlConnection(_connectionString))
+            catch (Exception ex)
             {
-                connection.Open();
-
-                using (var cmd = new NpgsqlCommand("SELECT Id, Name, Position, Photo FROM Employees WHERE Id = @id", connection))
-                {
-                    cmd.Parameters.AddWithValue("id", id);
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        if (reader.Read())
-                        {
-                            employee = new EmployeesModel
-                            {
-                                Id = reader.GetInt32(0),
-                                Name = reader.GetString(1),
-                                Position = reader.GetString(2),
-                                Photo = reader.GetString(3)
-                            };
-                        }
-                    }
-                }
-            }
-
-            return employee;
-        }
-        public void UpdateEmployee(EmployeesModel employee)
-        {
-            using (var connection = new NpgsqlConnection(_connectionString))
-            {
-                connection.Open();
-
-                using (var cmd = new NpgsqlCommand(
-                    "UPDATE Employees SET Name = @name, Position = @position, Photo = @photo WHERE Id = @id", connection))
-                {
-                    cmd.Parameters.AddWithValue("id", employee.Id);
-                    cmd.Parameters.AddWithValue("name", employee.Name);
-                    cmd.Parameters.AddWithValue("position", employee.Position);
-                    cmd.Parameters.AddWithValue("photo", employee.Photo);
-                    cmd.ExecuteNonQuery();
-                }
+                _logger.LogError(ex, "Failed to fetch employees.");
+                throw;
             }
         }
-        public void AddEmployee(EmployeesModel employee)
-        {
-            using (var connection = new NpgsqlConnection(_connectionString))
-            {
-                connection.Open();
 
-                using (var cmd = new NpgsqlCommand(
-                    "INSERT INTO Employees (Name, Position, Photo) " +
-                    "VALUES (@name, @position, @photo) RETURNING Id", connection))
+
+        public async Task<EmployeeModelDto> GetEmployeeByIdAsync(int id)
+        {
+            _logger.LogInformation("Fetching employee with ID {EmployeeId}.", id);
+            try
+            {
+                var employee = await _employeeRepository.GetEmployeeByIdAsync(id);
+                if (employee == null)
                 {
-                    cmd.Parameters.AddWithValue("name", employee.Name);
-                    cmd.Parameters.AddWithValue("position", employee.Position);
-                    cmd.Parameters.AddWithValue("photo", employee.Photo ?? "");
-                    employee.Id = (int)cmd.ExecuteScalar();
+                    _logger.LogWarning("Employee with ID {EmployeeId} not found.", id);
+                    return null;
                 }
+                return EmployeeMapper.ToDto(employee);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to fetch employee with ID {EmployeeId}.", id);
+                throw;
             }
         }
-    
+
+
+
+        public async Task AddEmployeeAsync(EmployeeCreateUpdateDto employeeDto)
+        {
+            if (employeeDto == null || string.IsNullOrEmpty(employeeDto.Name) || string.IsNullOrEmpty(employeeDto.Position))
+            {
+                _logger.LogWarning("Invalid employee data provided for creation.");
+                throw new ArgumentException("Name and Position are required.");
+            }
+
+            _logger.LogInformation("Adding new employee with name {EmployeeName}.", employeeDto.Name);
+            try
+            {
+                var employee = EmployeeMapper.ToEntity(employeeDto);
+
+                // Сохраняем фотографию, если она есть
+                if (employeeDto.Photo != null && employeeDto.Photo.Length > 0)
+                {
+                    var (filePath, _, _, _) = await _fileService.SaveProgramFileFromFormAsync(employeeDto.Name, employeeDto.Photo);
+                    employee.PhotoPath = filePath;
+                }
+
+                await _employeeRepository.AddEmployeeAsync(employee);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to add employee with name {EmployeeName}.", employeeDto.Name);
+                throw;
+            }
+        }
+
+
+        public async Task UpdateEmployeeAsync(int id, EmployeeCreateUpdateDto employeeDto)
+        {
+            if (employeeDto == null || string.IsNullOrEmpty(employeeDto.Name) || string.IsNullOrEmpty(employeeDto.Position))
+            {
+                _logger.LogWarning("Invalid employee data provided for update.");
+                throw new ArgumentException("Name and Position are required.");
+            }
+
+            _logger.LogInformation("Updating employee with ID {EmployeeId}.", id);
+            try
+            {
+                var employee = await _employeeRepository.GetEmployeeByIdAsync(id);
+                if (employee == null)
+                {
+                    _logger.LogWarning("Employee with ID {EmployeeId} not found.", id);
+                    throw new KeyNotFoundException("Employee not found.");
+                }
+
+                EmployeeMapper.UpdateEntity(employee, employeeDto);
+
+                // Обновляем фотографию, если она есть
+                if (employeeDto.Photo != null && employeeDto.Photo.Length > 0)
+                {
+                    var (filePath, _, _, _) = await _fileService.SaveProgramFileFromFormAsync(employeeDto.Name, employeeDto.Photo);
+                    employee.PhotoPath = filePath;
+                }
+
+                await _employeeRepository.UpdateEmployeeAsync(employee);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to update employee with ID {EmployeeId}.", id);
+                throw;
+            }
+        }
+
+
+
     }
 }

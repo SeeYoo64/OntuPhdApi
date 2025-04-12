@@ -4,10 +4,9 @@ namespace OntuPhdApi.Services.Employees
 {
     public interface IEmployeesService
     {
-
-        List<EmployeesModel> GetEmployees();
-        EmployeesModel GetEmployeeById(int id);
-        void UpdateEmployee(EmployeesModel employee);
-        void AddEmployee(EmployeesModel employee);
+        Task<List<EmployeeModelDto>> GetEmployeesAsync();
+        Task<EmployeeModelDto> GetEmployeeByIdAsync(int id);
+        Task AddEmployeeAsync(EmployeeCreateUpdateDto employeeDto);
+        Task UpdateEmployeeAsync(int id, EmployeeCreateUpdateDto employeeDto);
     }
 }

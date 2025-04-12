@@ -15,8 +15,8 @@ using OntuPhdApi.Models.Programs;
 namespace OntuPhdApi.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250412060735_Defenses2")]
-    partial class Defenses2
+    [Migration("20250412065038_Employees")]
+    partial class Employees
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -201,7 +201,7 @@ namespace OntuPhdApi.Migrations
                     b.ToTable("Defenses");
                 });
 
-            modelBuilder.Entity("OntuPhdApi.Models.Defense.ProgramDefense", b =>
+            modelBuilder.Entity("OntuPhdApi.Models.Employees.EmployeeModel", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -209,17 +209,20 @@ namespace OntuPhdApi.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Degree")
+                    b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("Name")
+                    b.Property<string>("PhotoPath")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Position")
                         .IsRequired()
                         .HasColumnType("text");
 
                     b.HasKey("Id");
 
-                    b.ToTable("ProgramDefense");
+                    b.ToTable("Employees");
                 });
 
             modelBuilder.Entity("OntuPhdApi.Models.Programs.Job", b =>
@@ -454,7 +457,7 @@ namespace OntuPhdApi.Migrations
 
             modelBuilder.Entity("OntuPhdApi.Models.Defense.DefenseModel", b =>
                 {
-                    b.HasOne("OntuPhdApi.Models.Defense.ProgramDefense", "Program")
+                    b.HasOne("OntuPhdApi.Models.Programs.ProgramModel", "Program")
                         .WithMany()
                         .HasForeignKey("ProgramId")
                         .OnDelete(DeleteBehavior.Cascade)

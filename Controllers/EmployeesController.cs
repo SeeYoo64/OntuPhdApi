@@ -10,120 +10,99 @@ namespace OntuPhdApi.Controllers
     [Route("api/[controller]")]
     public class EmployeesController : ControllerBase
     {
-        private readonly IEmployeesService _employeeService;
-        private readonly IWebHostEnvironment _environment;
+        private readonly IEmployeesService _employeesService;
+        private readonly ILogger<EmployeesController> _logger;
 
-        public EmployeesController(IEmployeesService employeeService, IWebHostEnvironment environment)
+        public EmployeesController(IEmployeesService employeesService, ILogger<EmployeesController> logger)
         {
-            _employeeService = employeeService;
-            _environment = environment;
+            _employeesService = employeesService;
+            _logger = logger;
         }
 
         [HttpGet]
-        public IActionResult GetEmployees()
+        public async Task<IActionResult> GetEmployees()
         {
+            _logger.LogInformation("Fetching all employees.");
             try
             {
-                var employees = _employeeService.GetEmployees();
+                var employees = await _employeesService.GetEmployeesAsync();
                 return Ok(employees);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                _logger.LogError(ex, "Failed to fetch employees.");
+                return StatusCode(500, "An error occurred while retrieving employees.");
             }
         }
 
         [HttpGet("{id}")]
-        public IActionResult GetEmployee(int id)
+        public async Task<IActionResult> GetEmployee(int id)
         {
+            _logger.LogInformation("Fetching employee with ID {EmployeeId}.", id);
             try
             {
-                var employee = _employeeService.GetEmployeeById(id);
+                var employee = await _employeesService.GetEmployeeByIdAsync(id);
                 if (employee == null)
                 {
-                    return NotFound($"Employee with ID {id} not found.");
+                    _logger.LogWarning("Employee with ID {EmployeeId} not found.", id);
+                    return NotFound("Employee not found.");
                 }
                 return Ok(employee);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                _logger.LogError(ex, "Failed to fetch employee with ID {EmployeeId}.", id);
+                return StatusCode(500, "An error occurred while retrieving the employee.");
             }
         }
 
         [HttpPost]
-        public async Task<IActionResult> AddEmployee([FromForm] EmployeesModelDto employeeDto)
+        public async Task<IActionResult> AddEmployee([FromForm] EmployeeCreateUpdateDto employeeDto)
         {
-            if (employeeDto == null ||
-                string.IsNullOrEmpty(employeeDto.Name) ||
-                string.IsNullOrEmpty(employeeDto.Position) ||
-                employeeDto.Photo == null)
-            {
-                return BadRequest("Invalid employee data. Name, Position, and Photo are required.");
-            }
-
+            _logger.LogInformation("Adding new employee with name {EmployeeName}.", employeeDto.Name);
             try
             {
-                // Создаём объект Employee
-                var employee = new EmployeesModel
-                {
-                    Name = employeeDto.Name,
-                    Position = employeeDto.Position,
-                    Photo = "" // Временное значение, обновим после загрузки файла
-                };
-
-                // Сохраняем сотрудника в базе, чтобы получить Id
-                _employeeService.AddEmployee(employee);
-
-                // Создаём директорию для файла сотрудника
-                var employeeDir = Path.Combine(_environment.ContentRootPath, "Files", "Uploads", "Employees", employee.Id.ToString());
-                Directory.CreateDirectory(employeeDir);
-
-                // Сохраняем Photo
-                var photoExtension = Path.GetExtension(employeeDto.Photo.FileName);
-                var photoPath = Path.Combine(employeeDir, $"photo{photoExtension}");
-                using (var stream = new FileStream(photoPath, FileMode.Create))
-                {
-                    await employeeDto.Photo.CopyToAsync(stream);
-                }
-                employee.Photo = Path.Combine("Files", "Uploads", "Employees", employee.Id.ToString(), $"photo{photoExtension}").Replace("\\", "/");
-
-                // Обновляем запись в базе с путём к файлу
-                _employeeService.UpdateEmployee(employee);
-
-                return CreatedAtAction(nameof(GetEmployee), new { id = employee.Id }, employee);
+                await _employeesService.AddEmployeeAsync(employeeDto);
+                return CreatedAtAction(nameof(GetEmployee), new { id = 0 }, employeeDto); // ID будет известен после добавления, если нужно
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning("Invalid employee data: {ErrorMessage}", ex.Message);
+                return BadRequest(ex.Message);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                _logger.LogError(ex, "Failed to add employee with name {EmployeeName}.", employeeDto.Name);
+                return StatusCode(500, "An error occurred while adding the employee.");
             }
         }
 
-        [HttpGet("download")]
-        public IActionResult DownloadFile([FromQuery] string filePath)
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateEmployee(int id, [FromForm] EmployeeCreateUpdateDto employeeDto)
         {
+            _logger.LogInformation("Updating employee with ID {EmployeeId}.", id);
             try
             {
-                // Проверяем, что путь начинается с "Files/Uploads/Employees"
-                if (string.IsNullOrEmpty(filePath) || !filePath.StartsWith("Files/Uploads/Employees"))
-                {
-                    return BadRequest("Invalid file path.");
-                }
-
-                var fullPath = Path.Combine(_environment.ContentRootPath, filePath.Replace("/", Path.DirectorySeparatorChar.ToString()));
-                if (!System.IO.File.Exists(fullPath))
-                {
-                    return NotFound($"File {filePath} not found.");
-                }
-
-                var fileBytes = System.IO.File.ReadAllBytes(fullPath);
-                var fileName = Path.GetFileName(fullPath);
-                return File(fileBytes, "application/octet-stream", fileName);
+                await _employeesService.UpdateEmployeeAsync(id, employeeDto);
+                return NoContent();
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning("Invalid employee data: {ErrorMessage}", ex.Message);
+                return BadRequest(ex.Message);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                _logger.LogWarning("Employee with ID {EmployeeId} not found.", id);
+                return NotFound(ex.Message);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                _logger.LogError(ex, "Failed to update employee with ID {EmployeeId}.", id);
+                return StatusCode(500, "An error occurred while updating the employee.");
             }
         }
+
+
     }
 }

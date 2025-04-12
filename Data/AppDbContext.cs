@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using OntuPhdApi.Models.Defense;
 using OntuPhdApi.Models.Authorization;
 using OntuPhdApi.Models.Programs;
+using OntuPhdApi.Models.Employees;
 
 namespace OntuPhdApi.Data
 {
@@ -19,6 +20,8 @@ namespace OntuPhdApi.Data
 
         public DbSet<DefenseModel> Defenses { get; set; }
 
+        public DbSet<EmployeeModel> Employees { get; set; }
+
         public DbSet<VerificationToken> VerificationTokens { get; set; }
         public DbSet<Account> Accounts { get; set; }
         public DbSet<Session> Sessions { get; set; }
@@ -31,6 +34,8 @@ namespace OntuPhdApi.Data
             ConfigureProgramModel(modelBuilder);
 
             ConfigureDefense(modelBuilder);
+
+            ConfigureEmployees(modelBuilder);
 
             ConfigureProgramDocument(modelBuilder);
             ConfigureProgramJobs(modelBuilder);
@@ -176,6 +181,16 @@ namespace OntuPhdApi.Data
 
         }
 
+        private void ConfigureEmployees(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<EmployeeModel>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Name).IsRequired();
+                entity.Property(e => e.Position).IsRequired();
+                entity.Property(e => e.PhotoPath);
+            });
+        }
 
         private void ConfigureAuthEntities(ModelBuilder modelBuilder)
         {
