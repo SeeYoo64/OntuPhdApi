@@ -1,237 +1,72 @@
 ﻿using Npgsql;
 using OntuPhdApi.Models.Defense;
 using OntuPhdApi.Models.Programs;
+using OntuPhdApi.Repositories.Defense;
+using OntuPhdApi.Utilities;
 using System.Text.Json;
 
 namespace OntuPhdApi.Services.Defense
 {
     public class DefenseService : IDefenseService
     {
-        private readonly string _connectionString;
+        private readonly IDefenseRepository _defenseRepository;
+        private readonly ILogger<DefenseService> _logger;
 
-        public DefenseService(IConfiguration configuration)
+        public DefenseService(IDefenseRepository defenseRepository, ILogger<DefenseService> logger)
         {
-            _connectionString = configuration.GetConnectionString("DefaultConnection");
+            _defenseRepository = defenseRepository;
+            _logger = logger;
         }
 
-        public List<DefenseModel> GetDefenses()
+        public async Task<List<DefenseDto>> GetDefensesAsync()
         {
-            var defenseList = new List<DefenseModel>();
-            var jsonOptions = new JsonSerializerOptions
+            _logger.LogInformation("Fetching all defenses.");
+            try
             {
-                PropertyNameCaseInsensitive = true
-            };
-            using (var connection = new NpgsqlConnection(_connectionString))
-            {
-                connection.Open();
-
-                using (var cmd = new NpgsqlCommand("SELECT Id, Name_Surname, defense_name, science_teachers, " +
-                    "date_of_defense, address, message, placeholder, members, files, date_of_publication, program_id " +
-                    "FROM Defense", connection))
-                using (var reader = cmd.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        try
-                        {
-
-                            defenseList.Add(new DefenseModel
-                            {
-                                Id = reader.GetInt32(0),
-                                NameSurname = reader.GetString(1),
-                                DefenseName = reader.GetString(2),
-                                ScienceTeachers = reader.IsDBNull(3) ? null : JsonSerializer.Deserialize<List<string>>(reader.GetString(3), jsonOptions),
-                                DateOfDefense = reader.GetDateTime(4),
-                                ProgramInfo = new ProgramDefense(),
-                                Address = reader.IsDBNull(5) ? null : reader.GetString(5),
-                                Message = reader.IsDBNull(6) ? null : reader.GetString(6),
-                                Placeholder = reader.IsDBNull(7) ? null : reader.GetString(7),
-                                Members = reader.IsDBNull(8) ? null : JsonSerializer.Deserialize<List<CompositionOfRada>>(reader.GetString(8), jsonOptions),
-                                FilesDefense = JsonSerializer.Deserialize<List<FilesDefense>>(reader.GetString(9), jsonOptions),
-                                DateOfPublication = reader.GetDateTime(10),
-                                ProgramId = reader.GetInt32(11)
-                            });
-
-                        }
-                        catch (JsonException ex)
-                        {
-                            Console.WriteLine($"Error deserializing News with ID {reader.GetInt32(0)}: {ex.Message}");
-                        }
-                    }
-                }
-
-                foreach (var defense in defenseList)
-                {
-
-                    using (var cmd = new NpgsqlCommand(
-                        "SELECT Id, Name, Degree, Field_of_study, Speciality " +
-                        "FROM Programs " +
-                        "WHERE id = @programId", connection))
-                    {
-                        cmd.Parameters.AddWithValue("programId", defense.ProgramId);
-                        using var reader = cmd.ExecuteReader();
-                        if (reader.Read())
-                        {
-                            defense.ProgramInfo = new ProgramDefense
-                            {
-                                Id = reader.GetInt32(0),
-                                Name = reader.GetString(1),
-                                Degree = reader.GetString(2),
-                                FieldOfStudy = reader.IsDBNull(3) ? null :
-                                    JsonSerializer.Deserialize<FieldOfStudy>(reader.GetString(3), jsonOptions),
-                                Speciality = reader.IsDBNull(4) ? null :
-                                    JsonSerializer.Deserialize<ShortSpeciality>(reader.GetString(4), jsonOptions),
-                            };
-                        }
-                    }
-                }
+                var defenses = await _defenseRepository.GetAllDefensesAsync();
+                return DefenseMapper.ToDtoList(defenses);
             }
-            return defenseList;
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to fetch defenses.");
+                throw;
+            }
         }
 
 
-        public DefenseModel GetDefenseById(int id)
+        public async Task<DefenseDto> GetDefenseByIdAsync(int id)
         {
-            var defense = new DefenseModel();
-            var jsonOptions = new JsonSerializerOptions
+            _logger.LogInformation("Fetching defense with ID {DefenseId}.", id);
+            try
             {
-                PropertyNameCaseInsensitive = true
-            };
-
-            using (var connection = new NpgsqlConnection(_connectionString))
-            {
-                connection.Open();
-
-                using (var cmd = new NpgsqlCommand("SELECT Id, Name_Surname, defense_name, science_teachers, " +
-                    "date_of_defense, address, message, placeholder, members, files, date_of_publication, program_id " +
-                    "FROM Defense WHERE id = @id", connection))
+                var defense = await _defenseRepository.GetDefenseByIdAsync(id);
+                if (defense == null)
                 {
-                    cmd.Parameters.AddWithValue("id", id);
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        if(reader.Read())
-                        {
-                            try
-                            {
-                                defense = new DefenseModel
-                                {
-                                    Id = reader.GetInt32(0),
-                                    NameSurname = reader.GetString(1),
-                                    DefenseName = reader.GetString(2),
-                                    ScienceTeachers = reader.IsDBNull(3) ? null : JsonSerializer.Deserialize<List<string>>(reader.GetString(3), jsonOptions),
-                                    DateOfDefense = reader.GetDateTime(4),
-                                    ProgramInfo = new ProgramDefense(),
-                                    Address = reader.IsDBNull(5) ? null : reader.GetString(5),
-                                    Message = reader.IsDBNull(6) ? null : reader.GetString(6),
-                                    Placeholder = reader.IsDBNull(7) ? null : reader.GetString(7),
-                                    Members = reader.IsDBNull(8) ? null : JsonSerializer.Deserialize<List<CompositionOfRada>>(reader.GetString(8), jsonOptions),
-                                    FilesDefense = JsonSerializer.Deserialize<List<FilesDefense>>(reader.GetString(9), jsonOptions),
-                                    DateOfPublication = reader.GetDateTime(10),
-                                    ProgramId = reader.GetInt32(11)
-                                };
-                            }
-                            catch (JsonException ex)
-                            {
-                                Console.WriteLine($"Error deserializing News with ID {reader.GetInt32(0)}: {ex.Message}");
-                            }
-                        }
-                    }
+                    _logger.LogWarning("Defense with ID {DefenseId} not found.", id);
+                    return null;
                 }
-                using (var cmd = new NpgsqlCommand(
-                "SELECT Id, Name, Degree, Field_of_study, Speciality " +
-                "FROM Programs " +
-                "WHERE id = @programId", connection))
-                {
-                    cmd.Parameters.AddWithValue("programId", defense.ProgramId);
-                    using var reader = cmd.ExecuteReader();
-                    if (reader.Read())
-                    {
-                        defense.ProgramInfo = new ProgramDefense
-                        {
-                            Id = reader.GetInt32(0),
-                            Name = reader.GetString(1),
-                            Degree = reader.GetString(2),
-                            FieldOfStudy = reader.IsDBNull(3) ? null :
-                                JsonSerializer.Deserialize<FieldOfStudy>(reader.GetString(3), jsonOptions),
-                            Speciality = reader.IsDBNull(4) ? null :
-                                JsonSerializer.Deserialize<ShortSpeciality>(reader.GetString(4), jsonOptions),
-                        };
-                    }
-                }
+                return DefenseMapper.ToDto(defense);
             }
-            return defense;
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to fetch defense with ID {DefenseId}.", id);
+                throw;
+            }
         }
 
-
-        public List<DefenseModel> GetDefensesByDegree(string degree)
+        public async Task<List<DefenseDto>> GetDefensesByDegreeAsync(string degree)
         {
-            var defenseList = new List<DefenseModel>();
-            var jsonOptions = new JsonSerializerOptions
+            _logger.LogInformation("Fetching defenses for degree {Degree}.", degree);
+            try
             {
-                PropertyNameCaseInsensitive = true
-            };
-
-            using (var connection = new NpgsqlConnection(_connectionString))
-            {
-                connection.Open();
-
-                // Выбираем только те защиты, у которых степень совпадает с указанной
-                using (var cmd = new NpgsqlCommand(@"
-                    SELECT d.Id, d.Name_Surname, d.defense_name, d.science_teachers, 
-                    d.date_of_defense, d.address, d.message, d.placeholder, 
-                    d.members, d.files, d.date_of_publication, d.program_id,
-                    p.Name, p.Degree, p.Field_of_study, p.Speciality
-                    FROM Defense d
-                    JOIN Programs p ON d.program_id = p.Id
-                    WHERE p.Degree = @degree", connection))
-                {
-                    cmd.Parameters.AddWithValue("degree", degree);
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            try
-                            {
-                                var defense = new DefenseModel
-                                {
-                                    Id = reader.GetInt32(0),
-                                    NameSurname = reader.GetString(1),
-                                    DefenseName = reader.GetString(2),
-                                    ScienceTeachers = reader.IsDBNull(3) ? null : JsonSerializer.Deserialize<List<string>>(reader.GetString(3), jsonOptions),
-                                    DateOfDefense = reader.GetDateTime(4),
-                                    Address = reader.IsDBNull(5) ? null : reader.GetString(5),
-                                    Message = reader.IsDBNull(6) ? null : reader.GetString(6),
-                                    Placeholder = reader.IsDBNull(7) ? null : reader.GetString(7),
-                                    Members = reader.IsDBNull(8) ? null :
-                                        JsonSerializer.Deserialize<List<CompositionOfRada>>(reader.GetString(8), jsonOptions),
-                                    FilesDefense = reader.IsDBNull(9) ? new List<FilesDefense>() :
-                                        JsonSerializer.Deserialize<List<FilesDefense>>(reader.GetString(9), jsonOptions),
-                                    DateOfPublication = reader.GetDateTime(10),
-                                    ProgramId = reader.GetInt32(11),
-                                    ProgramInfo = new ProgramDefense
-                                    {
-                                        Id = reader.GetInt32(11),
-                                        Name = reader.GetString(12),
-                                        Degree = reader.GetString(13),
-                                        FieldOfStudy = reader.IsDBNull(14) ? null :
-                                            JsonSerializer.Deserialize<FieldOfStudy>(reader.GetString(14), jsonOptions),
-                                        Speciality = reader.IsDBNull(15) ? null :
-                                            JsonSerializer.Deserialize<ShortSpeciality>(reader.GetString(15), jsonOptions),
-                                    }
-                                };
-
-                                defenseList.Add(defense);
-                            }
-                            catch (JsonException ex)
-                            {
-                                Console.WriteLine($"Error deserializing Defense with ID {reader.GetInt32(0)}: {ex.Message}");
-                            }
-                        }
-                    }
-                }
+                var defenses = await _defenseRepository.GetDefensesByDegreeAsync(degree);
+                return DefenseMapper.ToDtoList(defenses);
             }
-
-            return defenseList;
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to fetch defenses for degree {Degree}.", degree);
+                throw;
+            }
         }
 
 

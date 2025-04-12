@@ -2,7 +2,7 @@
 using OntuPhdApi.Controllers;
 using OntuPhdApi.Models.Programs;
 
-namespace OntuPhdApi.Repositories
+namespace OntuPhdApi.Repositories.Program
 {
     public interface IProgramRepository
     {

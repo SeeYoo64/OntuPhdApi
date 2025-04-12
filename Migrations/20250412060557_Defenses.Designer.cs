@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using OntuPhdApi.Data;
@@ -14,9 +15,11 @@ using OntuPhdApi.Models.Programs;
 namespace OntuPhdApi.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250412060557_Defenses")]
+    partial class Defenses
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -157,45 +160,77 @@ namespace OntuPhdApi.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Address")
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("address");
 
                     b.Property<string>("CandidateNameSurname")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("name_surname");
 
                     b.Property<DateTime>("DefenseDate")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("date_of_defense");
 
                     b.Property<string>("DefenseTitle")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("defense_name");
 
                     b.Property<List<DefenseFile>>("Files")
-                        .HasColumnType("jsonb");
+                        .HasColumnType("jsonb")
+                        .HasColumnName("files");
 
                     b.Property<List<CompositionOfRada>>("Members")
-                        .HasColumnType("jsonb");
+                        .HasColumnType("jsonb")
+                        .HasColumnName("members");
 
                     b.Property<string>("Message")
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("message");
 
                     b.Property<string>("Placeholder")
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("placeholder");
 
                     b.Property<int>("ProgramId")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("program_id");
 
                     b.Property<DateTime>("PublicationDate")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("date_of_publication");
 
                     b.PrimitiveCollection<List<string>>("ScienceTeachers")
-                        .HasColumnType("jsonb");
+                        .HasColumnType("jsonb")
+                        .HasColumnName("science_teachers");
 
                     b.HasKey("Id");
 
                     b.HasIndex("ProgramId");
 
                     b.ToTable("Defenses");
+                });
+
+            modelBuilder.Entity("OntuPhdApi.Models.Defense.ProgramDefense", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Degree")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ProgramDefense");
                 });
 
             modelBuilder.Entity("OntuPhdApi.Models.Programs.Job", b =>
@@ -430,7 +465,7 @@ namespace OntuPhdApi.Migrations
 
             modelBuilder.Entity("OntuPhdApi.Models.Defense.DefenseModel", b =>
                 {
-                    b.HasOne("OntuPhdApi.Models.Programs.ProgramModel", "Program")
+                    b.HasOne("OntuPhdApi.Models.Defense.ProgramDefense", "Program")
                         .WithMany()
                         .HasForeignKey("ProgramId")
                         .OnDelete(DeleteBehavior.Cascade)

@@ -5,7 +5,8 @@ using Microsoft.Extensions.Options;
 using Npgsql;
 using OntuPhdApi.Data;
 using OntuPhdApi.Middleware;
-using OntuPhdApi.Repositories;
+using OntuPhdApi.Repositories.Defense;
+using OntuPhdApi.Repositories.Program;
 using OntuPhdApi.Services;
 using OntuPhdApi.Services.ApplyDocuments;
 using OntuPhdApi.Services.Authorization;
@@ -64,10 +65,12 @@ internal class Program
         builder.Services.AddScoped<IEmployeesService, EmployeesService>();
 
         builder.Services.AddScoped<IDefenseService, DefenseService>();
+        builder.Services.AddScoped<IDefenseRepository, DefenseRepository>();
 
         builder.Services.AddScoped<ISpecialityNFieldsService, SpecialityNFieldsService>();
 
         builder.Services.AddScoped<ISessionService, SessionService>();
+
 
 
         builder.Services.AddCors(options =>

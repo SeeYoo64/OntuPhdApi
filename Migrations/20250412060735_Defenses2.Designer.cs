@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using OntuPhdApi.Data;
@@ -14,9 +15,11 @@ using OntuPhdApi.Models.Programs;
 namespace OntuPhdApi.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250412060735_Defenses2")]
+    partial class Defenses2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -196,6 +199,27 @@ namespace OntuPhdApi.Migrations
                     b.HasIndex("ProgramId");
 
                     b.ToTable("Defenses");
+                });
+
+            modelBuilder.Entity("OntuPhdApi.Models.Defense.ProgramDefense", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Degree")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ProgramDefense");
                 });
 
             modelBuilder.Entity("OntuPhdApi.Models.Programs.Job", b =>
@@ -430,7 +454,7 @@ namespace OntuPhdApi.Migrations
 
             modelBuilder.Entity("OntuPhdApi.Models.Defense.DefenseModel", b =>
                 {
-                    b.HasOne("OntuPhdApi.Models.Programs.ProgramModel", "Program")
+                    b.HasOne("OntuPhdApi.Models.Defense.ProgramDefense", "Program")
                         .WithMany()
                         .HasForeignKey("ProgramId")
                         .OnDelete(DeleteBehavior.Cascade)

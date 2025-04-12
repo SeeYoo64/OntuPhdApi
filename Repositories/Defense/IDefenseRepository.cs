@@ -1,0 +1,11 @@
+﻿using OntuPhdApi.Models.Defense;
+
+namespace OntuPhdApi.Repositories.Defense
+{
+    public interface IDefenseRepository
+    {
+        Task<List<DefenseModel>> GetAllDefensesAsync();
+        Task<DefenseModel> GetDefenseByIdAsync(int id);
+        Task<List<DefenseModel>> GetDefensesByDegreeAsync(string degree);
+    }
+}

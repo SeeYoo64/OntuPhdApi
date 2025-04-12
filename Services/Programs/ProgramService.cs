@@ -4,7 +4,7 @@ using NpgsqlTypes;
 using OntuPhdApi.Controllers;
 using OntuPhdApi.Data;
 using OntuPhdApi.Models.Programs;
-using OntuPhdApi.Repositories;
+using OntuPhdApi.Repositories.Program;
 using OntuPhdApi.Services.Files;
 using System.Text.Json;
 

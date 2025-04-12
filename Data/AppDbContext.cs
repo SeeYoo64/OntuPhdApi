@@ -2,6 +2,7 @@
 using System.Reflection.Emit;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using OntuPhdApi.Models.Defense;
 using OntuPhdApi.Models.Authorization;
 using OntuPhdApi.Models.Programs;
 
@@ -15,6 +16,9 @@ namespace OntuPhdApi.Data
         public DbSet<ProgramDocument> ProgramDocuments { get; set; }
         public DbSet<ProgramComponent> ProgramComponents { get; set; }
         public DbSet<Job> Jobs { get; set; }
+
+        public DbSet<DefenseModel> Defenses { get; set; }
+
         public DbSet<VerificationToken> VerificationTokens { get; set; }
         public DbSet<Account> Accounts { get; set; }
         public DbSet<Session> Sessions { get; set; }
@@ -25,6 +29,8 @@ namespace OntuPhdApi.Data
             ConfigureAuthEntities(modelBuilder);
 
             ConfigureProgramModel(modelBuilder);
+
+            ConfigureDefense(modelBuilder);
 
             ConfigureProgramDocument(modelBuilder);
             ConfigureProgramJobs(modelBuilder);
@@ -46,46 +52,31 @@ namespace OntuPhdApi.Data
 
                 // Поля с типом jsonb
                 entity.Property(e => e.FieldOfStudy)
-                      .HasColumnType("jsonb")
-                      .HasConversion(
-                          v => v == null ? null : JsonSerializer.Serialize(v, new JsonSerializerOptions()),
-                          v => v == null ? null : JsonSerializer.Deserialize<FieldOfStudy>(v, new JsonSerializerOptions()));
+                      .HasColumnType("jsonb"); 
 
                 entity.Property(e => e.Speciality)
-                      .HasColumnType("jsonb")
-                      .HasConversion(
-                          v => v == null ? null : JsonSerializer.Serialize(v, new JsonSerializerOptions()),
-                          v => v == null ? null : JsonSerializer.Deserialize<Speciality>(v, new JsonSerializerOptions()));
-
-                entity.Property(e => e.Form)
-                      .HasColumnType("jsonb")
-                      .HasConversion(
-                          v => v == null ? null : JsonSerializer.Serialize(v, new JsonSerializerOptions()),
-                          v => v == null ? null : JsonSerializer.Deserialize<List<string>>(v, new JsonSerializerOptions()));
-
-                entity.Property(e => e.Directions)
-                      .HasColumnType("jsonb")
-                      .HasConversion(
-                          v => v == null ? null : JsonSerializer.Serialize(v, new JsonSerializerOptions()),
-                          v => v == null ? null : JsonSerializer.Deserialize<List<string>>(v, new JsonSerializerOptions()));
+                      .HasColumnType("jsonb");
 
                 entity.Property(e => e.ProgramCharacteristics)
-                      .HasColumnType("jsonb")
-                      .HasConversion(
-                          v => v == null ? null : JsonSerializer.Serialize(v, new JsonSerializerOptions()),
-                          v => v == null ? null : JsonSerializer.Deserialize<ProgramCharacteristics>(v, new JsonSerializerOptions()));
+                      .HasColumnType("jsonb");
 
                 entity.Property(e => e.ProgramCompetence)
-                      .HasColumnType("jsonb")
-                      .HasConversion(
-                          v => v == null ? null : JsonSerializer.Serialize(v, new JsonSerializerOptions()),
-                          v => v == null ? null : JsonSerializer.Deserialize<ProgramCompetence>(v, new JsonSerializerOptions()));
+                      .HasColumnType("jsonb");
+
+                entity.Property(e => e.Form)
+                      .HasColumnType("jsonb");
+
+                entity.Property(e => e.Directions)
+                      .HasColumnType("jsonb");
+
+                entity.Property(e => e.ProgramCharacteristics)
+                      .HasColumnType("jsonb");
+
+                entity.Property(e => e.ProgramCompetence)
+                      .HasColumnType("jsonb");
 
                 entity.Property(e => e.Results)
-                      .HasColumnType("jsonb")
-                      .HasConversion(
-                          v => v == null ? null : JsonSerializer.Serialize(v, new JsonSerializerOptions()),
-                          v => v == null ? null : JsonSerializer.Deserialize<List<string>>(v, new JsonSerializerOptions()));
+                      .HasColumnType("jsonb");
 
                 // Связь один-к-одному с ProgramDocument
                 entity.HasOne(e => e.ProgramDocument)
@@ -105,6 +96,16 @@ namespace OntuPhdApi.Data
                       .HasForeignKey(e => e.ProgramId)
                       .OnDelete(DeleteBehavior.Cascade);
             });
+
+            modelBuilder.Ignore<FieldOfStudy>();
+            modelBuilder.Ignore<Speciality>();
+            modelBuilder.Ignore<ShortSpeciality>();
+            modelBuilder.Ignore<ProgramCharacteristics>();
+            modelBuilder.Ignore<ProgramCompetence>();
+            modelBuilder.Ignore<Area>();
+            modelBuilder.Ignore<DefenseFile>();
+            modelBuilder.Ignore<CompositionOfRada>();
+            modelBuilder.Ignore<MemberOfRada>();
         }
 
         private void ConfigureProgramComponent(ModelBuilder modelBuilder)
@@ -116,10 +117,7 @@ namespace OntuPhdApi.Data
                 entity.Property(e => e.ComponentName).IsRequired();
 
                 entity.Property(e => e.ControlForm)
-                      .HasColumnType("jsonb")
-                      .HasConversion(
-                          v => v == null ? null : JsonSerializer.Serialize(v, new JsonSerializerOptions()),
-                          v => v == null ? null : JsonSerializer.Deserialize<List<string>>(v, new JsonSerializerOptions()));
+                      .HasColumnType("jsonb");
             });
         }
 
@@ -149,6 +147,33 @@ namespace OntuPhdApi.Data
                 entity.Property(e => e.FileSize).IsRequired();
                 entity.Property(e => e.ContentType).IsRequired();
             });
+        }
+
+        private void ConfigureDefense(ModelBuilder modelBuilder)
+        {
+            // Конфигурация DefenseModel
+            modelBuilder.Entity<DefenseModel>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.CandidateNameSurname);
+                entity.Property(e => e.DefenseTitle);
+                entity.Property(e => e.ScienceTeachers).HasColumnType("jsonb");
+                entity.Property(e => e.DefenseDate);
+                entity.Property(e => e.Address);
+                entity.Property(e => e.Message);
+                entity.Property(e => e.Placeholder);
+                entity.Property(e => e.Members).HasColumnType("jsonb");
+                entity.Property(e => e.Files).HasColumnType("jsonb");
+                entity.Property(e => e.PublicationDate);
+                entity.Property(e => e.ProgramId);
+
+                // Связь с Program
+                entity.HasOne(d => d.Program)
+                      .WithMany()
+                      .HasForeignKey(d => d.ProgramId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
+
         }
 
 

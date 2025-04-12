@@ -8,7 +8,7 @@ using OntuPhdApi.Data;
 using OntuPhdApi.Models.Programs;
 using OntuPhdApi.Utilities;
 
-namespace OntuPhdApi.Repositories
+namespace OntuPhdApi.Repositories.Program
 {
     public class ProgramRepository : IProgramRepository
     {
