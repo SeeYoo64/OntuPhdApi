@@ -66,13 +66,13 @@ internal class Program
 
             });
 
+
+        var dataSourceBuilder = new NpgsqlDataSourceBuilder(builder.Configuration.GetConnectionString("DefaultConnection"));
+        dataSourceBuilder.EnableDynamicJson();
+        var dataSource = dataSourceBuilder.Build();
+
         builder.Services.AddDbContext<AppDbContext>(options =>
-        {
-            options.UseNpgsql(
-                builder.Configuration.GetConnectionString("DefaultConnection"),
-                npgsqlOptions => NpgsqlConnection.GlobalTypeMapper.EnableDynamicJson()
-            );
-        });
+            options.UseNpgsql(dataSource));
 
         // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
         builder.Services.AddEndpointsApiExplorer();

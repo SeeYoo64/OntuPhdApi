@@ -53,22 +53,6 @@ namespace OntuPhdApi.Controllers
             }
         }
 
-        [HttpGet("Count")]
-        public async Task<IActionResult> GetCountPrograms()
-        {
-            _logger.LogInformation("Fetching all programs.");
-            try
-            {
-                var programs = await _programService.GetPrograms();
-                return Ok(programs.Count);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to fetch programs.");
-                return StatusCode(500, "An error occurred while retrieving programs.");
-            }
-        }
-
 
         [HttpGet("degrees")]
         public async Task<IActionResult> GetProgramsDegrees([FromQuery] DegreeType? degree)
