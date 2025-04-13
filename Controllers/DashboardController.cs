@@ -27,7 +27,6 @@ namespace OntuPhdApi.Controllers
                 EmployeesCount = await _context.Employees.CountAsync(),
                 DefensesCount = await _context.Defenses.CountAsync()
 
-
             };
 
             return Ok(stats);

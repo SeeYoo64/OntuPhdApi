@@ -69,7 +69,7 @@ namespace OntuPhdApi.Controllers
                         user.Id, refreshToken);
             Response.Cookies.Append("refreshToken", refreshToken, new CookieOptions
             {
-                HttpOnly = true, // Недоступно для JavaScript
+                HttpOnly = false, // Недоступно для JavaScript
                 Secure = false,   // Только HTTPS
                 SameSite = SameSiteMode.Strict, // Защита от CSRF
                 Expires = DateTimeOffset.UtcNow.AddDays(90) // 90 дней
@@ -136,7 +136,7 @@ namespace OntuPhdApi.Controllers
                         user.Id, newRefreshToken);
             Response.Cookies.Append("refreshToken", newRefreshToken, new CookieOptions
             {
-                HttpOnly = true,
+                HttpOnly = false,
                 Secure = false,
                 SameSite = SameSiteMode.Strict,
                 Expires = DateTimeOffset.UtcNow.AddDays(90)
