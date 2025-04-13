@@ -50,7 +50,6 @@ internal class Program
                 IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
             };
 
-            
             options.Events = new JwtBearerEvents
             {
                 OnMessageReceived = context =>

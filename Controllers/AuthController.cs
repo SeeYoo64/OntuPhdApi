@@ -43,16 +43,9 @@ namespace OntuPhdApi.Controllers
 
             if (user == null)
             {
-                _logger.LogInformation("User not found, creating new user with email: {Email}", request.Email);
-                user = new User
-                {
-                    Email = request.Email,
-                    Name = request.Name ?? "User",
-                    EmailVerified = null
-                };
-                _context.Users.Add(user);
-                await _context.SaveChangesAsync();
-                _logger.LogInformation("Created new user: Id={Id}, Name={Name}, Email={Email}", user.Id, user.Name, user.Email);
+                _logger.LogInformation("User not found with email: {Email}", request.Email);
+
+                return Unauthorized(new { message = "User not found" });
             }
             else
             {
@@ -83,7 +76,7 @@ namespace OntuPhdApi.Controllers
                 HttpOnly = false, // Доступно для JavaScript
                 Secure = false,
                 SameSite = SameSiteMode.Strict,
-                Expires = DateTimeOffset.UtcNow.AddMinutes(15) // 15 минут
+                Expires = DateTimeOffset.UtcNow.AddMinutes(1) // 15 минут
             });
 
             var response = new
@@ -149,7 +142,7 @@ namespace OntuPhdApi.Controllers
                 HttpOnly = false,
                 Secure = false,
                 SameSite = SameSiteMode.Strict,
-                Expires = DateTimeOffset.UtcNow.AddMinutes(15)
+                Expires = DateTimeOffset.UtcNow.AddMinutes(1)
             });
 
             var response = new
