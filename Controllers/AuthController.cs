@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using OntuPhdApi.Data;
 using OntuPhdApi.Services.Authorization;
 using BCrypt.Net;
+using OntuPhdApi.Models.Authorization;
 
 
 namespace OntuPhdApi.Controllers
@@ -235,7 +236,109 @@ namespace OntuPhdApi.Controllers
             return Ok(response);
         }
 
+        [Authorize]
+        [HttpPost("create-admin")]
+        public async Task<IActionResult> CreateAdmin([FromBody] CreateAdminRequest request)
+        {
+            _logger.LogInformation("Starting CreateAdmin with request: Email={Email}", request.Email);
 
+            if (string.IsNullOrEmpty(request.Email))
+            {
+                _logger.LogError("CreateAdmin failed: Email is required");
+                return BadRequest(new { message = "Email is required" });
+            }
+
+            // Проверяем, не существует ли пользователь
+            var existingUser = await _context.Users
+                .FirstOrDefaultAsync(u => u.Email == request.Email);
+            if (existingUser != null)
+            {
+                _logger.LogError("CreateAdmin failed: User already exists with email: {Email}", request.Email);
+                return Conflict(new { message = "User with this email already exists" });
+            }
+
+            // Создаем нового админа
+            var user = new User
+            {
+                Email = request.Email,
+                Name = request.Name ?? "Admin",
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin"), // Дефолтный пароль
+                MustChangePassword = true // Требуется смена пароля
+            };
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+            _logger.LogInformation("Created new admin: Id={Id}, Name={Name}, Email={Email}, Role={Role}, MustChangePassword={MustChangePassword}",
+                user.Id, user.Name, user.Email, "User", user.MustChangePassword);
+
+            var response = new
+            {
+                user = new { user.Id, user.Name, user.Email}
+            };
+            return Ok(response);
+        }
+
+        [Authorize]
+        [HttpPost("change-password")]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+        {
+            _logger.LogInformation("Starting ChangePassword for user ID: {UserId}", User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+
+            if (string.IsNullOrEmpty(request.NewPassword))
+            {
+                _logger.LogError("ChangePassword failed: New password is required");
+                return BadRequest(new { message = "New password is required" });
+            }
+
+            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdString) || !int.TryParse(userIdString, out var userId))
+            {
+                _logger.LogError("ChangePassword failed: Invalid user ID in token");
+                return Unauthorized(new { message = "Invalid token" });
+            }
+
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null)
+            {
+                _logger.LogError("ChangePassword failed: User not found for ID: {UserId}", userId);
+                return NotFound(new { message = "User not found" });
+            }
+
+            // Проверяем старый пароль (для обычной смены пароля)
+            if (!user.MustChangePassword && string.IsNullOrEmpty(request.OldPassword))
+            {
+                _logger.LogError("ChangePassword failed: Old password is required for user ID: {UserId}", userId);
+                return BadRequest(new { message = "Old password is required" });
+            }
+
+            if (!user.MustChangePassword && !BCrypt.Net.BCrypt.Verify(request.OldPassword, user.PasswordHash))
+            {
+                _logger.LogError("ChangePassword failed: Invalid old password for user ID: {UserId}", userId);
+                return Unauthorized(new { message = "Invalid old password" });
+            }
+
+            // Обновляем пароль
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+            user.MustChangePassword = false; // Сбрасываем флаг
+            await _context.SaveChangesAsync();
+            _logger.LogInformation("Password changed for user: Id={Id}, Email={Email}, Role={Role}",
+                user.Id, user.Email, "User");
+
+            return Ok(new { message = "Password changed successfully" });
+        }
+
+
+    }
+
+    public class CreateAdminRequest
+    {
+        public string? Email { get; set; }
+        public string? Name { get; set; }
+    }
+
+    public class ChangePasswordRequest
+    {
+        public string? OldPassword { get; set; } // Не требуется для MustChangePassword
+        public string NewPassword { get; set; }
     }
 
     public class SignInRequest
