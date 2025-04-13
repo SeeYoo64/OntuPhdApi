@@ -128,7 +128,7 @@ internal class Program
         {
             options.AddPolicy("AllowAll", builder =>
             {
-                builder.WithOrigins("http://0.0.0.0:5124", "https://0.0.0.0:5125")
+                builder.WithOrigins("https://192.168.0.160:3000")
                        .AllowAnyHeader()
                        .AllowAnyMethod()
                        .AllowCredentials();
@@ -141,12 +141,7 @@ internal class Program
             {
                 Title = "OntuPhd API",
                 Version = "v1",
-                Description = """<div style="text-align: center;"><br>  <h2>Hello, FRONTENDERRR! 🌸</h2><br>   """ +
-                "<p>Сидит мать, дочь и сын на кухне ждут отца </p><br>" +
-                "<p> - С кем он щас поздоровается того он и выебет. </p><br>" +
-                "<p>Входит отец на кухню : </p><br>" +
-                "<p> - ВСЕМ ПРИВЕТ! ✨</p><br>" +
-                "<p><small>have fun</small></p><br></div>"
+                Description = """<div style="text-align: center;"><br>  <h2>Hello, FRONTENDERRR! 🌸</h2><br>   """ 
             });
         });
 
