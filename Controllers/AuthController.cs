@@ -3,8 +3,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OntuPhdApi.Data;
-using OntuPhdApi.Models.Authorization;
 using OntuPhdApi.Services.Authorization;
+using BCrypt.Net;
+
 
 namespace OntuPhdApi.Controllers
 {
@@ -22,18 +23,27 @@ namespace OntuPhdApi.Controllers
             _context = context;
             _authService = authService;
             _logger = logger;
+
         }
 
         // POST: /api/auth/signin
         [HttpPost("signin")]
         public async Task<IActionResult> SignIn([FromBody] SignInRequest request)
         {
-            _logger.LogInformation("Starting SignIn with request: Email={Email}, Name={Name}", request.Email, request.Name);
+            bool isValid = BCrypt.Net.BCrypt.Verify("tamitime", "$2a$11$.UdA2PZP3mu9g6dVftX7BuHKv/IVdUBkRRUpFzkOIESeGcJvT2qL6");
+            Console.WriteLine(isValid);
 
+            _logger.LogInformation("Starting SignIn with request: Email={Email}", request.Email);
             if (string.IsNullOrEmpty(request.Email))
             {
                 _logger.LogError("SignIn failed: Email is required");
                 return BadRequest(new { message = "Email is required" });
+            }
+
+            if (string.IsNullOrEmpty(request.Password))
+            {
+                _logger.LogError("SignIn failed: Password is required" + request.Password);
+                return BadRequest(new { message = "Password is required" });
             }
 
             // Поиск или создание пользователя
@@ -50,6 +60,13 @@ namespace OntuPhdApi.Controllers
             else
             {
                 _logger.LogInformation("Found existing user: Id={Id}, Name={Name}, Email={Email}", user.Id, user.Name, user.Email);
+                // Проверяем пароль
+
+                if (string.IsNullOrEmpty(user.PasswordHash) || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+                {
+                    _logger.LogError("SignIn failed: Invalid password for email: {Email}", request.Email);
+                    return Unauthorized(new { message = "Invalid email or password" });
+                }
             }
 
             // Генерация токенов
@@ -224,7 +241,7 @@ namespace OntuPhdApi.Controllers
     public class SignInRequest
     {
         public string? Email { get; set; }
-        public string? Name { get; set; }
+        public string? Password { get; set; }
     }
 
     public class RefreshTokenRequest
