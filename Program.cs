@@ -128,9 +128,10 @@ internal class Program
         {
             options.AddPolicy("AllowAll", builder =>
             {
-                builder.AllowAnyOrigin()
+                builder.WithOrigins("http://0.0.0.0:5124", "https://0.0.0.0:5125")
                        .AllowAnyHeader()
-                       .AllowAnyMethod();
+                       .AllowAnyMethod()
+                       .AllowCredentials();
             });
         });
 
@@ -150,7 +151,7 @@ internal class Program
         });
 
         var app = builder.Build();
-        app.UseCors("AllowAll");
+
 
         // Middleware
         app.UseRouting();
@@ -163,6 +164,7 @@ internal class Program
         });
 
         // app.UseHttpsRedirection();
+        app.UseCors("AllowAll");
 
         app.UseAuthentication();
         app.UseAuthorization();
