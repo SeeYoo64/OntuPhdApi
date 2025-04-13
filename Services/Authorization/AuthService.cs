@@ -12,15 +12,19 @@ namespace OntuPhdApi.Services.Authorization
     {
         private readonly AppDbContext _context;
         private readonly IConfiguration _configuration;
+        private readonly ILogger<AuthService> _logger;
 
-        public AuthService(AppDbContext context, IConfiguration configuration)
+        public AuthService(AppDbContext context, IConfiguration configuration, ILogger<AuthService> logger)
         {
             _context = context;
             _configuration = configuration;
+            _logger = logger;
         }
 
         public async Task<(string AccessToken, string RefreshToken)> GenerateTokensAsync(int userId)
         {
+            _logger.LogInformation("Generating tokens for user ID: {UserId}", userId);
+
             // Генерация Access Token
             var claims = new[]
             {
@@ -39,10 +43,17 @@ namespace OntuPhdApi.Services.Authorization
                 signingCredentials: creds
             );
 
-            var accessTokenString = new JwtSecurityTokenHandler().WriteToken(accessToken);
 
-            // Генерация Refresh Token
+
+            var accessTokenString = new JwtSecurityTokenHandler().WriteToken(accessToken);
+            _logger.LogInformation("Generated Access Token for user ID: {UserId}, Token: {AccessToken}",
+                userId, accessTokenString);
+
+            // Refresh Token
             var refreshToken = Guid.NewGuid().ToString();
+            _logger.LogInformation("Generated Refresh Token for user ID: {UserId}, Token: {RefreshToken}",
+                userId, refreshToken);
+
 
             // Сохранение Refresh Token в базе
             var account = await _context.Accounts
@@ -60,11 +71,15 @@ namespace OntuPhdApi.Services.Authorization
                     ExpiresAt = DateTimeOffset.UtcNow.AddDays(90).ToUnixTimeSeconds()
                 };
                 _context.Accounts.Add(account);
+                _logger.LogInformation("Created new Account for user ID: {UserId}, Account: Id={AccountId}, UserId={UserId}, RefreshToken={RefreshToken}, ExpiresAt={ExpiresAt}",
+                userId, account.Id, account.UserId, account.RefreshToken, account.ExpiresAt);
             }
             else
             {
                 account.RefreshToken = refreshToken;
                 account.ExpiresAt = DateTimeOffset.UtcNow.AddDays(90).ToUnixTimeSeconds();
+                _logger.LogInformation("Updated Account for user ID: {UserId}, Account: Id={AccountId}, UserId={UserId}, RefreshToken={RefreshToken}, ExpiresAt={ExpiresAt}",
+                    userId, account.Id, account.UserId, account.RefreshToken, account.ExpiresAt);
             }
 
             await _context.SaveChangesAsync();
@@ -74,12 +89,17 @@ namespace OntuPhdApi.Services.Authorization
 
         public async Task<User?> ValidateRefreshTokenAsync(string refreshToken)
         {
+            _logger.LogInformation("Validating Refresh Token: {RefreshToken}",
+            refreshToken);
+
             var account = await _context.Accounts
                 .Include(a => a.User)
                 .FirstOrDefaultAsync(a => a.RefreshToken == refreshToken && a.Type == "jwt");
 
             if (account == null || account.ExpiresAt < DateTimeOffset.UtcNow.ToUnixTimeSeconds())
             {
+                _logger.LogError("Refresh Token not found: {RefreshToken}",
+                refreshToken);
                 return null;
             }
 
@@ -88,6 +108,9 @@ namespace OntuPhdApi.Services.Authorization
 
         public async Task RevokeRefreshTokenAsync(string refreshToken)
         {
+            _logger.LogInformation("Revoking Refresh Token: {RefreshToken}",
+            refreshToken);
+
             var account = await _context.Accounts
                 .FirstOrDefaultAsync(a => a.RefreshToken == refreshToken && a.Type == "jwt");
 
@@ -96,7 +119,15 @@ namespace OntuPhdApi.Services.Authorization
                 account.RefreshToken = null;
                 account.ExpiresAt = null;
                 await _context.SaveChangesAsync();
+                _logger.LogInformation("Revoked Refresh Token, Account: Id={AccountId}, UserId={UserId}",
+                account.Id, account.UserId);
             }
+            else
+            {
+                _logger.LogWarning("Refresh Token not found for revocation: {RefreshToken}",
+                    refreshToken);
+            }
+
         }
     }
 }
