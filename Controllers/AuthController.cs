@@ -6,6 +6,7 @@ using OntuPhdApi.Data;
 using OntuPhdApi.Services.Authorization;
 using BCrypt.Net;
 using OntuPhdApi.Models.Authorization;
+using Microsoft.Extensions.Logging;
 
 
 namespace OntuPhdApi.Controllers
@@ -25,6 +26,25 @@ namespace OntuPhdApi.Controllers
             _authService = authService;
             _logger = logger;
 
+        }
+
+        [Authorize]
+        [HttpGet("admins")]
+        public async Task<IActionResult> GetAdmins()
+        {
+            _logger.LogInformation("Starting GetAdmins request for user ID: {UserId}",
+                User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+
+            var admins = await _context.Users
+                .Select(u => new
+                {
+                    u.Email,
+                    u.Image
+                })
+                .ToListAsync();
+
+            _logger.LogInformation("GetAdmins successful, found {Count} admins", admins.Count);
+            return Ok(new { admins });
         }
 
         // POST: /api/auth/signin
@@ -107,7 +127,6 @@ namespace OntuPhdApi.Controllers
 
         }
 
-        // GET: /api/auth/session
         [HttpPost("refresh")]
         public async Task<IActionResult> Refresh()
         {
