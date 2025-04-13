@@ -54,7 +54,7 @@ namespace OntuPhdApi.Controllers
             Response.Cookies.Append("refreshToken", refreshToken, new CookieOptions
             {
                 HttpOnly = true, // Недоступно для JavaScript
-                Secure = true,   // Только HTTPS
+                Secure = false,   // Только HTTPS
                 SameSite = SameSiteMode.Strict, // Защита от CSRF
                 Expires = DateTimeOffset.UtcNow.AddDays(90) // 90 дней
             });
@@ -63,7 +63,7 @@ namespace OntuPhdApi.Controllers
             Response.Cookies.Append("accessToken", accessToken, new CookieOptions
             {
                 HttpOnly = false, // Доступно для JavaScript
-                Secure = true,
+                Secure = false,
                 SameSite = SameSiteMode.Strict,
                 Expires = DateTimeOffset.UtcNow.AddMinutes(15) // 15 минут
             });
@@ -102,7 +102,7 @@ namespace OntuPhdApi.Controllers
             Response.Cookies.Append("refreshToken", newRefreshToken, new CookieOptions
             {
                 HttpOnly = true,
-                Secure = true,
+                Secure = false,
                 SameSite = SameSiteMode.Strict,
                 Expires = DateTimeOffset.UtcNow.AddDays(90)
             });
@@ -110,7 +110,7 @@ namespace OntuPhdApi.Controllers
             Response.Cookies.Append("accessToken", newAccessToken, new CookieOptions
             {
                 HttpOnly = false,
-                Secure = true,
+                Secure = false,
                 SameSite = SameSiteMode.Strict,
                 Expires = DateTimeOffset.UtcNow.AddMinutes(15)
             });
