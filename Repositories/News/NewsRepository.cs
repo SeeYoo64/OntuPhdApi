@@ -95,5 +95,27 @@ namespace OntuPhdApi.Repositories.News
         }
 
 
+        public async Task DeleteNewsAsync(int id)
+        {
+            _logger.LogInformation("Deleting news with ID {NewsId} from database.", id);
+            try
+            {
+                var news = await _context.News.FirstOrDefaultAsync(n => n.Id == id);
+                if (news == null)
+                {
+                    _logger.LogWarning("News with ID {NewsId} not found for deletion.", id);
+                    throw new KeyNotFoundException("News not found.");
+                }
+
+                _context.News.Remove(news);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting news with ID {NewsId}.", id);
+                throw;
+            }
+        }
+
     }
 }

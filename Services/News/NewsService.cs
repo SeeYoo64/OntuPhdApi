@@ -244,6 +244,59 @@ namespace OntuPhdApi.Services.News
             }
         }
 
+        public async Task DeleteNewsAsync(int id)
+        {
+            _logger.LogInformation("Deleting news with ID {NewsId}.", id);
+            try
+            {
+                // Находим новость
+                var news = await _newsRepository.GetNewsByIdAsync(id);
+                if (news == null)
+                {
+                    _logger.LogWarning("News with ID {NewsId} not found for deletion.", id);
+                    throw new KeyNotFoundException("News not found.");
+                }
+
+                // Удаляем связанные файлы
+                var newsDir = Path.Combine(_newsUploadsPath, news.Id.ToString());
+                if (Directory.Exists(newsDir))
+                {
+                    // Удаляем миниатюру
+                    if (!string.IsNullOrEmpty(news.ThumbnailPath))
+                    {
+                        var thumbnailPath = Path.Combine("wwwroot", news.ThumbnailPath.TrimStart('/'));
+                        if (File.Exists(thumbnailPath))
+                        {
+                            File.Delete(thumbnailPath);
+                        }
+                    }
+
+                    // Удаляем фотографии
+                    if (news.PhotoPaths != null && news.PhotoPaths.Any())
+                    {
+                        foreach (var photoPath in news.PhotoPaths)
+                        {
+                            var fullPath = Path.Combine("wwwroot", photoPath.TrimStart('/'));
+                            if (File.Exists(fullPath))
+                            {
+                                File.Delete(fullPath);
+                            }
+                        }
+                    }
+
+                    // Удаляем директорию
+                    Directory.Delete(newsDir, true);
+                }
+
+                // Удаляем новость из базы
+                await _newsRepository.DeleteNewsAsync(id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to delete news with ID {NewsId}.", id);
+                throw;
+            }
+        }
 
     }
 }

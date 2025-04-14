@@ -137,7 +137,26 @@ namespace OntuPhdApi.Controllers
             }
         }
 
-
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteNews(int id)
+        {
+            _logger.LogInformation("Deleting news with ID {NewsId}.", id);
+            try
+            {
+                await _newsService.DeleteNewsAsync(id);
+                return NoContent();
+            }
+            catch (KeyNotFoundException ex)
+            {
+                _logger.LogWarning("News with ID {NewsId} not found for deletion.", id);
+                return StatusCode(404, $"News with ID {id} not found");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to delete news with ID {NewsId}.", id);
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
 
     }
 }

@@ -9,5 +9,7 @@ namespace OntuPhdApi.Repositories.News
         Task<List<NewsModel>> GetLatestNewsAsync(int count);
         Task AddNewsAsync(NewsModel news);
         Task UpdateNewsAsync(NewsModel news);
+
+        Task DeleteNewsAsync(int id);
     }
 }

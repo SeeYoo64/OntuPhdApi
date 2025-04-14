@@ -9,5 +9,6 @@ namespace OntuPhdApi.Services.News
         Task<List<NewsLatestDto>> GetLatestNewsAsync(int count);
         Task AddNewsAsync(NewsCreateUpdateDto newsDto);
         Task UpdateNewsAsync(int id, NewsCreateUpdateDto newsDto);
+        Task DeleteNewsAsync(int id);
     }
 }
