@@ -115,13 +115,13 @@ namespace OntuPhdApi.Controllers
                 Expires = DateTimeOffset.UtcNow.AddMinutes(1) // 15 минут
             });
 
-
+            // Установка mustChangePassword Token в обычную куки
             _logger.LogInformation("Setting MustChangePassword cookie for user ID: {UserId}, Value: {Value}",
             user.Id, user.MustChangePassword);
             Response.Cookies.Append("mustChangePassword", user.MustChangePassword ? "true" : "false", new CookieOptions
             {
                 HttpOnly = false, 
-                Secure = true,
+                Secure = false,
                 SameSite = SameSiteMode.Strict,
                 Expires = DateTimeOffset.UtcNow.AddMinutes(15)
             });
@@ -199,7 +199,7 @@ namespace OntuPhdApi.Controllers
             Response.Cookies.Append("mustChangePassword", user.MustChangePassword ? "true" : "false", new CookieOptions
             {
                 HttpOnly = false,
-                Secure = true,
+                Secure = false,
                 SameSite = SameSiteMode.Strict,
                 Expires = DateTimeOffset.UtcNow.AddMinutes(15)
             });
@@ -361,7 +361,7 @@ namespace OntuPhdApi.Controllers
             Response.Cookies.Append("mustChangePassword", user.MustChangePassword ? "true" : "false", new CookieOptions
             {
                 HttpOnly = false,
-                Secure = true,
+                Secure = false,
                 SameSite = SameSiteMode.Strict,
                 Expires = DateTimeOffset.UtcNow.AddMinutes(15)
             });
