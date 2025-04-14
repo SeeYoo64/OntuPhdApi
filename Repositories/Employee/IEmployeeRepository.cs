@@ -8,5 +8,6 @@ namespace OntuPhdApi.Repositories.Employee
         Task<EmployeeModel> GetEmployeeByIdAsync(int id);
         Task AddEmployeeAsync(EmployeeModel employee);
         Task UpdateEmployeeAsync(EmployeeModel employee);
+        Task DeleteEmployeeAsync(int id);
     }
 }

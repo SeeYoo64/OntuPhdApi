@@ -9,8 +9,9 @@ namespace OntuPhdApi.Services.Employees
     public class EmployeesService : IEmployeesService
     {
         private readonly IEmployeeRepository _employeeRepository;
-        private readonly IProgramFileService _fileService; 
+        private readonly IProgramFileService _fileService;
         private readonly ILogger<EmployeesService> _logger;
+        private readonly string _employeesUploadsPath = Path.Combine("wwwroot", "Files", "Uploads", "Employees"); 
 
         public EmployeesService(
             IEmployeeRepository employeeRepository,
@@ -20,6 +21,12 @@ namespace OntuPhdApi.Services.Employees
             _employeeRepository = employeeRepository;
             _fileService = fileService;
             _logger = logger;
+
+            // Создаем директорию для загрузок, если она не существует
+            if (!Directory.Exists(_employeesUploadsPath))
+            {
+                Directory.CreateDirectory(_employeesUploadsPath);
+            }
         }
 
         public async Task<List<EmployeeModelDto>> GetEmployeesAsync()
@@ -73,14 +80,30 @@ namespace OntuPhdApi.Services.Employees
             {
                 var employee = EmployeeMapper.ToEntity(employeeDto);
 
+                // Добавляем сотрудника, чтобы получить ID
+                await _employeeRepository.AddEmployeeAsync(employee);
+
+                // Создаем директорию для файлов сотрудника
+                var employeeDir = Path.Combine(_employeesUploadsPath, employee.Id.ToString());
+                if (!Directory.Exists(employeeDir))
+                {
+                    Directory.CreateDirectory(employeeDir);
+                }
+
                 // Сохраняем фотографию, если она есть
                 if (employeeDto.Photo != null && employeeDto.Photo.Length > 0)
                 {
-                    var (filePath, _, _, _) = await _fileService.SaveProgramFileFromFormAsync(employeeDto.Name, employeeDto.Photo);
-                    employee.PhotoPath = filePath;
+                    var photoFileName = $"photo{employee.Id}{Path.GetExtension(employeeDto.Photo.FileName)}";
+                    var photoPath = Path.Combine(employeeDir, photoFileName);
+                    using (var stream = new FileStream(photoPath, FileMode.Create))
+                    {
+                        await employeeDto.Photo.CopyToAsync(stream);
+                    }
+                    employee.PhotoPath = $"/Files/Uploads/Employees/{employee.Id}/{photoFileName}";
+                    await _employeeRepository.UpdateEmployeeAsync(employee); // Обновляем с новым путем
                 }
 
-                await _employeeRepository.AddEmployeeAsync(employee);
+                // Второй вызов AddEmployeeAsync убран
             }
             catch (Exception ex)
             {
@@ -110,11 +133,33 @@ namespace OntuPhdApi.Services.Employees
 
                 EmployeeMapper.UpdateEntity(employee, employeeDto);
 
+                // Создаем директорию для файлов сотрудника, если её нет
+                var employeeDir = Path.Combine(_employeesUploadsPath, employee.Id.ToString());
+                if (!Directory.Exists(employeeDir))
+                {
+                    Directory.CreateDirectory(employeeDir);
+                }
+
                 // Обновляем фотографию, если она есть
                 if (employeeDto.Photo != null && employeeDto.Photo.Length > 0)
                 {
-                    var (filePath, _, _, _) = await _fileService.SaveProgramFileFromFormAsync(employeeDto.Name, employeeDto.Photo);
-                    employee.PhotoPath = filePath;
+                    // Удаляем старую фотографию, если она есть
+                    if (!string.IsNullOrEmpty(employee.PhotoPath))
+                    {
+                        var oldPhotoPath = Path.Combine("wwwroot", employee.PhotoPath.TrimStart('/'));
+                        if (File.Exists(oldPhotoPath))
+                        {
+                            File.Delete(oldPhotoPath);
+                        }
+                    }
+
+                    var photoFileName = $"photo{employee.Id}{Path.GetExtension(employeeDto.Photo.FileName)}";
+                    var photoPath = Path.Combine(employeeDir, photoFileName);
+                    using (var stream = new FileStream(photoPath, FileMode.Create))
+                    {
+                        await employeeDto.Photo.CopyToAsync(stream);
+                    }
+                    employee.PhotoPath = $"/Files/Uploads/Employees/{employee.Id}/{photoFileName}";
                 }
 
                 await _employeeRepository.UpdateEmployeeAsync(employee);
@@ -126,7 +171,46 @@ namespace OntuPhdApi.Services.Employees
             }
         }
 
+        public async Task DeleteEmployeeAsync(int id)
+        {
+            _logger.LogInformation("Deleting employee with ID {EmployeeId}.", id);
+            try
+            {
+                // Находим сотрудника
+                var employee = await _employeeRepository.GetEmployeeByIdAsync(id);
+                if (employee == null)
+                {
+                    _logger.LogWarning("Employee with ID {EmployeeId} not found for deletion.", id);
+                    throw new KeyNotFoundException("Employee not found.");
+                }
 
+                // Удаляем связанные файлы
+                var employeeDir = Path.Combine(_employeesUploadsPath, employee.Id.ToString());
+                if (Directory.Exists(employeeDir))
+                {
+                    // Удаляем фотографию
+                    if (!string.IsNullOrEmpty(employee.PhotoPath))
+                    {
+                        var photoPath = Path.Combine("wwwroot", employee.PhotoPath.TrimStart('/'));
+                        if (File.Exists(photoPath))
+                        {
+                            File.Delete(photoPath);
+                        }
+                    }
+
+                    // Удаляем директорию
+                    Directory.Delete(employeeDir, true);
+                }
+
+                // Удаляем сотрудника из базы
+                await _employeeRepository.DeleteEmployeeAsync(id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to delete employee with ID {EmployeeId}.", id);
+                throw;
+            }
+        }
 
     }
 }

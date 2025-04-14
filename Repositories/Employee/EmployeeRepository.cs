@@ -80,7 +80,27 @@ namespace OntuPhdApi.Repositories.Employee
         }
 
 
+        public async Task DeleteEmployeeAsync(int id)
+        {
+            _logger.LogInformation("Deleting employee with ID {EmployeeId} from database.", id);
+            try
+            {
+                var employee = await _context.Employees.FirstOrDefaultAsync(e => e.Id == id);
+                if (employee == null)
+                {
+                    _logger.LogWarning("Employee with ID {EmployeeId} not found for deletion.", id);
+                    throw new KeyNotFoundException("Employee not found.");
+                }
 
+                _context.Employees.Remove(employee);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting employee with ID {EmployeeId}.", id);
+                throw;
+            }
+        }
 
 
     }

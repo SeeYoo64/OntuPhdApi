@@ -8,5 +8,6 @@ namespace OntuPhdApi.Services.Employees
         Task<EmployeeModelDto> GetEmployeeByIdAsync(int id);
         Task AddEmployeeAsync(EmployeeCreateUpdateDto employeeDto);
         Task UpdateEmployeeAsync(int id, EmployeeCreateUpdateDto employeeDto);
+        Task DeleteEmployeeAsync(int id);
     }
 }

@@ -103,6 +103,27 @@ namespace OntuPhdApi.Controllers
             }
         }
 
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteEmployee(int id)
+        {
+            _logger.LogInformation("Deleting employee with ID {EmployeeId}.", id);
+            try
+            {
+                await _employeesService.DeleteEmployeeAsync(id);
+                return NoContent();
+            }
+            catch (KeyNotFoundException ex)
+            {
+                _logger.LogWarning("Employee with ID {EmployeeId} not found for deletion.", id);
+                return StatusCode(400, $"Employee with ID {id} not found for deletion.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to delete employee with ID {EmployeeId}.", id);
+                return StatusCode(500, "An error occurred while updating the employee.");
+            }
+        }
+
 
     }
 }
