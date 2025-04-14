@@ -19,13 +19,13 @@ namespace OntuPhdApi.Controllers
         private readonly AppDbContext _context;
         private readonly IAuthService _authService;
         private readonly ILogger<AuthController> _logger;
-
-        public AuthController(AppDbContext context, IAuthService authService, ILogger<AuthController> logger)
+        private readonly IWebHostEnvironment _environment;
+        public AuthController(AppDbContext context, IAuthService authService, ILogger<AuthController> logger, IWebHostEnvironment environment)
         {
             _context = context;
             _authService = authService;
             _logger = logger;
-
+            _environment = environment; 
         }
 
         [Authorize]
@@ -39,12 +39,53 @@ namespace OntuPhdApi.Controllers
                 .Select(u => new
                 {
                     u.Email,
-                    u.Image
+                    u.Name
                 })
                 .ToListAsync();
 
             _logger.LogInformation("GetAdmins successful, found {Count} admins", admins.Count);
             return Ok(new { admins });
+        }
+
+        [Authorize]
+        [HttpPost("create-admin")]
+        public async Task<IActionResult> CreateAdmin([FromBody] CreateAdminRequest request)
+        {
+            _logger.LogInformation("Starting CreateAdmin with request: Email={Email}", request.Email);
+
+            if (string.IsNullOrEmpty(request.Email))
+            {
+                _logger.LogError("CreateAdmin failed: Email is required");
+                return BadRequest(new { message = "Email is required" });
+            }
+
+            // Проверяем, не существует ли пользователь
+            var existingUser = await _context.Users
+                .FirstOrDefaultAsync(u => u.Email == request.Email);
+            if (existingUser != null)
+            {
+                _logger.LogError("CreateAdmin failed: User already exists with email: {Email}", request.Email);
+                return Conflict(new { message = "User with this email already exists" });
+            }
+
+            // Создаем нового админа
+            var user = new User
+            {
+                Email = request.Email,
+                Name = request.Name ?? "Admin",
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin"), // Дефолтный пароль
+                MustChangePassword = true // Требуется смена пароля
+            };
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+            _logger.LogInformation("Created new admin: Id={Id}, Name={Name}, Email={Email}, Role={Role}, MustChangePassword={MustChangePassword}",
+                user.Id, user.Name, user.Email, "User", user.MustChangePassword);
+
+            var response = new
+            {
+                user = new { user.Id, user.Name, user.Email }
+            };
+            return Ok(response);
         }
 
         // POST: /api/auth/signin
@@ -247,77 +288,6 @@ namespace OntuPhdApi.Controllers
         }
 
 
-        [Authorize]
-        [HttpGet("me")]
-        public async Task<IActionResult> GetCurrentUser()
-        {
-            _logger.LogInformation("Starting GetCurrentUser request");
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            _logger.LogInformation("Extracted user ID from token: {UserId}", userId);
-
-
-            _logger.LogInformation("Searching for user with ID: {UserId}", userId);
-            var user = await _context.Users.FindAsync(userId);
-
-
-
-            if (user == null)
-            {
-                _logger.LogError("GetCurrentUser failed: User not found for ID: {UserId}", userId);
-                return NotFound(new { message = "User not found" });
-            }
-
-            var response = new
-            {
-                user.Id,
-                user.Name,
-                user.Email
-            };
-            _logger.LogInformation("GetCurrentUser successful, response: Id={Id}, Name={Name}, Email={Email}",
-                response.Id, response.Name, response.Email);
-            return Ok(response);
-        }
-
-        [Authorize]
-        [HttpPost("create-admin")]
-        public async Task<IActionResult> CreateAdmin([FromBody] CreateAdminRequest request)
-        {
-            _logger.LogInformation("Starting CreateAdmin with request: Email={Email}", request.Email);
-
-            if (string.IsNullOrEmpty(request.Email))
-            {
-                _logger.LogError("CreateAdmin failed: Email is required");
-                return BadRequest(new { message = "Email is required" });
-            }
-
-            // Проверяем, не существует ли пользователь
-            var existingUser = await _context.Users
-                .FirstOrDefaultAsync(u => u.Email == request.Email);
-            if (existingUser != null)
-            {
-                _logger.LogError("CreateAdmin failed: User already exists with email: {Email}", request.Email);
-                return Conflict(new { message = "User with this email already exists" });
-            }
-
-            // Создаем нового админа
-            var user = new User
-            {
-                Email = request.Email,
-                Name = request.Name ?? "Admin",
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin"), // Дефолтный пароль
-                MustChangePassword = true // Требуется смена пароля
-            };
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
-            _logger.LogInformation("Created new admin: Id={Id}, Name={Name}, Email={Email}, Role={Role}, MustChangePassword={MustChangePassword}",
-                user.Id, user.Name, user.Email, "User", user.MustChangePassword);
-
-            var response = new
-            {
-                user = new { user.Id, user.Name, user.Email}
-            };
-            return Ok(response);
-        }
 
         [Authorize]
         [HttpPost("change-password")]
@@ -376,6 +346,137 @@ namespace OntuPhdApi.Controllers
             return Ok(new { message = "Password changed successfully" });
         }
 
+        [Authorize]
+        [HttpGet("me")]
+        public async Task<IActionResult> GetCurrentUser()
+        {
+            _logger.LogInformation("Starting GetCurrentUser request");
+
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            _logger.LogInformation("Extracted user ID from token: {UserId}", userId);
+
+
+
+            _logger.LogInformation("Searching for user with ID: {UserId}", userId);
+            var user = await _context.Users.FindAsync(userId);
+
+
+
+            if (user == null)
+            {
+                _logger.LogError("GetCurrentUser failed: User not found for ID: {UserId}", userId);
+                return NotFound(new { message = "User not found" });
+            }
+
+            // Формируем путь к аватарке
+            string? ImagePath = null;
+            if (!string.IsNullOrEmpty(user.Name) && !string.IsNullOrEmpty(user.Image))
+            {
+                // Экранируем недопустимые символы в имени
+                var safeName = user.Name.Replace("/", "_").Replace("\\", "_");
+                ImagePath = $"Files/Uploads/Users/{safeName}/{user.Image}";
+            }
+
+            var response = new
+            {
+                user.Id,
+                user.Name,
+                user.Email,
+                user.Image
+            };
+            _logger.LogInformation("GetCurrentUser successful, response: Id={Id}, Name={Name}, Email={Email}, ImagePath={ImagePath}",
+                response.Id, response.Name, response.Email, response.Image ?? "null");
+            return Ok(response);
+        }
+
+
+        [Authorize]
+        [HttpPost("upload-avatar")]
+        public async Task<IActionResult> UploadAvatar(IFormFile file)
+        {
+            _logger.LogInformation("Starting UploadAvatar request for user ID: {UserId}",
+                User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+
+            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdString) || !int.TryParse(userIdString, out var userId))
+            {
+                _logger.LogError("UploadAvatar failed: Invalid user ID in token");
+                return Unauthorized(new { message = "Invalid token" });
+            }
+
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null)
+            {
+                _logger.LogError("UploadAvatar failed: User not found for ID: {UserId}", userId);
+                return NotFound(new { message = "User not found" });
+            }
+
+            if (file == null || file.Length == 0)
+            {
+                _logger.LogError("UploadAvatar failed: No file provided for user ID: {UserId}", userId);
+                return BadRequest(new { message = "No file provided" });
+            }
+
+            // Проверка размера файла (5 МБ = 5 * 1024 * 1024 байт)
+            if (file.Length > 5 * 1024 * 1024)
+            {
+                _logger.LogError("UploadAvatar failed: File too large for user ID: {UserId}, Size: {Size}",
+                    userId, file.Length);
+                return BadRequest(new { message = "File size exceeds 5 MB" });
+            }
+
+            // Проверка MIME-типа
+            var allowedTypes = new[] { "image/png", "image/jpeg", "image/jpg" };
+            if (!allowedTypes.Contains(file.ContentType))
+            {
+                _logger.LogError("UploadAvatar failed: Invalid file type for user ID: {UserId}, Type: {Type}",
+                    userId, file.ContentType);
+                return BadRequest(new { message = "Only PNG, JPG, JPEG files are allowed" });
+            }
+
+            // Формируем путь
+            if (string.IsNullOrEmpty(user.Name))
+            {
+                _logger.LogError("UploadAvatar failed: User name is empty for user ID: {UserId}", userId);
+                return BadRequest(new { message = "User name is required" });
+            }
+
+            var safeName = string.Join("_", user.Name.Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries));
+            var uploadsDir = Path.Combine(_environment.WebRootPath, "Files", "Uploads", "Users", safeName);
+            Directory.CreateDirectory(uploadsDir); // Создаём папку, если нет
+
+            // Генерируем уникальное имя файла
+            var extension = Path.GetExtension(file.FileName).ToLower();
+            var fileName = $"avatar_{DateTime.UtcNow:yyyyMMddHHmmss}{extension}";
+            var filePath = Path.Combine(uploadsDir, fileName);
+
+            // Сохраняем файл
+            try
+            {
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await file.CopyToAsync(stream);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "UploadAvatar failed: Error saving file for user ID: {UserId}, Path: {Path}",
+                    userId, filePath);
+                return StatusCode(500, new { message = "Error saving file" });
+            }
+
+            // Обновляем пользователя
+            user.Image = fileName;
+            await _context.SaveChangesAsync();
+            _logger.LogInformation("Updated user image for user ID: {UserId}, Image: {Image}", userId, fileName);
+
+            // Формируем виртуальный путь
+            var imagePath = $"Files/Uploads/Users/{safeName}/{fileName}";
+            _logger.LogInformation("UploadAvatar successful for user ID: {UserId}, ImagePath: {ImagePath}",
+                userId, imagePath);
+
+            return Ok(new { imagePath });
+        }
 
     }
 

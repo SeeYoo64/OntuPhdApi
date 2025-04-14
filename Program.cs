@@ -154,6 +154,8 @@ internal class Program
             });
         });
 
+
+
         builder.Services.AddSwaggerGen(c =>
         {
             c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
@@ -179,6 +181,8 @@ internal class Program
 
         // app.UseHttpsRedirection();
         app.UseCors("AllowAll");
+
+        app.UseStaticFiles();
 
         app.UseAuthentication();
         app.UseAuthorization();
