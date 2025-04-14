@@ -51,8 +51,6 @@ namespace OntuPhdApi.Controllers
         [HttpPost("signin")]
         public async Task<IActionResult> SignIn([FromBody] SignInRequest request)
         {
-            bool isValid = BCrypt.Net.BCrypt.Verify("tamitime", "$2a$11$.UdA2PZP3mu9g6dVftX7BuHKv/IVdUBkRRUpFzkOIESeGcJvT2qL6");
-            Console.WriteLine(isValid);
 
             _logger.LogInformation("Starting SignIn with request: Email={Email}", request.Email);
             if (string.IsNullOrEmpty(request.Email))
@@ -117,6 +115,18 @@ namespace OntuPhdApi.Controllers
                 Expires = DateTimeOffset.UtcNow.AddMinutes(1) // 15 минут
             });
 
+
+            _logger.LogInformation("Setting MustChangePassword cookie for user ID: {UserId}, Value: {Value}",
+            user.Id, user.MustChangePassword);
+            Response.Cookies.Append("mustChangePassword", user.MustChangePassword ? "true" : "false", new CookieOptions
+            {
+                HttpOnly = false, 
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                Expires = DateTimeOffset.UtcNow.AddMinutes(15)
+            });
+
+
             var response = new
             {
                 user = new { user.Id, user.Name, user.Email }
@@ -152,6 +162,7 @@ namespace OntuPhdApi.Controllers
                 _logger.LogError("Refresh failed: Invalid or expired refresh token");
                 Response.Cookies.Delete("refreshToken");
                 Response.Cookies.Delete("accessToken");
+                Response.Cookies.Delete("mustChangePassword");
                 return Unauthorized(new { message = "Invalid or expired refresh token" });
             }
             _logger.LogInformation("Refresh token validated, user: Id={Id}, Name={Name}, Email={Email}",
@@ -180,6 +191,17 @@ namespace OntuPhdApi.Controllers
                 Secure = false,
                 SameSite = SameSiteMode.Strict,
                 Expires = DateTimeOffset.UtcNow.AddMinutes(1)
+            });
+
+            _logger.LogInformation("Setting MustChangePassword cookie for user ID: {UserId}, Value: {Value}",
+            user.Id, user.MustChangePassword);
+
+            Response.Cookies.Append("mustChangePassword", user.MustChangePassword ? "true" : "false", new CookieOptions
+            {
+                HttpOnly = false,
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                Expires = DateTimeOffset.UtcNow.AddMinutes(15)
             });
 
             var response = new
@@ -219,7 +241,8 @@ namespace OntuPhdApi.Controllers
             Response.Cookies.Delete("refreshToken");
             _logger.LogInformation("Deleting accessToken cookie");
             Response.Cookies.Delete("accessToken");
-
+            _logger.LogInformation("Deleting mustChangePassword cookie");
+            Response.Cookies.Delete("mustChangePassword");
             return Ok(new { message = "Signed out" });
         }
 
@@ -334,6 +357,14 @@ namespace OntuPhdApi.Controllers
                 _logger.LogError("ChangePassword failed: Invalid old password for user ID: {UserId}", userId);
                 return Unauthorized(new { message = "Invalid old password" });
             }
+            Response.Cookies.Delete("mustChangePassword");
+            Response.Cookies.Append("mustChangePassword", user.MustChangePassword ? "true" : "false", new CookieOptions
+            {
+                HttpOnly = false,
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                Expires = DateTimeOffset.UtcNow.AddMinutes(15)
+            });
 
             // Обновляем пароль
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
