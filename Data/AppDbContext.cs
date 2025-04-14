@@ -6,6 +6,7 @@ using OntuPhdApi.Models.Defense;
 using OntuPhdApi.Models.Authorization;
 using OntuPhdApi.Models.Programs;
 using OntuPhdApi.Models.Employees;
+using OntuPhdApi.Models.News;
 
 namespace OntuPhdApi.Data
 {
@@ -22,6 +23,8 @@ namespace OntuPhdApi.Data
 
         public DbSet<EmployeeModel> Employees { get; set; }
 
+        public DbSet<NewsModel> News { get; set; }
+
         public DbSet<VerificationToken> VerificationTokens { get; set; }
         public DbSet<Account> Accounts { get; set; }
         public DbSet<User> Users { get; set; }
@@ -29,16 +32,24 @@ namespace OntuPhdApi.Data
         {
             base.OnModelCreating(modelBuilder);
             ConfigureAuthEntities(modelBuilder);
-
-            ConfigureProgramModel(modelBuilder);
+            ConfigureProgramEntity(modelBuilder);
 
             ConfigureDefense(modelBuilder);
 
             ConfigureEmployees(modelBuilder);
 
+            ConfigureNews(modelBuilder);
+
+
+
+        }
+
+        private void ConfigureProgramEntity(ModelBuilder modelBuilder)
+        {
             ConfigureProgramDocument(modelBuilder);
             ConfigureProgramJobs(modelBuilder);
-            ConfigureProgramComponent(modelBuilder);    
+            ConfigureProgramComponent(modelBuilder);
+            ConfigureProgramModel(modelBuilder);
         }
 
         private void ConfigureProgramModel(ModelBuilder modelBuilder)
@@ -191,6 +202,26 @@ namespace OntuPhdApi.Data
             });
         }
 
+        private void ConfigureNews(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<NewsModel>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Title).IsRequired();
+                entity.Property(e => e.Summary).IsRequired();
+                entity.Property(e => e.MainTag).IsRequired();
+                entity.Property(e => e.OtherTags).HasColumnType("jsonb");
+                entity.Property(e => e.PublicationDate);
+                entity.Property(e => e.ThumbnailPath);
+                entity.Property(e => e.PhotoPaths).HasColumnType("jsonb");
+                entity.Property(e => e.Body).HasColumnType("text");
+            });
+        }
+
+
+
+
+
         private void ConfigureAuthEntities(ModelBuilder modelBuilder)
         {
             ConfigureUser(modelBuilder);
@@ -229,7 +260,6 @@ namespace OntuPhdApi.Data
                       .OnDelete(DeleteBehavior.Cascade);
             });
         }
-
 
         private void ConfigureVerificationToken(ModelBuilder modelBuilder)
         {

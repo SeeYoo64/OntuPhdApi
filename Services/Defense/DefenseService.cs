@@ -2,7 +2,7 @@
 using OntuPhdApi.Models.Defense;
 using OntuPhdApi.Models.Programs;
 using OntuPhdApi.Repositories.Defense;
-using OntuPhdApi.Utilities;
+using OntuPhdApi.Utilities.Mappers;
 using System.Text.Json;
 
 namespace OntuPhdApi.Services.Defense

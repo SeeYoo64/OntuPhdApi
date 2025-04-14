@@ -1,215 +1,249 @@
-﻿using Npgsql;
+﻿using Microsoft.AspNetCore.Http.HttpResults;
+using Npgsql;
 using OntuPhdApi.Models.News;
+using OntuPhdApi.Repositories.News;
+using OntuPhdApi.Services.Files;
+using OntuPhdApi.Utilities.Mappers;
 using System.Text.Json;
 
 namespace OntuPhdApi.Services.News
 {
     public class NewsService : INewsService
     {
+        private readonly INewsRepository _newsRepository;
+        private readonly IProgramFileService _fileService; 
+        private readonly ILogger<NewsService> _logger;
+        private readonly string _newsUploadsPath = Path.Combine("wwwroot", "Files", "Uploads", "News");
 
-        private readonly string _connectionString;
-
-        public NewsService(IConfiguration configuration)
+        public NewsService(
+            INewsRepository newsRepository,
+            IProgramFileService fileService,
+            ILogger<NewsService> logger)
         {
+            _newsRepository = newsRepository;
+            _fileService = fileService;
+            _logger = logger;
 
-            _connectionString = configuration.GetConnectionString("DefaultConnection");
-
+            // Создаем директорию для загрузок, если она не существует
+            if (!Directory.Exists(_newsUploadsPath))
+            {
+                Directory.CreateDirectory(_newsUploadsPath);
+            }
         }
 
-        public List<NewsModel> GetNews()
+        public async Task<List<NewsDto>> GetNewsAsync()
         {
-            var newsList = new List<NewsModel>();
-            var jsonOptions = new JsonSerializerOptions
+            _logger.LogInformation("Fetching all news.");
+            try
             {
-                PropertyNameCaseInsensitive = true
-            };
-
-            using (var connection = new NpgsqlConnection(_connectionString))
+                var news = await _newsRepository.GetAllNewsAsync();
+                return NewsMapper.ToDtoList(news);
+            }
+            catch (Exception ex)
             {
-                connection.Open();
+                _logger.LogError(ex, "Failed to fetch news.");
+                throw;
+            }
+        }
 
-                using (var cmd = new NpgsqlCommand("SELECT Id, Title, Summary, MainTag, " +
-                    "Othertags, Date, Thumbnail, Photos, Body FROM News", connection))
-                using (var reader = cmd.ExecuteReader())
+        public async Task<NewsViewDto> GetNewsByIdAsync(int id)
+        {
+            _logger.LogInformation("Fetching news with ID {NewsId}.", id);
+            try
+            {
+                var news = await _newsRepository.GetNewsByIdAsync(id);
+                if (news == null)
                 {
-                    while (reader.Read())
+                    _logger.LogWarning("News with ID {NewsId} not found.", id);
+                    return null;
+                }
+                return NewsMapper.ToViewDto(news);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to fetch news with ID {NewsId}.", id);
+                throw;
+            }
+        }
+
+        public async Task<List<NewsLatestDto>> GetLatestNewsAsync(int count)
+        {
+            _logger.LogInformation("Fetching {Count} latest news.", count);
+            try
+            {
+                if (count <= 0)
+                {
+                    _logger.LogWarning("Invalid count parameter: {Count}.", count);
+                    throw new ArgumentException("Count must be greater than zero.");
+                }
+
+                var news = await _newsRepository.GetLatestNewsAsync(count);
+                return NewsMapper.ToLatestDtoList(news);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to fetch {Count} latest news.", count);
+                throw;
+            }
+        }
+
+        public async Task AddNewsAsync(NewsCreateUpdateDto newsDto)
+        {
+            if (newsDto == null || string.IsNullOrEmpty(newsDto.Title) || string.IsNullOrEmpty(newsDto.Summary) || string.IsNullOrEmpty(newsDto.MainTag))
+            {
+                _logger.LogWarning("Invalid news data provided for creation.");
+                throw new ArgumentException("Title, Summary, and MainTag are required.");
+            }
+
+            _logger.LogInformation("Adding new news with title {NewsTitle}.", newsDto.Title);
+            try
+            {
+                var news = NewsMapper.ToEntity(newsDto);
+
+                // Добавляем новость, чтобы получить ID
+                await _newsRepository.AddNewsAsync(news);
+
+                // Создаем директорию для файлов новости
+                var newsDir = Path.Combine(_newsUploadsPath, news.Id.ToString());
+                if (!Directory.Exists(newsDir))
+                {
+                    Directory.CreateDirectory(newsDir);
+                }
+
+                // Сохраняем миниатюру
+                if (newsDto.Thumbnail != null && newsDto.Thumbnail.Length > 0)
+                {
+                    var thumbnailFileName = $"thumb{news.Id}{Path.GetExtension(newsDto.Thumbnail.FileName)}";
+                    var thumbnailPath = Path.Combine(newsDir, thumbnailFileName);
+                    using (var stream = new FileStream(thumbnailPath, FileMode.Create))
                     {
-                        try
+                        await newsDto.Thumbnail.CopyToAsync(stream);
+                    }
+                    news.ThumbnailPath = $"/Files/Uploads/News/{news.Id}/{thumbnailFileName}";
+                }
+
+                // Сохраняем фотографии
+                if (newsDto.Photos != null && newsDto.Photos.Any())
+                {
+                    news.PhotoPaths = new List<string>();
+                    foreach (var photo in newsDto.Photos)
+                    {
+                        if (photo.Length > 0)
                         {
-                            newsList.Add(new NewsModel
+                            var uniqueId = Guid.NewGuid().ToString();
+                            var photoFileName = $"photo-{uniqueId}{Path.GetExtension(photo.FileName)}";
+                            var photoPath = Path.Combine(newsDir, photoFileName);
+                            using (var stream = new FileStream(photoPath, FileMode.Create))
                             {
-                                Id = reader.GetInt32(0),
-                                Title = reader.GetString(1),
-                                Summary = reader.GetString(2),
-                                MainTag = reader.GetString(3),
-                                OtherTags = JsonSerializer.Deserialize<List<string>>(reader.GetString(4), jsonOptions),
-                                Date = reader.GetDateTime(5),
-                                Thumbnail = reader.GetString(6),
-                                Photos = JsonSerializer.Deserialize<List<string>>(reader.GetString(7), jsonOptions),
-                                Body = reader.GetString(8)
-                            });
-                        }
-                        catch (JsonException ex)
-                        {
-                            Console.WriteLine($"Error deserializing News with ID {reader.GetInt32(0)}: {ex.Message}");
+                                await photo.CopyToAsync(stream);
+                            }
+                            news.PhotoPaths.Add($"/Files/Uploads/News/{news.Id}/{photoFileName}");
                         }
                     }
                 }
-            }
 
-            return newsList;
+                // Обновляем новость с путями к файлам
+                await _newsRepository.UpdateNewsAsync(news);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to add news with title {NewsTitle}.", newsDto.Title);
+                throw;
+            }
         }
 
-        public NewsView GetNewsById(int id)
+        public async Task UpdateNewsAsync(int id, NewsCreateUpdateDto newsDto)
         {
-            NewsView news = null;
-            var jsonOptions = new JsonSerializerOptions
+            if (newsDto == null || string.IsNullOrEmpty(newsDto.Title) || string.IsNullOrEmpty(newsDto.Summary) || string.IsNullOrEmpty(newsDto.MainTag))
             {
-                PropertyNameCaseInsensitive = true
-            };
+                _logger.LogWarning("Invalid news data provided for update.");
+                throw new ArgumentException("Title, Summary, and MainTag are required.");
+            }
 
-            using (var connection = new NpgsqlConnection(_connectionString))
+            _logger.LogInformation("Updating news with ID {NewsId}.", id);
+            try
             {
-                connection.Open();
-
-                using (var cmd = new NpgsqlCommand("SELECT Id, Title, " +
-                    "MainTag, OtherTags, Date, Photos, Body FROM News WHERE Id = @id", connection))
+                var news = await _newsRepository.GetNewsByIdAsync(id);
+                if (news == null)
                 {
-                    cmd.Parameters.AddWithValue("id", id);
-                    using (var reader = cmd.ExecuteReader())
+                    _logger.LogWarning("News with ID {NewsId} not found.", id);
+                    throw new KeyNotFoundException("News not found.");
+                }
+
+                NewsMapper.UpdateEntity(news, newsDto);
+
+                // Создаем директорию для файлов новости, если её нет
+                var newsDir = Path.Combine(_newsUploadsPath, news.Id.ToString());
+                if (!Directory.Exists(newsDir))
+                {
+                    Directory.CreateDirectory(newsDir);
+                }
+
+                // Обновляем миниатюру, если она загружена
+                if (newsDto.Thumbnail != null && newsDto.Thumbnail.Length > 0)
+                {
+                    // Удаляем старую миниатюру, если она есть
+                    if (!string.IsNullOrEmpty(news.ThumbnailPath))
                     {
-                        if (reader.Read())
+                        var oldThumbnailPath = Path.Combine("wwwroot", news.ThumbnailPath.TrimStart('/'));
+                        if (File.Exists(oldThumbnailPath))
                         {
-                            try
+                            File.Delete(oldThumbnailPath);
+                        }
+                    }
+
+                    var thumbnailFileName = $"thumb{news.Id}{Path.GetExtension(newsDto.Thumbnail.FileName)}";
+                    var thumbnailPath = Path.Combine(newsDir, thumbnailFileName);
+                    using (var stream = new FileStream(thumbnailPath, FileMode.Create))
+                    {
+                        await newsDto.Thumbnail.CopyToAsync(stream);
+                    }
+                    news.ThumbnailPath = $"/Files/Uploads/News/{news.Id}/{thumbnailFileName}";
+                }
+
+                // Обновляем фотографии, если они загружены
+                if (newsDto.Photos != null && newsDto.Photos.Any())
+                {
+                    // Удаляем старые фотографии, если они есть
+                    if (news.PhotoPaths != null && news.PhotoPaths.Any())
+                    {
+                        foreach (var oldPhotoPath in news.PhotoPaths)
+                        {
+                            var fullPath = Path.Combine("wwwroot", oldPhotoPath.TrimStart('/'));
+                            if (File.Exists(fullPath))
                             {
-                                news = new NewsView
-                                {
-                                    Id = reader.GetInt32(0),
-                                    Title = reader.GetString(1),
-                                    MainTag = reader.GetString(2),
-                                    OtherTags = JsonSerializer.Deserialize<List<string>>(reader.GetString(3), jsonOptions),
-                                    Date = reader.GetDateTime(4),
-                                    Photos = JsonSerializer.Deserialize<List<string>>(reader.GetString(5), jsonOptions),
-                                    Body = reader.GetString(6)
-                                };
-                            }
-                            catch (JsonException ex)
-                            {
-                                throw new Exception($"Error deserializing News with ID {id}: {ex.Message}");
+                                File.Delete(fullPath);
                             }
                         }
                     }
-                }
-            }
 
-            return news;
-        }
-
-        public void UpdateNews(NewsModel news)
-        {
-            var jsonOptions = new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            };
-
-            using (var connection = new NpgsqlConnection(_connectionString))
-            {
-                connection.Open();
-
-                using (var cmd = new NpgsqlCommand(
-                    "UPDATE News SET Title = @title, Summary = @summary, MainTag = @mainTag, OtherTags = @otherTags, " +
-                    "Date = @date, Thumbnail = @thumbnail, Photos = @photos, Body = @body WHERE Id = @id", connection))
-                {
-                    cmd.Parameters.AddWithValue("id", news.Id);
-                    cmd.Parameters.AddWithValue("title", news.Title);
-                    cmd.Parameters.AddWithValue("summary", news.Summary);
-                    cmd.Parameters.AddWithValue("mainTag", news.MainTag);
-                    cmd.Parameters.AddWithValue("otherTags", JsonSerializer.Serialize(news.OtherTags, jsonOptions));
-                    cmd.Parameters.AddWithValue("date", news.Date);
-                    cmd.Parameters.AddWithValue("thumbnail", news.Thumbnail);
-                    cmd.Parameters.AddWithValue("photos", JsonSerializer.Serialize(news.Photos, jsonOptions));
-                    cmd.Parameters.AddWithValue("body", JsonSerializer.Serialize(news.Body, jsonOptions));
-                    cmd.ExecuteNonQuery();
-                }
-            }
-        }
-
-        public List<NewsLatest> GetLatestNews(int count = 4)
-        {
-            var newsList = new List<NewsLatest>();
-            var jsonOptions = new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            };
-
-            using (var connection = new NpgsqlConnection(_connectionString))
-            {
-                connection.Open();
-
-                using (var cmd = new NpgsqlCommand(
-                    "SELECT Id, Title, Summary, MainTag, Date, Thumbnail " +
-                    "FROM News " +
-                    "ORDER BY Date DESC " +
-                    "LIMIT @count", connection))
-                {
-                    cmd.Parameters.AddWithValue("count", count);
-                    using (var reader = cmd.ExecuteReader())
+                    // Сохраняем новые фотографии
+                    news.PhotoPaths = new List<string>();
+                    foreach (var photo in newsDto.Photos)
                     {
-                        while (reader.Read())
+                        if (photo.Length > 0)
                         {
-                            try
+                            var uniqueId = Guid.NewGuid().ToString();
+                            var photoFileName = $"photo-{uniqueId}{Path.GetExtension(photo.FileName)}";
+                            var photoPath = Path.Combine(newsDir, photoFileName);
+                            using (var stream = new FileStream(photoPath, FileMode.Create))
                             {
-                                newsList.Add(new NewsLatest
-                                {
-                                    Id = reader.GetInt32(0),
-                                    Title = reader.GetString(1),
-                                    Summary = reader.GetString(2),
-                                    MainTag = reader.GetString(3),
-                                    Date = reader.GetDateTime(4),
-                                    Thumbnail = reader.GetString(5),
-                                });
+                                await photo.CopyToAsync(stream);
                             }
-                            catch (JsonException ex)
-                            {
-                                Console.WriteLine($"Error deserializing News with ID {reader.GetInt32(0)}: {ex.Message}");
-                            }
+                            news.PhotoPaths.Add($"/Files/Uploads/News/{news.Id}/{photoFileName}");
                         }
                     }
                 }
+
+                await _newsRepository.UpdateNewsAsync(news);
             }
-
-            return newsList;
-        }
-
-        public void AddNews(NewsModel news)
-        {
-            var jsonOptions = new JsonSerializerOptions
+            catch (Exception ex)
             {
-                PropertyNameCaseInsensitive = true
-            };
-
-            using (var connection = new NpgsqlConnection(_connectionString))
-            {
-                connection.Open();
-
-                using (var cmd = new NpgsqlCommand(
-                    "INSERT INTO News (Title, Summary, MainTag, OtherTags, Date, Thumbnail, Photos, Body) " +
-                    "VALUES (@title, @summary, @mainTag, @otherTags, @date, @thumbnail, @photos, @body) RETURNING Id", connection))
-                {
-                    cmd.Parameters.AddWithValue("title", news.Title);
-                    cmd.Parameters.AddWithValue("summary", news.Summary);
-                    cmd.Parameters.AddWithValue("mainTag", news.MainTag);
-                    cmd.Parameters.Add(new NpgsqlParameter("otherTags", NpgsqlTypes.NpgsqlDbType.Jsonb) { Value = JsonSerializer.Serialize(news.OtherTags, jsonOptions) });
-                    cmd.Parameters.AddWithValue("date", news.Date);
-                    cmd.Parameters.AddWithValue("thumbnail", news.Thumbnail);
-                    cmd.Parameters.Add(new NpgsqlParameter("photos", NpgsqlTypes.NpgsqlDbType.Jsonb) { Value = JsonSerializer.Serialize(news.Photos, jsonOptions) });
-                    cmd.Parameters.Add(new NpgsqlParameter("body", NpgsqlTypes.NpgsqlDbType.Jsonb) { Value = JsonSerializer.Serialize(news.Body, jsonOptions) });
-                    news.Id = (int)cmd.ExecuteScalar();
-                }
+                _logger.LogError(ex, "Failed to update news with ID {NewsId}.", id);
+                throw;
             }
         }
-    
-    
-    
+
+
     }
 }

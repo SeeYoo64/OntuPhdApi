@@ -10,6 +10,7 @@ using Npgsql;
 using OntuPhdApi.Data;
 using OntuPhdApi.Repositories.Defense;
 using OntuPhdApi.Repositories.Employee;
+using OntuPhdApi.Repositories.News;
 using OntuPhdApi.Repositories.Program;
 using OntuPhdApi.Services;
 using OntuPhdApi.Services.ApplyDocuments;
@@ -131,6 +132,7 @@ internal class Program
 
         builder.Services.AddScoped<IApplyDocumentsService, ApplyDocumentsService>();
 
+        builder.Services.AddScoped<INewsRepository, NewsRepository>();
         builder.Services.AddScoped<INewsService, NewsService>();
 
         builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();

@@ -202,6 +202,48 @@ namespace OntuPhdApi.Migrations
                     b.ToTable("Employees");
                 });
 
+            modelBuilder.Entity("OntuPhdApi.Models.News.NewsModel", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("MainTag")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.PrimitiveCollection<List<string>>("OtherTags")
+                        .HasColumnType("jsonb");
+
+                    b.PrimitiveCollection<List<string>>("PhotoPaths")
+                        .HasColumnType("jsonb");
+
+                    b.Property<DateTime>("PublicationDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Summary")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ThumbnailPath")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("News");
+                });
+
             modelBuilder.Entity("OntuPhdApi.Models.Programs.Job", b =>
                 {
                     b.Property<int>("Id")
@@ -219,9 +261,6 @@ namespace OntuPhdApi.Migrations
                     b.Property<int>("ProgramId")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("ProgramModelId")
-                        .HasColumnType("integer");
-
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasColumnType("text")
@@ -229,7 +268,7 @@ namespace OntuPhdApi.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ProgramModelId");
+                    b.HasIndex("ProgramId");
 
                     b.ToTable("Jobs");
 
@@ -434,9 +473,13 @@ namespace OntuPhdApi.Migrations
 
             modelBuilder.Entity("OntuPhdApi.Models.Programs.Job", b =>
                 {
-                    b.HasOne("OntuPhdApi.Models.Programs.ProgramModel", null)
+                    b.HasOne("OntuPhdApi.Models.Programs.ProgramModel", "ProgramModel")
                         .WithMany("Jobs")
-                        .HasForeignKey("ProgramModelId");
+                        .HasForeignKey("ProgramId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ProgramModel");
                 });
 
             modelBuilder.Entity("OntuPhdApi.Models.Programs.ProgramComponent", b =>

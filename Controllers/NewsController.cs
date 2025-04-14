@@ -11,152 +11,128 @@ namespace OntuPhdApi.Controllers
     public class NewsController : ControllerBase
     {
         private readonly INewsService _newsService;
+        private readonly ILogger<NewsController> _logger;
 
-        public NewsController(INewsService newsService, IWebHostEnvironment environment)
+        public NewsController(INewsService newsService, ILogger<NewsController> logger)
         {
             _newsService = newsService;
-            _environment = environment;
+            _logger = logger;
         }
-        private readonly IWebHostEnvironment _environment;
+
 
         [HttpGet]
-        public IActionResult GetNews()
+        public async Task<IActionResult> GetNews()
         {
+            _logger.LogInformation("Fetching all news.");
             try
             {
-                var news = _newsService.GetNews();
+                var news = await _newsService.GetNewsAsync();
                 return Ok(news);
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Failed to fetch news.");
                 return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }
+
 
         [HttpGet("{id}")]
-        public IActionResult GetNews(int id)
+        public async Task<IActionResult> GetNewsById(int id)
         {
+            _logger.LogInformation("Fetching news with ID {NewsId}.", id);
             try
             {
-                var news = _newsService.GetNewsById(id);
+                var news = await _newsService.GetNewsByIdAsync(id);
                 if (news == null)
                 {
-                    return NotFound($"News with ID {id} not found.");
+                    _logger.LogWarning("News with ID {NewsId} not found.", id);
+                    return StatusCode(404, $"News with ID {id} was not found");
+
                 }
                 return Ok(news);
             }
-            catch (Exception ex)
+            catch (ArgumentException ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> AddNews([FromForm] NewsDto newsDto)
-        {
-            if (newsDto == null ||
-                string.IsNullOrEmpty(newsDto.Title) ||
-                string.IsNullOrEmpty(newsDto.Summary) ||
-                string.IsNullOrEmpty(newsDto.MainTag) ||
-                newsDto.Thumbnail == null ||
-                newsDto.OtherTags == null ||
-                newsDto.Photos == null ||
-                newsDto.Body == null)
-            {
-                return BadRequest("Invalid news data. Title, Summary, MainTag, Thumbnail, OtherTags, Photos, and Body are required.");
-            }
-
-            try
-            {
-                // Создаём объект News
-                var news = new NewsModel
-                {
-                    Title = newsDto.Title,
-                    Summary = newsDto.Summary,
-                    MainTag = newsDto.MainTag,
-                    OtherTags = newsDto.OtherTags,
-                    Date = newsDto.Date,
-                    Body = newsDto.Body
-                };
-
-                // Сохраняем новость в базе, чтобы получить Id
-                _newsService.AddNews(news);
-
-                // Создаём директорию для файлов новости
-                var newsDir = Path.Combine(_environment.ContentRootPath, "Files", "Uploads", "News", news.Id.ToString());
-                Directory.CreateDirectory(newsDir);
-
-                // Сохраняем Thumbnail
-                var thumbnailExtension = Path.GetExtension(newsDto.Thumbnail.FileName);
-                var thumbnailPath = Path.Combine(newsDir, $"thumbnail{thumbnailExtension}");
-                using (var stream = new FileStream(thumbnailPath, FileMode.Create))
-                {
-                    await newsDto.Thumbnail.CopyToAsync(stream);
-                }
-                news.Thumbnail = Path.Combine("Files", "Uploads", "News", news.Id.ToString(), $"thumbnail{thumbnailExtension}").Replace("\\", "/");
-
-                // Сохраняем Photos
-                news.Photos = new List<string>();
-                for (int i = 0; i < newsDto.Photos.Count; i++)
-                {
-                    var photo = newsDto.Photos[i];
-                    var photoExtension = Path.GetExtension(photo.FileName);
-                    var photoPath = Path.Combine(newsDir, $"photo{i + 1}{photoExtension}");
-                    using (var stream = new FileStream(photoPath, FileMode.Create))
-                    {
-                        await photo.CopyToAsync(stream);
-                    }
-                    news.Photos.Add(Path.Combine("Files", "Uploads", "News", news.Id.ToString(), $"photo{i + 1}{photoExtension}").Replace("\\", "/"));
-                }
-
-                // Обновляем запись в базе с путями к файлам
-                _newsService.UpdateNews(news);
-
-                return CreatedAtAction(nameof(GetNews), new { id = news.Id }, news);
+                _logger.LogWarning("Invalid request for news with ID {NewsId}: {ErrorMessage}", id, ex.Message);
+                return StatusCode(400, $"Bad request error: {ex.Message}");
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
-        }
-
-        [HttpGet("download")]
-        public IActionResult DownloadFile([FromQuery] string filePath)
-        {
-            try
-            {
-                // Проверяем, что путь начинается с "Files/Uploads/News"
-                if (string.IsNullOrEmpty(filePath) || !filePath.StartsWith("Files/Uploads/News"))
-                {
-                    return BadRequest("Invalid file path.");
-                }
-
-                var fullPath = Path.Combine(_environment.ContentRootPath, filePath.Replace("/", Path.DirectorySeparatorChar.ToString()));
-                if (!System.IO.File.Exists(fullPath))
-                {
-                    return NotFound($"File {filePath} not found.");
-                }
-
-                var fileBytes = System.IO.File.ReadAllBytes(fullPath);
-                var fileName = Path.GetFileName(fullPath);
-                return File(fileBytes, "application/octet-stream", fileName);
-            }
-            catch (Exception ex)
-            {
+                _logger.LogError(ex, "Failed to fetch news with ID {NewsId}.", id);
                 return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }
 
         [HttpGet("latest")]
-        public IActionResult GetLatestNews()
+        public async Task<IActionResult> GetLatestNews([FromQuery] int count = 4)
         {
+            _logger.LogInformation("Fetching {Count} latest news.", count);
             try
             {
-                var latestNews = _newsService.GetLatestNews(4);
-                return Ok(latestNews);
+                var news = await _newsService.GetLatestNewsAsync(count);
+                return Ok(news);
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning("Invalid count parameter {Count}: {ErrorMessage}", count, ex.Message);
+                return StatusCode(400, $"Bad Request error: {ex.Message}");
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Failed to fetch {Count} latest news.", count);
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+
+        [HttpPost]
+        public async Task<IActionResult> AddNews([FromForm] NewsCreateUpdateDto newsDto)
+        {
+            _logger.LogInformation("Adding new news with title {NewsTitle}.", newsDto.Title);
+            try
+            {
+                await _newsService.AddNewsAsync(newsDto);
+                return CreatedAtAction(
+                    nameof(GetNewsById),
+                    new { id = 0 }, // ID можно получить из сервиса, если нужно
+                    newsDto
+                );
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning("Invalid news data: {ErrorMessage}", ex.Message);
+                return StatusCode(400, $"Bad Request error: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to add news with title {NewsTitle}.", newsDto.Title);
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateNews(int id, [FromForm] NewsCreateUpdateDto newsDto)
+        {
+            _logger.LogInformation("Updating news with ID {NewsId}.", id);
+            try
+            {
+                await _newsService.UpdateNewsAsync(id, newsDto);
+                return NoContent();
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning("Invalid news data: {ErrorMessage}", ex.Message);
+                return StatusCode(400, $"Bad Request error: {ex.Message}");
+            }
+            catch (KeyNotFoundException ex)
+            {
+                _logger.LogWarning("News with ID {NewsId} not found.", id);
+                return StatusCode(404, $"News with ID {id} not found");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to update news with ID {NewsId}.", id);
                 return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }
