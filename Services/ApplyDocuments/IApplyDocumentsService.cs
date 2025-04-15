@@ -1,13 +1,15 @@
-﻿using OntuPhdApi.Models;
+﻿using OntuPhdApi.Models.ApplyDocuments;
 
 namespace OntuPhdApi.Services.ApplyDocuments
 
 {
     public interface IApplyDocumentsService
     {
-        List<ApplyDocumentsModel> GetApplyDocuments();
-        ApplyDocumentsModel GetApplyDocumentById(int id);
-        List<ApplyDocumentsModel> GetApplyDocumentsByName(string name);
-        void AddApplyDocument(ApplyDocumentsModel applyDocument);
+        Task<List<ApplyDocumentDto>> GetApplyDocumentsAsync();
+        Task<ApplyDocumentDto> GetApplyDocumentByIdAsync(int id);
+        Task<List<ApplyDocumentDto>> GetApplyDocumentsByNameAsync(string name);
+        Task<int> AddApplyDocumentAsync(ApplyDocumentCreateUpdateDto applyDocumentDto);
+        Task UpdateApplyDocumentAsync(int id, ApplyDocumentCreateUpdateDto applyDocumentDto); 
+        Task DeleteApplyDocumentAsync(int id);
     }
 }

@@ -1,154 +1,138 @@
 ﻿using Npgsql;
-using OntuPhdApi.Models;
+using OntuPhdApi.Models.ApplyDocuments;
+using OntuPhdApi.Repositories.ApplyDocument;
+using OntuPhdApi.Utilities.Mappers;
 using System.Text.Json;
 
 namespace OntuPhdApi.Services.ApplyDocuments
 {
     public class ApplyDocumentsService : IApplyDocumentsService
     {
-        private readonly string _connectionString;
+        private readonly IApplyDocumentRepository _applyDocumentRepository;
+        private readonly ILogger<ApplyDocumentsService> _logger;
 
-        public ApplyDocumentsService(IConfiguration configuration)
+        public ApplyDocumentsService(
+            IApplyDocumentRepository applyDocumentRepository,
+            ILogger<ApplyDocumentsService> logger)
         {
-
-            _connectionString = configuration.GetConnectionString("DefaultConnection");
-
+            _applyDocumentRepository = applyDocumentRepository;
+            _logger = logger;
         }
-        public List<ApplyDocumentsModel> GetApplyDocuments()
+
+        public async Task<List<ApplyDocumentDto>> GetApplyDocumentsAsync()
         {
-            var applyDocuments = new List<ApplyDocumentsModel>();
-            var jsonOptions = new JsonSerializerOptions
+            _logger.LogInformation("Fetching all apply documents.");
+            try
             {
-                PropertyNameCaseInsensitive = true
-            };
-
-            using (var connection = new NpgsqlConnection(_connectionString))
+                var applyDocuments = await _applyDocumentRepository.GetAllApplyDocumentsAsync();
+                return ApplyDocumentMapper.ToDtoList(applyDocuments);
+            }
+            catch (Exception ex)
             {
-                connection.Open();
+                _logger.LogError(ex, "Failed to fetch apply documents.");
+                throw;
+            }
+        }
 
-                using var cmd = new NpgsqlCommand("SELECT Id, Name, Description, " +
-                    "Requirements, OriginalsRequired FROM ApplyDocuments", connection);
-                using var reader = cmd.ExecuteReader();
-                while (reader.Read())
+        public async Task<ApplyDocumentDto> GetApplyDocumentByIdAsync(int id)
+        {
+            _logger.LogInformation("Fetching apply document with ID {ApplyDocumentId}.", id);
+            try
+            {
+                var applyDocument = await _applyDocumentRepository.GetApplyDocumentByIdAsync(id);
+                return ApplyDocumentMapper.ToDto(applyDocument);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to fetch apply document with ID {ApplyDocumentId}.", id);
+                throw;
+            }
+        }
+
+        public async Task<List<ApplyDocumentDto>> GetApplyDocumentsByNameAsync(string name)
+        {
+            _logger.LogInformation("Fetching apply documents for name {Name}.", name);
+            try
+            {
+                if (string.IsNullOrEmpty(name))
                 {
-                    try
-                    {
-                        applyDocuments.Add(new ApplyDocumentsModel
-                        {
-                            Id = reader.GetInt32(0),
-                            Name = reader.GetString(1),
-                            Description = reader.GetString(2),
-                            Requirements = JsonSerializer.Deserialize<List<Requirements>>(reader.GetString(3), jsonOptions),
-                            OriginalsRequired = JsonSerializer.Deserialize<List<Requirements>>(reader.GetString(4), jsonOptions)
-                        });
-                    }
-                    catch (JsonException ex)
-                    {
-                        Console.WriteLine($"Error deserializing ApplyDocuments with ID {reader.GetInt32(0)}: {ex.Message}");
-                    }
+                    _logger.LogWarning("Name parameter is empty or null.");
+                    throw new ArgumentException("Name parameter cannot be empty or null.");
                 }
+
+                var applyDocuments = await _applyDocumentRepository.GetApplyDocumentsByNameAsync(name);
+                return ApplyDocumentMapper.ToDtoList(applyDocuments);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to fetch apply documents for name {Name}.", name);
+                throw;
+            }
+        }
+
+        public async Task<int> AddApplyDocumentAsync(ApplyDocumentCreateUpdateDto applyDocumentDto)
+        {
+            if (applyDocumentDto == null || string.IsNullOrEmpty(applyDocumentDto.Name) || string.IsNullOrEmpty(applyDocumentDto.Description))
+            {
+                _logger.LogWarning("Invalid apply document data provided for creation.");
+                throw new ArgumentException("Name and Description are required.");
             }
 
-            return applyDocuments;
+            _logger.LogInformation("Adding new apply document with name {ApplyDocumentName}.", applyDocumentDto.Name);
+            try
+            {
+                var applyDocument = ApplyDocumentMapper.ToEntity(applyDocumentDto);
+                await _applyDocumentRepository.AddApplyDocumentAsync(applyDocument);
+                return applyDocument.Id;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to add apply document with name {ApplyDocumentName}.", applyDocumentDto.Name);
+                throw;
+            }
         }
 
-
-        public ApplyDocumentsModel GetApplyDocumentById(int id)
+        public async Task UpdateApplyDocumentAsync(int id, ApplyDocumentCreateUpdateDto applyDocumentDto)
         {
-            ApplyDocumentsModel applyDocument = null;
-            var jsonOptions = new JsonSerializerOptions
+            if (applyDocumentDto == null || string.IsNullOrEmpty(applyDocumentDto.Name) || string.IsNullOrEmpty(applyDocumentDto.Description))
             {
-                PropertyNameCaseInsensitive = true
-            };
-
-            using (var connection = new NpgsqlConnection(_connectionString))
-            {
-                connection.Open();
-
-                using var cmd = new NpgsqlCommand("SELECT Id, Name, Description, Requirements, OriginalsRequired FROM ApplyDocuments WHERE Id = @id", connection);
-                cmd.Parameters.AddWithValue("id", id);
-                using var reader = cmd.ExecuteReader();
-                if (reader.Read())
-                {
-                    try
-                    {
-                        applyDocument = new ApplyDocumentsModel
-                        {
-                            Id = reader.GetInt32(0),
-                            Name = reader.GetString(1),
-                            Description = reader.GetString(2),
-                            Requirements = JsonSerializer.Deserialize<List<Requirements>>(reader.GetString(3), jsonOptions),
-                            OriginalsRequired = JsonSerializer.Deserialize<List<Requirements>>(reader.GetString(4), jsonOptions)
-                        };
-                    }
-                    catch (JsonException ex)
-                    {
-                        throw new Exception($"Error deserializing ApplyDocuments with ID {id}: {ex.Message}");
-                    }
-                }
+                _logger.LogWarning("Invalid apply document data provided for update.");
+                throw new ArgumentException("Name and Description are required.");
             }
 
-            return applyDocument;
-        }
-
-
-        public List<ApplyDocumentsModel> GetApplyDocumentsByName(string name)
-        {
-            var applyDocuments = new List<ApplyDocumentsModel>();
-            var jsonOptions = new JsonSerializerOptions
+            _logger.LogInformation("Updating apply document with ID {ApplyDocumentId}.", id);
+            try
             {
-                PropertyNameCaseInsensitive = true
-            };
-
-            using (var connection = new NpgsqlConnection(_connectionString))
-            {
-                connection.Open();
-
-                using var cmd = new NpgsqlCommand("SELECT Id, Name, Description, Requirements, OriginalsRequired FROM ApplyDocuments WHERE Name ILIKE @name", connection);
-                cmd.Parameters.AddWithValue("name", $"%{name}%");
-                using var reader = cmd.ExecuteReader();
-                while (reader.Read())
+                var existingApplyDocument = await _applyDocumentRepository.GetApplyDocumentByIdAsync(id);
+                if (existingApplyDocument == null)
                 {
-                    try
-                    {
-                        applyDocuments.Add(new ApplyDocumentsModel
-                        {
-                            Id = reader.GetInt32(0),
-                            Name = reader.GetString(1),
-                            Description = reader.GetString(2),
-                            Requirements = JsonSerializer.Deserialize<List<Requirements>>(reader.GetString(3), jsonOptions),
-                            OriginalsRequired = JsonSerializer.Deserialize<List<Requirements>>(reader.GetString(4), jsonOptions)
-                        });
-                    }
-                    catch (JsonException ex)
-                    {
-                        Console.WriteLine($"Error deserializing ApplyDocuments with ID {reader.GetInt32(0)}: {ex.Message}");
-                    }
+                    _logger.LogWarning("Apply document with ID {ApplyDocumentId} not found for update.", id);
+                    throw new KeyNotFoundException("Apply document not found.");
                 }
+
+                ApplyDocumentMapper.UpdateEntity(existingApplyDocument, applyDocumentDto);
+                await _applyDocumentRepository.UpdateApplyDocumentAsync(existingApplyDocument);
             }
-
-            return applyDocuments;
-        }
-
-
-        public void AddApplyDocument(ApplyDocumentsModel applyDocument)
-        {
-            var jsonOptions = new JsonSerializerOptions
+            catch (Exception ex)
             {
-                PropertyNameCaseInsensitive = true
-            };
-
-            using var connection = new NpgsqlConnection(_connectionString);
-            connection.Open();
-
-            using var cmd = new NpgsqlCommand(
-                "INSERT INTO ApplyDocuments (Name, Description, Requirements, OriginalsRequired) " +
-                "VALUES (@name, @description, @requirements, @originalsRequired) RETURNING Id", connection);
-            cmd.Parameters.AddWithValue("name", applyDocument.Name);
-            cmd.Parameters.AddWithValue("description", applyDocument.Description);
-            cmd.Parameters.Add(new NpgsqlParameter("requirements", NpgsqlTypes.NpgsqlDbType.Jsonb) { Value = JsonSerializer.Serialize(applyDocument.Requirements, jsonOptions) });
-            cmd.Parameters.Add(new NpgsqlParameter("originalsRequired", NpgsqlTypes.NpgsqlDbType.Jsonb) { Value = JsonSerializer.Serialize(applyDocument.OriginalsRequired, jsonOptions) });
-            applyDocument.Id = (int)cmd.ExecuteScalar();
+                _logger.LogError(ex, "Failed to update apply document with ID {ApplyDocumentId}.", id);
+                throw;
+            }
         }
+
+        public async Task DeleteApplyDocumentAsync(int id)
+        {
+            _logger.LogInformation("Deleting apply document with ID {ApplyDocumentId}.", id);
+            try
+            {
+                await _applyDocumentRepository.DeleteApplyDocumentAsync(id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to delete apply document with ID {ApplyDocumentId}.", id);
+                throw;
+            }
+        }
+
     }
 }

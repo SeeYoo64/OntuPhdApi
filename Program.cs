@@ -8,6 +8,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Npgsql;
 using OntuPhdApi.Data;
+using OntuPhdApi.Repositories.ApplyDocument;
 using OntuPhdApi.Repositories.Defense;
 using OntuPhdApi.Repositories.Document;
 using OntuPhdApi.Repositories.Employee;
@@ -132,6 +133,7 @@ internal class Program
         builder.Services.AddScoped<IDocumentRepository, DocumentRepository>();
         builder.Services.AddScoped<IDocumentService, DocumentService>();
 
+        builder.Services.AddScoped<IApplyDocumentRepository, ApplyDocumentRepository>();
         builder.Services.AddScoped<IApplyDocumentsService, ApplyDocumentsService>();
 
         builder.Services.AddScoped<INewsRepository, NewsRepository>();
