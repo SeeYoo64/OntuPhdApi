@@ -1,6 +1,6 @@
 ﻿using System.Reflection.Metadata;
 using Microsoft.AspNetCore.Mvc;
-using OntuPhdApi.Models;
+using OntuPhdApi.Models.Documents;
 using OntuPhdApi.Services;
 using OntuPhdApi.Services.Documents;
 
@@ -11,88 +11,157 @@ namespace OntuPhdApi.Controllers
     public class DocumentsController : ControllerBase
     {
         private readonly IDocumentService _documentService;
+        private readonly ILogger<DocumentsController> _logger;
 
-        public DocumentsController(IDocumentService documentService)
+        public DocumentsController(IDocumentService documentService, ILogger<DocumentsController> logger)
         {
             _documentService = documentService;
+            _logger = logger;
         }
 
         [HttpGet]
-        public IActionResult GetDocuments([FromQuery] string? type)
+        public async Task<IActionResult> GetDocuments()
         {
+            _logger.LogInformation("Fetching all documents.");
             try
             {
-                if (!string.IsNullOrEmpty(type))
-                {
-                    var documents = _documentService.GetDocumentsByType(type);
-                    return Ok(documents);
-                }
-                else
-                {
-                    var documents = _documentService.GetDocuments();
-
-                    // Сортировка по Status: Completed -> Ontime -> NotStarted, затем по DataStart
-                    documents = documents
-                        .OrderBy(r => r.Type switch
-                        {
-                            "Entry" => 1,
-                            "Normative" => 2,
-                            _ => 3
-                        })
-                        .ThenBy(r => r.Type)
-                        .ThenBy(r => r.Id)
-                        .ToList();
-
-
-
-                    return Ok(documents);
-                }
+                var documents = await _documentService.GetDocumentsAsync();
+                return Ok(documents);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                _logger.LogError(ex, "Failed to fetch documents.");
+                return StatusCode(500, "An error occurred while retrieving defenses.");
             }
         }
 
         [HttpGet("{id}")]
-        public IActionResult GetDocument(int id)
+        public async Task<IActionResult> GetDocument(int id)
         {
+            _logger.LogInformation("Fetching document with ID {DocumentId}.", id);
             try
             {
-                var document = _documentService.GetDocumentById(id);
+                var document = await _documentService.GetDocumentByIdAsync(id);
                 if (document == null)
                 {
-                    return NotFound($"Document with ID {id} not found.");
+                    _logger.LogWarning("Document with ID {DocumentId} not found.", id);
+                    return StatusCode(404, $"Document with ID {id} not found.");
                 }
                 return Ok(document);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                _logger.LogError(ex, "Failed to fetch document with ID {DocumentId}.", id);
+                return StatusCode(500, "An error occurred while retrieving defenses.");
+            }
+        }
+
+        [HttpGet("type/{type}")]
+        public async Task<IActionResult> GetDocumentsByType(string type)
+        {
+            _logger.LogInformation("Fetching documents for type {Type}.", type);
+            try
+            {
+                if (string.IsNullOrEmpty(type))
+                {
+                    _logger.LogWarning("Type parameter is empty or null.");
+                    return StatusCode(400, "Bad request.");
+                }
+
+                var documents = await _documentService.GetDocumentsByTypeAsync(type);
+                return Ok(documents);
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning("Invalid type parameter {Type}: {ErrorMessage}", type, ex.Message);
+                return StatusCode(400, "Bad request.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to fetch documents for type {Type}.", type);
+                return StatusCode(500, "An error occurred while retrieving defenses.");
             }
         }
 
         [HttpPost]
-        public IActionResult AddDocument([FromBody] DocumentsModel document)
+        public async Task<IActionResult> AddDocument([FromBody] DocumentCreateUpdateDto documentDto)
         {
-            if (document == null || string.IsNullOrEmpty(document.Name) || string.IsNullOrEmpty(document.Type) || string.IsNullOrEmpty(document.Link))
-            {
-                return BadRequest("Invalid document data. Name, Type, and Link are required.");
-            }
-
+            _logger.LogInformation("Adding new document with name {DocumentName}.", documentDto.Name);
             try
             {
-                _documentService.AddDocument(document);
-                return CreatedAtAction(nameof(GetDocument), new { id = document.Id }, document);
+                var documentId = await _documentService.AddDocumentAsync(documentDto);
+                return CreatedAtAction(
+                    nameof(GetDocument),
+                    new { id = documentId },
+                    documentDto
+                );
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning("Invalid document data: {ErrorMessage}", ex.Message);
+                return StatusCode(400, "Bad request.");
+            }
+            catch (KeyNotFoundException ex)
+            {
+                _logger.LogWarning("Program not found: {ErrorMessage}", ex.Message);
+                return StatusCode(404, "Program not found.");
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                _logger.LogError(ex, "Failed to add document with name {DocumentName}.", documentDto.Name);
+                return StatusCode(500, "An error occurred while retrieving defenses.");
             }
         }
-    
-    
-    
-    
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateDocument(int id, [FromBody] DocumentCreateUpdateDto documentDto)
+        {
+            _logger.LogInformation("Updating document with ID {DocumentId}.", id);
+            try
+            {
+                await _documentService.UpdateDocumentAsync(id, documentDto);
+                return NoContent();
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning("Invalid document data: {ErrorMessage}", ex.Message);
+                return StatusCode(400, "Bad request.");
+            }
+            catch (KeyNotFoundException ex)
+            {
+                _logger.LogWarning("Document or Program not found: {ErrorMessage}", ex.Message);
+                return StatusCode(404, "Document or Program not found.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to update document with ID {DocumentId}.", id);
+                return StatusCode(500, "An error occurred while retrieving defenses.");
+            }
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteDocument(int id)
+        {
+            _logger.LogInformation("Deleting document with ID {DocumentId}.", id);
+            try
+            {
+                await _documentService.DeleteDocumentAsync(id);
+                return NoContent();
+            }
+            catch (KeyNotFoundException ex)
+            {
+                _logger.LogWarning("Document with ID {DocumentId} not found for deletion.", id);
+                return StatusCode(404, $"Document with ID {id} not found.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to delete document with ID {DocumentId}.", id);
+                return StatusCode(500, "An error occurred while retrieving defenses.");
+            }
+        }
+
+
+
+
     }
 }

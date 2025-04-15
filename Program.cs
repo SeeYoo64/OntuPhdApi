@@ -9,6 +9,7 @@ using Microsoft.OpenApi.Models;
 using Npgsql;
 using OntuPhdApi.Data;
 using OntuPhdApi.Repositories.Defense;
+using OntuPhdApi.Repositories.Document;
 using OntuPhdApi.Repositories.Employee;
 using OntuPhdApi.Repositories.News;
 using OntuPhdApi.Repositories.Program;
@@ -128,6 +129,7 @@ internal class Program
         builder.Services.AddScoped<IProgramService, ProgramService>();
         builder.Services.AddScoped<IProgramFileService, ProgramFileService>();
 
+        builder.Services.AddScoped<IDocumentRepository, DocumentRepository>();
         builder.Services.AddScoped<IDocumentService, DocumentService>();
 
         builder.Services.AddScoped<IApplyDocumentsService, ApplyDocumentsService>();

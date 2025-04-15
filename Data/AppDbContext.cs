@@ -7,6 +7,7 @@ using OntuPhdApi.Models.Authorization;
 using OntuPhdApi.Models.Programs;
 using OntuPhdApi.Models.Employees;
 using OntuPhdApi.Models.News;
+using OntuPhdApi.Models.Documents;
 
 namespace OntuPhdApi.Data
 {
@@ -25,6 +26,8 @@ namespace OntuPhdApi.Data
 
         public DbSet<NewsModel> News { get; set; }
 
+        public DbSet<DocumentModel> Documents { get; set; }
+
         public DbSet<VerificationToken> VerificationTokens { get; set; }
         public DbSet<Account> Accounts { get; set; }
         public DbSet<User> Users { get; set; }
@@ -40,7 +43,7 @@ namespace OntuPhdApi.Data
 
             ConfigureNews(modelBuilder);
 
-
+            ConfigureDocument(modelBuilder);
 
         }
 
@@ -218,6 +221,19 @@ namespace OntuPhdApi.Data
             });
         }
 
+        private void ConfigureDocument(ModelBuilder modelBuilder)
+        {
+            // Конфигурация Document
+            modelBuilder.Entity<DocumentModel>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(d => d.Id).ValueGeneratedOnAdd();
+                entity.Property(d => d.ProgramId);
+                entity.Property(d => d.Name).IsRequired();
+                entity.Property(d => d.Type).IsRequired();
+                entity.Property(d => d.Link).IsRequired();
+            });
+        }
 
 
 
