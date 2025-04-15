@@ -9,5 +9,6 @@ namespace OntuPhdApi.Services.Defense
         Task<List<DefenseDto>> GetDefensesByDegreeAsync(string degree);
         Task DeleteDefenseAsync(int id);
         Task<int> AddDefenseAsync(DefenseCreateDto defenseDto);
+        Task UpdateDefenseAsync(int id, DefenseCreateDto defenseDto);
     }
 }

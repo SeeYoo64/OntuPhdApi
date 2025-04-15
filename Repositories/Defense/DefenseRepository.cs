@@ -105,5 +105,21 @@ namespace OntuPhdApi.Repositories.Defense
             }
         }
 
+        public async Task UpdateDefenseAsync(DefenseModel defense)
+        {
+            _logger.LogInformation("Updating defense with ID {DefenseId} in database.", defense.Id);
+            try
+            {
+                _context.Defenses.Update(defense);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating defense with ID {DefenseId}.", defense.Id);
+                throw;
+            }
+        }
+
+
     }
 }

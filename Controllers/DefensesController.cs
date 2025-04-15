@@ -127,5 +127,34 @@ namespace OntuPhdApi.Controllers
             }
         }
 
+
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateDefense(int id, [FromBody] DefenseCreateDto defenseDto)
+        {
+            _logger.LogInformation("Updating defense with ID {DefenseId}.", id);
+            try
+            {
+                await _defenseService.UpdateDefenseAsync(id, defenseDto);
+                return NoContent();
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning("Invalid defense data: {ErrorMessage}", ex.Message);
+                return NotFound("Bad request.");
+            }
+            catch (KeyNotFoundException ex)
+            {
+                _logger.LogWarning("Defense or Program not found: {ErrorMessage}", ex.Message);
+                return NotFound("Defense not found.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to update defense with ID {DefenseId}.", id);
+                return StatusCode(500, "An error occurred while .");
+            }
+        }
+
+
     }
 }

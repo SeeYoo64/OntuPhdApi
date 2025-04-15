@@ -129,5 +129,69 @@ namespace OntuPhdApi.Services.Defense
             }
         }
 
+
+
+        public async Task UpdateDefenseAsync(int id, DefenseCreateDto defenseDto)
+        {
+            if (defenseDto == null || string.IsNullOrEmpty(defenseDto.CandidateNameSurname) || string.IsNullOrEmpty(defenseDto.DefenseTitle))
+            {
+                _logger.LogWarning("Invalid defense data provided for update.");
+                throw new ArgumentException("CandidateNameSurname and DefenseTitle are required.");
+            }
+
+            _logger.LogInformation("Updating defense with ID {DefenseId}.", id);
+            try
+            {
+                // Проверяем, существует ли защита
+                var existingDefense = await _defenseRepository.GetDefenseByIdAsync(id);
+                if (existingDefense == null)
+                {
+                    _logger.LogWarning("Defense with ID {DefenseId} not found for update.", id);
+                    throw new KeyNotFoundException("Defense not found.");
+                }
+
+                // Проверяем, существует ли Program с указанным ProgramId
+                var programExists = await _context.Programs.AnyAsync(p => p.Id == defenseDto.ProgramId);
+                if (!programExists)
+                {
+                    _logger.LogWarning("Program with ID {ProgramId} not found for defense update.", defenseDto.ProgramId);
+                    throw new KeyNotFoundException("Program not found.");
+                }
+
+                // Обновляем поля сущности
+                existingDefense.CandidateNameSurname = defenseDto.CandidateNameSurname;
+                existingDefense.DefenseTitle = defenseDto.DefenseTitle;
+                existingDefense.ScienceTeachers = defenseDto.ScienceTeachers;
+                existingDefense.DefenseDate = defenseDto.DefenseDate;
+                existingDefense.Address = defenseDto.Address;
+                existingDefense.Message = defenseDto.Message;
+                existingDefense.Placeholder = defenseDto.Placeholder;
+                existingDefense.Members = defenseDto.Members?.Select(m => new CompositionOfRada
+                {
+                    Position = m.Position,
+                    Members = m.Members?.Select(member => new MemberOfRada
+                    {
+                        NameSurname = member.NameSurname,
+                        ToolTip = member.ToolTip
+                    }).ToList()
+                }).ToList();
+                existingDefense.Files = defenseDto.Files?.Select(f => new DefenseFile
+                {
+                    Name = f.Name,
+                    Link = f.Link,
+                    Type = f.Type
+                }).ToList();
+                existingDefense.PublicationDate = defenseDto.PublicationDate;
+                existingDefense.ProgramId = defenseDto.ProgramId;
+
+                await _defenseRepository.UpdateDefenseAsync(existingDefense);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to update defense with ID {DefenseId}.", id);
+                throw;
+            }
+        }
+
     }
 }

@@ -8,6 +8,7 @@ namespace OntuPhdApi.Repositories.Defense
         Task<DefenseModel> GetDefenseByIdAsync(int id);
         Task<List<DefenseModel>> GetDefensesByDegreeAsync(string degree);
         Task DeleteDefenseAsync(int id);
+        Task UpdateDefenseAsync(DefenseModel defense);
         Task AddDefenseAsync(DefenseModel defense);
     }
 }
