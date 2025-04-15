@@ -1,4 +1,6 @@
-﻿using Npgsql;
+﻿using Microsoft.EntityFrameworkCore;
+using Npgsql;
+using OntuPhdApi.Data;
 using OntuPhdApi.Models.Defense;
 using OntuPhdApi.Models.Programs;
 using OntuPhdApi.Repositories.Defense;
@@ -11,11 +13,16 @@ namespace OntuPhdApi.Services.Defense
     {
         private readonly IDefenseRepository _defenseRepository;
         private readonly ILogger<DefenseService> _logger;
+        private readonly AppDbContext _context;
+        public DefenseService(IDefenseRepository defenseRepository, 
+            ILogger<DefenseService> logger,
+            AppDbContext context
 
-        public DefenseService(IDefenseRepository defenseRepository, ILogger<DefenseService> logger)
+            )
         {
             _defenseRepository = defenseRepository;
             _logger = logger;
+            _context = context;
         }
 
         public async Task<List<DefenseDto>> GetDefensesAsync()
@@ -88,6 +95,36 @@ namespace OntuPhdApi.Services.Defense
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to delete defense with ID {DefenseId}.", id);
+                throw;
+            }
+        }
+
+        public async Task<int> AddDefenseAsync(DefenseCreateDto defenseDto)
+        {
+            if (defenseDto == null || string.IsNullOrEmpty(defenseDto.CandidateNameSurname) || string.IsNullOrEmpty(defenseDto.DefenseTitle))
+            {
+                _logger.LogWarning("Invalid defense data provided for creation.");
+                throw new ArgumentException("CandidateNameSurname and DefenseTitle are required.");
+            }
+
+            _logger.LogInformation("Adding new defense with title {DefenseTitle}.", defenseDto.DefenseTitle);
+            try
+            {
+                // Проверяем, существует ли Program с указанным ProgramId
+                var programExists = await _context.Programs.AnyAsync(p => p.Id == defenseDto.ProgramId);
+                if (!programExists)
+                {
+                    _logger.LogWarning("Program with ID {ProgramId} not found for defense creation.", defenseDto.ProgramId);
+                    throw new KeyNotFoundException("Program not found.");
+                }
+
+                var defense = DefenseMapper.ToEntity(defenseDto);
+                await _defenseRepository.AddDefenseAsync(defense);
+                return defense.Id;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to add defense with title {DefenseTitle}.", defenseDto.DefenseTitle);
                 throw;
             }
         }

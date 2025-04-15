@@ -90,5 +90,20 @@ namespace OntuPhdApi.Repositories.Defense
             }
         }
 
+        public async Task AddDefenseAsync(DefenseModel defense)
+        {
+            _logger.LogInformation("Adding new defense with title {DefenseTitle}.", defense.DefenseTitle);
+            try
+            {
+                await _context.Defenses.AddAsync(defense);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error adding defense with title {DefenseTitle}.", defense.DefenseTitle);
+                throw;
+            }
+        }
+
     }
 }

@@ -22,10 +22,10 @@ namespace OntuPhdApi.Utilities.Mappers
                 Members = entity.Members?.Select(m => new CompositionOfRadaDto
                 {
                     Position = m.Position,
-                    Members = m.Members?.Select(mr => new MemberOfRadaDto
+                    Members = m.Members?.Select(member => new MemberOfRadaDto
                     {
-                        NameSurname = mr.NameSurname,
-                        ToolTip = mr.ToolTip
+                        NameSurname = member.NameSurname,
+                        ToolTip = member.ToolTip
                     }).ToList()
                 }).ToList(),
                 Files = entity.Files?.Select(f => new DefenseFileDto
@@ -35,23 +35,57 @@ namespace OntuPhdApi.Utilities.Mappers
                     Type = f.Type
                 }).ToList(),
                 PublicationDate = entity.PublicationDate,
-                ProgramInfo = new ProgramDefenseDto
+                ProgramId = entity.ProgramId,
+                Program = entity.Program != null ? new ProgramDefenseDto
                 {
                     Id = entity.Program.Id,
                     Name = entity.Program.Name,
                     Degree = entity.Program.Degree,
                     FieldOfStudy = entity.Program.FieldOfStudy,
-                    Speciality = new ShortSpeciality {
-                        Code = entity.Program.Speciality.Code,
+                    Speciality = new ShortSpeciality{
+                        Code =  entity.Program.Speciality.Code,
                         Name = entity.Program.Speciality.Name
                     }
-                }
+                } : null
             };
         }
 
         public static List<DefenseDto> ToDtoList(List<DefenseModel> entities)
         {
             return entities?.Select(ToDto).Where(dto => dto != null).ToList() ?? new List<DefenseDto>();
+        }
+
+        public static DefenseModel ToEntity(DefenseCreateDto dto)
+        {
+            if (dto == null) return null;
+
+            return new DefenseModel
+            {
+                CandidateNameSurname = dto.CandidateNameSurname,
+                DefenseTitle = dto.DefenseTitle,
+                ScienceTeachers = dto.ScienceTeachers,
+                DefenseDate = dto.DefenseDate,
+                Address = dto.Address,
+                Message = dto.Message,
+                Placeholder = dto.Placeholder,
+                Members = dto.Members?.Select(m => new CompositionOfRada
+                {
+                    Position = m.Position,
+                    Members = m.Members?.Select(member => new MemberOfRada
+                    {
+                        NameSurname = member.NameSurname,
+                        ToolTip = member.ToolTip
+                    }).ToList()
+                }).ToList(),
+                Files = dto.Files?.Select(f => new DefenseFile
+                {
+                    Name = f.Name,
+                    Link = f.Link,
+                    Type = f.Type
+                }).ToList(),
+                PublicationDate = dto.PublicationDate,
+                ProgramId = dto.ProgramId
+            };
         }
     }
 }

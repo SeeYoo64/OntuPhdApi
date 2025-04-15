@@ -1,5 +1,6 @@
 ﻿using System;
 using Microsoft.AspNetCore.Mvc;
+using OntuPhdApi.Models.Defense;
 using OntuPhdApi.Services.Defense;
 
 
@@ -91,6 +92,37 @@ namespace OntuPhdApi.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Failed to delete defense with ID {id}.");
+                return StatusCode(500, "An error occurred while .");
+            }
+        }
+
+
+        [HttpPost]
+        public async Task<IActionResult> AddDefense([FromBody] DefenseCreateDto defenseDto)
+        {
+            _logger.LogInformation("Adding new defense with title {DefenseTitle}.", defenseDto.DefenseTitle);
+            try
+            {
+                var defenseId = await _defenseService.AddDefenseAsync(defenseDto);
+                return CreatedAtAction(
+                    nameof(GetDefense),
+                    new { id = defenseId },
+                    defenseDto
+                );
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning("Invalid defense data: {ErrorMessage}", ex.Message);
+                return StatusCode(404, "Bad request.");
+            }
+            catch (KeyNotFoundException ex)
+            {
+                _logger.LogWarning("Program not found: {ErrorMessage}", ex.Message);
+                return StatusCode(404, "Program not found.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to add defense with title {DefenseTitle}.", defenseDto.DefenseTitle);
                 return StatusCode(500, "An error occurred while .");
             }
         }
