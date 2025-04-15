@@ -69,7 +69,28 @@ namespace OntuPhdApi.Services.Defense
             }
         }
 
+        public async Task DeleteDefenseAsync(int id)
+        {
+            _logger.LogInformation("Deleting defense with ID {DefenseId}.", id);
+            try
+            {
+                // Проверяем существование защиты
+                var defense = await _defenseRepository.GetDefenseByIdAsync(id);
+                if (defense == null)
+                {
+                    _logger.LogWarning("Defense with ID {DefenseId} not found for deletion.", id);
+                    throw new KeyNotFoundException("Defense not found.");
+                }
 
+                // Удаляем защиту из базы
+                await _defenseRepository.DeleteDefenseAsync(id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to delete defense with ID {DefenseId}.", id);
+                throw;
+            }
+        }
 
     }
 }

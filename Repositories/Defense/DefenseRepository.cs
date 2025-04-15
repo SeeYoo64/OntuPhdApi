@@ -68,6 +68,27 @@ namespace OntuPhdApi.Repositories.Defense
             }
         }
 
+        public async Task DeleteDefenseAsync(int id)
+        {
+            _logger.LogInformation("Deleting defense with ID {DefenseId} from database.", id);
+            try
+            {
+                var defense = await _context.Defenses.FirstOrDefaultAsync(d => d.Id == id);
+                if (defense == null)
+                {
+                    _logger.LogWarning("Defense with ID {DefenseId} not found for deletion.", id);
+                    throw new KeyNotFoundException("Defense not found.");
+                }
+
+                _context.Defenses.Remove(defense);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting defense with ID {DefenseId}.", id);
+                throw;
+            }
+        }
 
     }
 }

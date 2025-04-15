@@ -74,5 +74,26 @@ namespace OntuPhdApi.Controllers
 
 
 
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteDefense(int id)
+        {
+            _logger.LogInformation("Deleting defense with ID {DefenseId}.", id);
+            try
+            {
+                await _defenseService.DeleteDefenseAsync(id);
+                return NoContent();
+            }
+            catch (KeyNotFoundException ex)
+            {
+                _logger.LogWarning("Defense with ID {DefenseId} not found for deletion.", id);
+                return NotFound("Defense not found.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Failed to delete defense with ID {id}.");
+                return StatusCode(500, "An error occurred while .");
+            }
+        }
+
     }
 }
