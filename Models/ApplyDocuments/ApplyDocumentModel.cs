@@ -13,9 +13,7 @@ namespace OntuPhdApi.Models.ApplyDocuments
 
     public class Requirements
     {
-        [JsonPropertyName("Title")]
         public string Title { get; set; }
-        [JsonPropertyName("Description")]
         public string Description { get; set; }
     }
 
@@ -31,9 +29,7 @@ namespace OntuPhdApi.Models.ApplyDocuments
 
     public class RequirementDto
     {
-        [JsonPropertyName("Title")]
         public string Title { get; set; }
-        [JsonPropertyName("Description")]
         public string Description { get; set; }
     }
 
