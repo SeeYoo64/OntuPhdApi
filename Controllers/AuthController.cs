@@ -7,6 +7,7 @@ using OntuPhdApi.Services.Authorization;
 using BCrypt.Net;
 using OntuPhdApi.Models.Authorization;
 using Microsoft.Extensions.Logging;
+using static System.Net.Mime.MediaTypeNames;
 
 
 namespace OntuPhdApi.Controllers
@@ -36,10 +37,13 @@ namespace OntuPhdApi.Controllers
                 User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
 
             var admins = await _context.Users
+                .OrderBy(u => u.Id)
+                .Skip(2)
                 .Select(u => new
                 {
                     u.Email,
-                    u.Name
+                    u.Name,
+                    u.Image
                 })
                 .ToListAsync();
 
@@ -68,14 +72,61 @@ namespace OntuPhdApi.Controllers
                 return Conflict(new { message = "User with this email already exists" });
             }
 
+            // Проверяем, не существует ли пользователь
+            existingUser = await _context.Users
+                .FirstOrDefaultAsync(u => u.Name == request.Name);
+            if (existingUser != null)
+            {
+                _logger.LogError("CreateAdmin failed: User already exists with name: {Name}", request.Name);
+                return Conflict(new { message = "User with this name already exists" });
+            }
+
             // Создаем нового админа
             var user = new User
             {
                 Email = request.Email,
                 Name = request.Name ?? "Admin",
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin"), // Дефолтный пароль
-                MustChangePassword = true // Требуется смена пароля
+                MustChangePassword = true, // Требуется смена пароля
+                Image = "blank.png"
             };
+
+            // Создаём папку пользователя и копируем blank.png
+            if (string.IsNullOrEmpty(user.Name))
+            {
+                _logger.LogError("CreateAdmin failed: User name is empty for email: {Email}", user.Email);
+                return BadRequest(new { message = "User name is required" });
+            }
+
+            var safeName = string.Join("_", user.Name.Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries));
+            var userUploadsDir = Path.Combine(_environment.WebRootPath, "Files", "Uploads", "Users", safeName);
+            var imagePath = $"Files/Uploads/Users/{safeName}/blank.png";
+
+            try
+            {
+                Directory.CreateDirectory(userUploadsDir);
+                _logger.LogInformation("Created directory for user: {Directory}", userUploadsDir);
+
+                var sourceBlankPath = Path.Combine(_environment.WebRootPath, "Files", "Uploads", "blank.png");
+                var destBlankPath = Path.Combine(userUploadsDir, "blank.png");
+
+                if (System.IO.File.Exists(sourceBlankPath))
+                {
+                    System.IO.File.Copy(sourceBlankPath, destBlankPath, overwrite: false);
+                    _logger.LogInformation("Copied blank.png to: {DestPath}", destBlankPath);
+                }
+                else
+                {
+                    _logger.LogWarning("Source blank.png not found at: {SourcePath}, proceeding without copy", sourceBlankPath);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "CreateAdmin failed: Error creating directory or copying blank.png for user: {Email}, Directory: {Directory}",
+                    user.Email, userUploadsDir);
+                return StatusCode(500, new { message = "Error setting up user avatar directory" });
+            }
+
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
             _logger.LogInformation("Created new admin: Id={Id}, Name={Name}, Email={Email}, Role={Role}, MustChangePassword={MustChangePassword}",
@@ -83,7 +134,7 @@ namespace OntuPhdApi.Controllers
 
             var response = new
             {
-                user = new { user.Id, user.Name, user.Email }
+                user = new { user.Id, user.Name, user.Email, user.Image }
             };
             return Ok(response);
         }
@@ -287,8 +338,6 @@ namespace OntuPhdApi.Controllers
             return Ok(new { message = "Signed out" });
         }
 
-
-
         [Authorize]
         [HttpPost("change-password")]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
@@ -392,7 +441,7 @@ namespace OntuPhdApi.Controllers
 
         [Authorize]
         [HttpPost("upload-avatar")]
-        public async Task<IActionResult> UploadAvatar(IFormFile file)
+        public async Task<IActionResult> UploadAvatar(IFormFile? file)
         {
             _logger.LogInformation("Starting UploadAvatar request for user ID: {UserId}",
                 User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
@@ -411,71 +460,139 @@ namespace OntuPhdApi.Controllers
                 return NotFound(new { message = "User not found" });
             }
 
-            if (file == null || file.Length == 0)
-            {
-                _logger.LogError("UploadAvatar failed: No file provided for user ID: {UserId}", userId);
-                return BadRequest(new { message = "No file provided" });
-            }
 
-            // Проверка размера файла (5 МБ = 5 * 1024 * 1024 байт)
-            if (file.Length > 5 * 1024 * 1024)
-            {
-                _logger.LogError("UploadAvatar failed: File too large for user ID: {UserId}, Size: {Size}",
-                    userId, file.Length);
-                return BadRequest(new { message = "File size exceeds 5 MB" });
-            }
-
-            // Проверка MIME-типа
             var allowedTypes = new[] { "image/png", "image/jpeg", "image/jpg" };
-            if (!allowedTypes.Contains(file.ContentType))
-            {
-                _logger.LogError("UploadAvatar failed: Invalid file type for user ID: {UserId}, Type: {Type}",
-                    userId, file.ContentType);
-                return BadRequest(new { message = "Only PNG, JPG, JPEG files are allowed" });
-            }
-
-            // Формируем путь
-            if (string.IsNullOrEmpty(user.Name))
-            {
-                _logger.LogError("UploadAvatar failed: User name is empty for user ID: {UserId}", userId);
-                return BadRequest(new { message = "User name is required" });
-            }
-
             var safeName = string.Join("_", user.Name.Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries));
             var uploadsDir = Path.Combine(_environment.WebRootPath, "Files", "Uploads", "Users", safeName);
-            Directory.CreateDirectory(uploadsDir); // Создаём папку, если нет
+            Directory.CreateDirectory(uploadsDir);
 
-            // Генерируем уникальное имя файла
-            var extension = Path.GetExtension(file.FileName).ToLower();
-            var fileName = $"avatar_{DateTime.UtcNow:yyyyMMddHHmmss}{extension}";
-            var filePath = Path.Combine(uploadsDir, fileName);
-
-            // Сохраняем файл
+            // Удаляем все старые аватарки, кроме blank.png
             try
             {
-                using (var stream = new FileStream(filePath, FileMode.Create))
+                foreach (var oldFile in Directory.GetFiles(uploadsDir))
                 {
-                    await file.CopyToAsync(stream);
+                    var fileName = Path.GetFileName(oldFile);
+                    if (fileName != "blank.png")
+                    {
+                        System.IO.File.Delete(oldFile);
+                        _logger.LogInformation("Deleted old avatar for user ID: {UserId}, File: {File}", userId, oldFile);
+                    }
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "UploadAvatar failed: Error saving file for user ID: {UserId}, Path: {Path}",
-                    userId, filePath);
-                return StatusCode(500, new { message = "Error saving file" });
+                _logger.LogError(ex, "Failed to delete old avatars for user ID: {UserId}, Directory: {Directory}", userId, uploadsDir);
+                // Продолжаем, даже если удаление не удалось
             }
 
-            // Обновляем пользователя
-            user.Image = fileName;
-            await _context.SaveChangesAsync();
-            _logger.LogInformation("Updated user image for user ID: {UserId}, Image: {Image}", userId, fileName);
+            string imagePath;
+            if (file == null || file.Length == 0)
+            {
+                // Удаление аватарки: устанавливаем blank.png
+                user.Image = "blank.png";
+                imagePath = $"Files/Uploads/Users/{safeName}/blank.png";
+                _logger.LogInformation("Set blank.png for user ID: {UserId}, ImagePath: {ImagePath}", userId, imagePath);
+            }
+            else
+            {
+                // Загрузка новой аватарки
+                if (file.Length > 5 * 1024 * 1024)
+                {
+                    _logger.LogError("UploadAvatar failed: File too large for user ID: {UserId}, Size: {Size}", userId, file.Length);
+                    return BadRequest(new { message = "File size exceeds 5 MB" });
+                }
+                if (!allowedTypes.Contains(file.ContentType))
+                {
+                    _logger.LogError("UploadAvatar failed: Invalid file type for user ID: {UserId}, Type: {Type}", userId, file.ContentType);
+                    return BadRequest(new { message = "Only PNG, JPG, JPEG files are allowed" });
+                }
 
-            // Формируем виртуальный путь
-            var imagePath = $"Files/Uploads/Users/{safeName}/{fileName}";
-            _logger.LogInformation("UploadAvatar successful for user ID: {UserId}, ImagePath: {ImagePath}",
-                userId, imagePath);
+                var extension = Path.GetExtension(file.FileName).ToLower();
+                var fileName = $"avatar_{DateTime.UtcNow:yyyyMMddHHmmss}{extension}";
+                var filePath = Path.Combine(uploadsDir, fileName);
+
+                try
+                {
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await file.CopyToAsync(stream);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "UploadAvatar failed: Error saving file for user ID: {UserId}, Path: {Path}", userId, filePath);
+                    return StatusCode(500, new { message = "Error saving file" });
+                }
+
+                user.Image = fileName;
+                imagePath = $"Files/Uploads/Users/{safeName}/{fileName}";
+                _logger.LogInformation("Uploaded new avatar for user ID: {UserId}, Image: {Image}, ImagePath: {ImagePath}", userId, fileName, imagePath);
+            }
+
+            await _context.SaveChangesAsync();
+            _logger.LogInformation("Updated user image for user ID: {UserId}, Image: {Image}", userId, user.Image);
 
             return Ok(new { imagePath });
+
+        }
+
+
+        [Authorize]
+        [HttpDelete("delete-admin/{id}")]
+        public async Task<IActionResult> DeleteAdmin(int id)
+        {
+            _logger.LogInformation("Starting DeleteAdmin request for user ID: {CurrentUserId}, Target ID: {TargetId}",
+                User.FindFirst(ClaimTypes.NameIdentifier)?.Value, id);
+
+            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdString) || !int.TryParse(userIdString, out var currentUserId))
+            {
+                _logger.LogError("DeleteAdmin failed: Invalid current user ID in token");
+                return Unauthorized(new { message = "Invalid token" });
+            }
+
+            // Нельзя удалить самого себя
+            if (currentUserId == id)
+            {
+                _logger.LogError("DeleteAdmin failed: User ID {UserId} cannot delete self", currentUserId);
+                return BadRequest(new { message = "Cannot delete yourself" });
+            }
+
+            var user = await _context.Users
+                .Include(u => u.Accounts)
+                .FirstOrDefaultAsync(u => u.Id == id);
+
+            if (user == null)
+            {
+                _logger.LogError("DeleteAdmin failed: User not found for ID: {TargetId}", id);
+                return NotFound(new { message = "User not found" });
+            }
+
+            // Проверяем, что останется хотя бы один админ
+            var adminCount = await _context.Users.CountAsync();
+            if (adminCount <= 1)
+            {
+                _logger.LogError("DeleteAdmin failed: Cannot delete the last admin, ID: {TargetId}", id);
+                return BadRequest(new { message = "Cannot delete the last admin" });
+            }
+
+
+            // Удаляем папку с аватаркой
+            var safeName = string.Join("_", user.Name.Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries));
+            var userDir = Path.Combine(_environment.WebRootPath, "Files", "Uploads", "Users", safeName);
+            if (Directory.Exists(userDir))
+            {
+                Directory.Delete(userDir, true);
+                _logger.LogInformation("Deleted directory for user ID: {TargetId}, Directory: {Directory}", id, userDir);
+            }
+
+            // Удаляем пользователя и связанные аккаунты
+            _context.Users.Remove(user);
+            await _context.SaveChangesAsync();
+            _logger.LogInformation("DeleteAdmin successful: Deleted user ID: {TargetId}, Email: {Email}",
+                id, user.Email);
+
+            return Ok(new { message = "Admin deleted successfully" });
         }
 
     }

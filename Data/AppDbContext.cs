@@ -272,6 +272,13 @@ namespace OntuPhdApi.Data
                 entity.Property(e => e.Name).HasMaxLength(255);
                 entity.Property(e => e.Email).HasMaxLength(255);
             });
+
+            modelBuilder.Entity<User>()
+            .HasMany(u => u.Accounts)
+            .WithOne(a => a.User)
+            .HasForeignKey(a => a.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         }
 
         private void ConfigureAccount(ModelBuilder modelBuilder)
