@@ -99,7 +99,7 @@ namespace OntuPhdApi.Controllers
                 return BadRequest(new { message = "User name is required" });
             }
 
-            var safeName = string.Join("_", user.Name.Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries));
+            var safeName = string.Join("_", user.Id);
             var userUploadsDir = Path.Combine(_environment.WebRootPath, "Files", "Uploads", "Users", safeName);
             var imagePath = $"Files/Uploads/Users/{safeName}/blank.png";
 
@@ -423,7 +423,7 @@ namespace OntuPhdApi.Controllers
             if (!string.IsNullOrEmpty(user.Name) && !string.IsNullOrEmpty(user.Image))
             {
                 // Экранируем недопустимые символы в имени
-                var safeName = user.Name.Replace("/", "_").Replace("\\", "_");
+                var safeName = user.Id;
                 ImagePath = $"Files/Uploads/Users/{safeName}/{user.Image}";
             }
 
@@ -463,7 +463,7 @@ namespace OntuPhdApi.Controllers
 
 
             var allowedTypes = new[] { "image/png", "image/jpeg", "image/jpg" };
-            var safeName = string.Join("_", user.Name.Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries));
+            var safeName = string.Join("_", user.Id);
             var uploadsDir = Path.Combine(_environment.WebRootPath, "Files", "Uploads", "Users", safeName);
             Directory.CreateDirectory(uploadsDir);
 
@@ -579,7 +579,7 @@ namespace OntuPhdApi.Controllers
 
 
             // Удаляем папку с аватаркой
-            var safeName = string.Join("_", user.Name.Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries));
+            var safeName = string.Join("_", user.Id);
             var userDir = Path.Combine(_environment.WebRootPath, "Files", "Uploads", "Users", safeName);
             if (Directory.Exists(userDir))
             {
