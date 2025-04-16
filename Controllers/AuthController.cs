@@ -41,6 +41,7 @@ namespace OntuPhdApi.Controllers
                 .Skip(2)
                 .Select(u => new
                 {
+                    u.Id,
                     u.Email,
                     u.Name,
                     u.Image
