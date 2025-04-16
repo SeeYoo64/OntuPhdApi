@@ -11,7 +11,7 @@ namespace OntuPhdApi.Services.Employees
         private readonly IEmployeeRepository _employeeRepository;
         private readonly IProgramFileService _fileService;
         private readonly ILogger<EmployeesService> _logger;
-        private readonly string _employeesUploadsPath = Path.Combine("wwwroot", "Files", "Uploads", "Employees"); 
+        private readonly string _employeesUploadsPath = Path.Combine("wwwroot", "Files", "Uploads", "Employees");
 
         public EmployeesService(
             IEmployeeRepository employeeRepository,
@@ -67,7 +67,7 @@ namespace OntuPhdApi.Services.Employees
 
 
 
-        public async Task AddEmployeeAsync(EmployeeCreateUpdateDto employeeDto)
+        public async Task<EmployeeModel> AddEmployeeAsync(EmployeeCreateUpdateDto employeeDto)
         {
             if (employeeDto == null || string.IsNullOrEmpty(employeeDto.Name) || string.IsNullOrEmpty(employeeDto.Position))
             {
@@ -79,31 +79,59 @@ namespace OntuPhdApi.Services.Employees
             try
             {
                 var employee = EmployeeMapper.ToEntity(employeeDto);
+                employee.PhotoPath = "blank.png";
 
-                // Добавляем сотрудника, чтобы получить ID
                 await _employeeRepository.AddEmployeeAsync(employee);
 
-                // Создаем директорию для файлов сотрудника
-                var employeeDir = Path.Combine(_employeesUploadsPath, employee.Id.ToString());
+                var safeName = string.Join("_", employee.Id);
+                var employeeDir = Path.Combine(_employeesUploadsPath, safeName);
                 if (!Directory.Exists(employeeDir))
                 {
                     Directory.CreateDirectory(employeeDir);
+                    _logger.LogInformation("Created directory for employee: {Directory}", employeeDir);
                 }
 
-                // Сохраняем фотографию, если она есть
+                var sourceBlankPath = Path.Combine("wwwroot", "Files", "Uploads", "blank.png");
+                var destBlankPath = Path.Combine(employeeDir, "blank.png");
+                if (System.IO.File.Exists(sourceBlankPath))
+                {
+                    System.IO.File.Copy(sourceBlankPath, destBlankPath, overwrite: false);
+                    _logger.LogInformation("Copied blank.png to: {DestPath}", destBlankPath);
+                }
+                else
+                {
+                    _logger.LogWarning("Source blank.png not found at: {SourcePath}, proceeding without copy", sourceBlankPath);
+                }
+
                 if (employeeDto.Photo != null && employeeDto.Photo.Length > 0)
                 {
-                    var photoFileName = $"photo{employee.Id}{Path.GetExtension(employeeDto.Photo.FileName)}";
+                    var allowedTypes = new[] { "image/png", "image/jpeg", "image/jpg" };
+                    if (!allowedTypes.Contains(employeeDto.Photo.ContentType))
+                    {
+                        _logger.LogError("Invalid photo type for employee: {EmployeeName}, Type: {Type}", employeeDto.Name, employeeDto.Photo.ContentType);
+                        throw new ArgumentException("Only PNG, JPG, JPEG files are allowed.");
+                    }
+
+                    if (employeeDto.Photo.Length > 5 * 1024 * 1024)
+                    {
+                        _logger.LogError("Photo too large for employee: {EmployeeName}, Size: {Size}", employeeDto.Name, employeeDto.Photo.Length);
+                        throw new ArgumentException("File size exceeds 5 MB.");
+                    }
+
+                    var extension = Path.GetExtension(employeeDto.Photo.FileName).ToLower();
+                    var photoFileName = $"photo_{DateTime.UtcNow:yyyyMMddHHmmss}{extension}";
                     var photoPath = Path.Combine(employeeDir, photoFileName);
                     using (var stream = new FileStream(photoPath, FileMode.Create))
                     {
                         await employeeDto.Photo.CopyToAsync(stream);
                     }
-                    employee.PhotoPath = $"/Files/Uploads/Employees/{employee.Id}/{photoFileName}";
-                    await _employeeRepository.UpdateEmployeeAsync(employee); // Обновляем с новым путем
+                    employee.PhotoPath = photoFileName;
+                    _logger.LogInformation("Uploaded photo for employee: {EmployeeName}, Path: {PhotoPath}", employeeDto.Name, photoPath);
+
+                    await _employeeRepository.UpdateEmployeeAsync(employee);
                 }
 
-                // Второй вызов AddEmployeeAsync убран
+                return employee;
             }
             catch (Exception ex)
             {
@@ -115,102 +143,164 @@ namespace OntuPhdApi.Services.Employees
 
         public async Task UpdateEmployeeAsync(int id, EmployeeCreateUpdateDto employeeDto)
         {
-            if (employeeDto == null || string.IsNullOrEmpty(employeeDto.Name) || string.IsNullOrEmpty(employeeDto.Position))
-            {
-                _logger.LogWarning("Invalid employee data provided for update.");
-                throw new ArgumentException("Name and Position are required.");
-            }
-
-            _logger.LogInformation("Updating employee with ID {EmployeeId}.", id);
-            try
-            {
-                var employee = await _employeeRepository.GetEmployeeByIdAsync(id);
-                if (employee == null)
-                {
-                    _logger.LogWarning("Employee with ID {EmployeeId} not found.", id);
-                    throw new KeyNotFoundException("Employee not found.");
-                }
-
+            if (employeeDto == null || string.IsNullOrEmpty(employeeDto.Name) || string.IsNullOrEmpty(employeeDto.Position)) { 
+                _logger.LogWarning("Invalid employee data provided for update."); 
+                throw new ArgumentException("Name and Position are required."); 
+            } 
+            _logger.LogInformation("Updating employee with ID {EmployeeId}.", id); 
+            try { 
+                var employee = await _employeeRepository.GetEmployeeByIdAsync(id); 
+                if (employee == null) { 
+                    _logger.LogWarning("Employee with ID {EmployeeId} not found.", id); 
+                    throw new KeyNotFoundException("Employee not found."); 
+                } 
                 EmployeeMapper.UpdateEntity(employee, employeeDto);
-
-                // Создаем директорию для файлов сотрудника, если её нет
-                var employeeDir = Path.Combine(_employeesUploadsPath, employee.Id.ToString());
-                if (!Directory.Exists(employeeDir))
-                {
-                    Directory.CreateDirectory(employeeDir);
-                }
-
-                // Обновляем фотографию, если она есть
-                if (employeeDto.Photo != null && employeeDto.Photo.Length > 0)
-                {
-                    // Удаляем старую фотографию, если она есть
-                    if (!string.IsNullOrEmpty(employee.PhotoPath))
-                    {
-                        var oldPhotoPath = Path.Combine("wwwroot", employee.PhotoPath.TrimStart('/'));
-                        if (File.Exists(oldPhotoPath))
-                        {
-                            File.Delete(oldPhotoPath);
-                        }
-                    }
-
-                    var photoFileName = $"photo{employee.Id}{Path.GetExtension(employeeDto.Photo.FileName)}";
-                    var photoPath = Path.Combine(employeeDir, photoFileName);
-                    using (var stream = new FileStream(photoPath, FileMode.Create))
-                    {
-                        await employeeDto.Photo.CopyToAsync(stream);
-                    }
-                    employee.PhotoPath = $"/Files/Uploads/Employees/{employee.Id}/{photoFileName}";
-                }
-
-                await _employeeRepository.UpdateEmployeeAsync(employee);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to update employee with ID {EmployeeId}.", id);
-                throw;
+                var safeName = string.Join("_", employee.Id);
+                var employeeDir = Path.Combine(_employeesUploadsPath, safeName); 
+                if (!Directory.Exists(employeeDir)) { Directory.CreateDirectory(employeeDir); 
+                    _logger.LogInformation("Created directory for employee: {Directory}", employeeDir); 
+                } 
+                try { 
+                    foreach (var oldFile in Directory.GetFiles(employeeDir)) { 
+                        var fileName = Path.GetFileName(oldFile); 
+                        if (fileName != "blank.png") { 
+                            System.IO.File.Delete(oldFile); 
+                            _logger.LogInformation("Deleted old photo for employee ID: {EmployeeId}, File: {File}", id, oldFile); 
+                        } 
+                    } 
+                } catch (Exception ex) { 
+                    _logger.LogError(ex, "Failed to delete old photos for employee ID: {EmployeeId}, Directory: {Directory}", id, employeeDir); 
+                } 
+                if (employeeDto.Photo != null && employeeDto.Photo.Length != 0) { 
+                    var allowedTypes = new[] { "image/png", "image/jpeg", "image/jpg" }; 
+                    if (!allowedTypes.Contains(employeeDto.Photo.ContentType)) { 
+                        _logger.LogError("Invalid photo type for employee ID: {EmployeeId}, Type: {Type}", id, employeeDto.Photo.ContentType); 
+                        throw new ArgumentException("Only PNG, JPG, JPEG files are allowed."); 
+                    } 
+                    if (employeeDto.Photo.Length > 5 * 1024 * 1024) 
+                    { 
+                        _logger.LogError("Photo too large for employee ID: {EmployeeId}, Size: {Size}", id, employeeDto.Photo.Length); 
+                        throw new ArgumentException("File size exceeds 5 MB."); 
+                    } 
+                    var extension = Path.GetExtension(employeeDto.Photo.FileName).ToLower(); 
+                    var photoFileName = $"photo_{DateTime.UtcNow:yyyyMMddHHmmss}{extension}"; 
+                    var photoPath = Path.Combine(employeeDir, photoFileName); 
+                    using (var stream = new FileStream(photoPath, FileMode.Create)) { 
+                        await employeeDto.Photo.CopyToAsync(stream); 
+                    } 
+                    employee.PhotoPath = photoFileName; 
+                    _logger.LogInformation("Uploaded photo for employee ID: {EmployeeId}, Path: {PhotoPath}", id, photoPath); 
+                } 
+                else { 
+                    employee.PhotoPath = "blank.png"; 
+                    _logger.LogInformation("Set blank.png for employee ID: {EmployeeId}", id); 
+                } 
+                await _employeeRepository.UpdateEmployeeAsync(employee); 
+            } 
+            catch (Exception ex) { 
+                _logger.LogError(ex, "Failed to update employee with ID {EmployeeId}.", id); 
+                throw; 
             }
         }
 
-        public async Task DeleteEmployeeAsync(int id)
-        {
-            _logger.LogInformation("Deleting employee with ID {EmployeeId}.", id);
-            try
-            {
-                // Находим сотрудника
-                var employee = await _employeeRepository.GetEmployeeByIdAsync(id);
-                if (employee == null)
-                {
-                    _logger.LogWarning("Employee with ID {EmployeeId} not found for deletion.", id);
-                    throw new KeyNotFoundException("Employee not found.");
+
+        public async Task UploadEmployeePhotoAsync(int id, IFormFile? photo) 
+        { 
+            _logger.LogInformation("Uploading photo for employee with ID {EmployeeId}.", id); try 
+            { 
+                var employee = await _employeeRepository.GetEmployeeByIdAsync(id); 
+                if (employee == null) { _logger.LogWarning("Employee with ID {EmployeeId} not found.", id); 
+                    throw new KeyNotFoundException("Employee not found."); 
                 }
+                var safeName = string.Join("_", employee.Id);
+                var employeeDir = Path.Combine(_employeesUploadsPath, safeName); 
+                if (!Directory.Exists(employeeDir)) 
+                { 
+                    Directory.CreateDirectory(employeeDir); 
+                    _logger.LogInformation("Created directory for employee: {Directory}", employeeDir); 
+                    var sourceBlankPath = Path.Combine("wwwroot", "Files", "Uploads", "blank.png"); 
+                    var destBlankPath = Path.Combine(employeeDir, "blank.png"); 
+                    if (System.IO.File.Exists(sourceBlankPath)) { 
+                        System.IO.File.Copy(sourceBlankPath, destBlankPath, overwrite: false); 
+                        _logger.LogInformation("Copied blank.png to: {DestPath}", destBlankPath); 
+                    } else { 
+                        _logger.LogWarning("Source blank.png not found at: {SourcePath}, proceeding without copy", sourceBlankPath); 
+                    } 
+                } 
+                try { 
+                    foreach (var oldFile in Directory.GetFiles(employeeDir)) { 
+                        var fileName = Path.GetFileName(oldFile); 
+                        if (fileName != "blank.png") { 
+                            System.IO.File.Delete(oldFile); 
+                            _logger.LogInformation("Deleted old photo for employee ID: {EmployeeId}, File: {File}", id, oldFile); 
+                        } 
+                    } 
+                } catch (Exception ex) { 
+                    _logger.LogError(ex, "Failed to delete old photos for employee ID: {EmployeeId}, Directory: {Directory}", id, employeeDir); 
+                } 
+                string photoPath; 
+                if (photo != null && photo.Length !=  0) 
+                { 
+                    var allowedTypes = new[] { "image/png", "image/jpeg", "image/jpg" }; 
+                    if (!allowedTypes.Contains(photo.ContentType)) { 
+                        _logger.LogError("Invalid photo type for employee ID: {EmployeeId}, Type: {Type}", id, photo.ContentType); 
+                        throw new ArgumentException("Only PNG, JPG, JPEG files are allowed."); 
+                    } 
+                    if (photo.Length > 5 * 1024 * 1024) 
+                    { 
+                        _logger.LogError("Photo too large for employee ID: {EmployeeId}, Size: {Size}", id, photo.Length); 
+                        throw new ArgumentException("File size exceeds 5 MB."); 
+                    } 
+                    var extension = Path.GetExtension(photo.FileName).ToLower();
+                    var photoFileName = $"photo_{DateTime.UtcNow:yyyyMMddHHmmss}{extension}"; 
+                    var filePath = Path.Combine(employeeDir, photoFileName); 
+                    using (var stream = new FileStream(filePath, FileMode.Create)) 
+                    { 
+                        await photo.CopyToAsync(stream); 
+                    } 
+                    employee.PhotoPath = photoFileName; 
+                    photoPath = $"Files/Uploads/Employees/{safeName}/{photoFileName}"; 
+                    _logger.LogInformation("Uploaded photo for employee ID: {EmployeeId}, Path: {PhotoPath}", id, photoPath); 
+                } 
 
-                // Удаляем связанные файлы
-                var employeeDir = Path.Combine(_employeesUploadsPath, employee.Id.ToString());
-                if (Directory.Exists(employeeDir))
-                {
-                    // Удаляем фотографию
-                    if (!string.IsNullOrEmpty(employee.PhotoPath))
-                    {
-                        var photoPath = Path.Combine("wwwroot", employee.PhotoPath.TrimStart('/'));
-                        if (File.Exists(photoPath))
-                        {
-                            File.Delete(photoPath);
-                        }
-                    }
+                else 
+                { 
+                    employee.PhotoPath = "blank.png"; 
+                    photoPath = $"Files/Uploads/Employees/{safeName}/blank.png"; 
+                    _logger.LogInformation("Set blank.png for employee ID: {EmployeeId}, PhotoPath: {PhotoPath}", id, photoPath); 
+                } 
 
-                    // Удаляем директорию
-                    Directory.Delete(employeeDir, true);
-                }
+                await _employeeRepository.UpdateEmployeeAsync(employee); 
+            } 
+                catch (Exception ex) { 
+                _logger.LogError(ex, "Failed to upload photo for employee with ID {EmployeeId}.", id); throw;
+            } 
+        }
+        
+        
+        public async Task DeleteEmployeeAsync(int id) { 
+            _logger.LogInformation("Deleting employee with ID {EmployeeId}.", id); 
+            try 
+            { 
+                var employee = await _employeeRepository.GetEmployeeByIdAsync(id); 
+                if (employee == null) { 
+                    _logger.LogWarning("Employee with ID {EmployeeId} not found for deletion.", id); 
+                    throw new KeyNotFoundException("Employee not found."); 
+                } 
+                var safeName = string.Join("_", employee.Id, StringSplitOptions.RemoveEmptyEntries);
+                var employeeDir = Path.Combine(_employeesUploadsPath, safeName); 
 
-                // Удаляем сотрудника из базы
-                await _employeeRepository.DeleteEmployeeAsync(id);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to delete employee with ID {EmployeeId}.", id);
-                throw;
-            }
+                if (Directory.Exists(employeeDir)) { 
+                    Directory.Delete(employeeDir, true); 
+                    _logger.LogInformation("Deleted directory for employee ID: {EmployeeId}, Directory: {Directory}", id, employeeDir); 
+                } 
+                await _employeeRepository.DeleteEmployeeAsync(id); 
+            } catch (Exception ex) 
+            { 
+                _logger.LogError(ex, "Failed to delete employee with ID {EmployeeId}.", id); throw; 
+            } 
         }
 
     }
 }
+

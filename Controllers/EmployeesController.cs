@@ -62,8 +62,17 @@ namespace OntuPhdApi.Controllers
             _logger.LogInformation("Adding new employee with name {EmployeeName}.", employeeDto.Name);
             try
             {
-                await _employeesService.AddEmployeeAsync(employeeDto);
-                return CreatedAtAction(nameof(GetEmployee), new { id = 0 }, employeeDto); // ID будет известен после добавления, если нужно
+                var employee = await _employeesService.AddEmployeeAsync(employeeDto);
+                var response = new EmployeeModelDto
+                {
+                    Id = employee.Id,
+                    Name = employee.Name,
+                    Position = employee.Position,
+                    PhotoPath = employee.PhotoPath != "blank.png"
+                        ? $"Files/Uploads/Employees/{string.Join("_", employee.Name.Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries))}/{employee.PhotoPath}"
+                        : $"Files/Uploads/Employees/{string.Join("_", employee.Name.Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries))}/blank.png"
+                };
+                return CreatedAtAction(nameof(GetEmployee), new { id = employee.Id }, response);
             }
             catch (ArgumentException ex)
             {

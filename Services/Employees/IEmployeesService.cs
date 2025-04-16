@@ -6,7 +6,7 @@ namespace OntuPhdApi.Services.Employees
     {
         Task<List<EmployeeModelDto>> GetEmployeesAsync();
         Task<EmployeeModelDto> GetEmployeeByIdAsync(int id);
-        Task AddEmployeeAsync(EmployeeCreateUpdateDto employeeDto);
+        Task<EmployeeModel> AddEmployeeAsync(EmployeeCreateUpdateDto employeeDto);
         Task UpdateEmployeeAsync(int id, EmployeeCreateUpdateDto employeeDto);
         Task DeleteEmployeeAsync(int id);
     }
