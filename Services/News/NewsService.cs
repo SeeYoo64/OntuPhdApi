@@ -103,46 +103,83 @@ namespace OntuPhdApi.Services.News
                 // Добавляем новость, чтобы получить ID
                 await _newsRepository.AddNewsAsync(news);
 
-                // Создаем директорию для файлов новости
+                // Создаём директорию для файлов новости
                 var newsDir = Path.Combine(_newsUploadsPath, news.Id.ToString());
-                if (!Directory.Exists(newsDir))
-                {
-                    Directory.CreateDirectory(newsDir);
-                }
+                Directory.CreateDirectory(newsDir);
 
-                // Сохраняем миниатюру
+                // Сохраняем миниатюру, если загружена
                 if (newsDto.Thumbnail != null && newsDto.Thumbnail.Length > 0)
                 {
-                    var thumbnailFileName = $"thumb{news.Id}{Path.GetExtension(newsDto.Thumbnail.FileName)}";
-                    var thumbnailPath = Path.Combine(newsDir, thumbnailFileName);
-                    using (var stream = new FileStream(thumbnailPath, FileMode.Create))
+                    // Проверка размера
+                    if (newsDto.Thumbnail.Length > 5 * 1024 * 1024)
+                    {
+                        _logger.LogWarning("Thumbnail too large for news ID: {NewsId}, Size: {Size}", news.Id, newsDto.Thumbnail.Length);
+                        throw new ArgumentException("Thumbnail size exceeds 5 MB");
+                    }
+
+                    // Проверка типа
+                    var allowedTypes = new[] { "image/png", "image/jpeg", "image/jpg" };
+                    if (!allowedTypes.Contains(newsDto.Thumbnail.ContentType))
+                    {
+                        _logger.LogWarning("Invalid thumbnail type for news ID: {NewsId}, Type: {Type}", news.Id, newsDto.Thumbnail.ContentType);
+                        throw new ArgumentException("Only PNG, JPG, JPEG files are allowed for thumbnail");
+                    }
+
+                    var extension = Path.GetExtension(newsDto.Thumbnail.FileName).ToLower();
+                    var fileName = $"thumb_{DateTime.UtcNow:yyyyMMddHHmmss}{extension}";
+                    var filePath = Path.Combine(newsDir, fileName);
+
+                    using (var stream = new FileStream(filePath, FileMode.Create))
                     {
                         await newsDto.Thumbnail.CopyToAsync(stream);
                     }
-                    news.ThumbnailPath = $"/Files/Uploads/News/{news.Id}/{thumbnailFileName}";
+                    news.ThumbnailPath = fileName;
+                    _logger.LogInformation("Uploaded thumbnail for news ID: {NewsId}, Path: {Path}", news.Id, news.ThumbnailPath);
+                }
+                else
+                {
+                    news.ThumbnailPath = null;
+                    _logger.LogInformation("No thumbnail provided for news ID: {NewsId}", news.Id);
                 }
 
-                // Сохраняем фотографии
+                // Сохраняем фотографии, если загружены
                 if (newsDto.Photos != null && newsDto.Photos.Any())
                 {
                     news.PhotoPaths = new List<string>();
                     foreach (var photo in newsDto.Photos)
                     {
-                        if (photo.Length > 0)
+                        if (photo.Length == 0)
+                            continue;
+
+                        // Проверка размера
+                        if (photo.Length > 5 * 1024 * 1024)
                         {
-                            var uniqueId = Guid.NewGuid().ToString();
-                            var photoFileName = $"photo-{uniqueId}{Path.GetExtension(photo.FileName)}";
-                            var photoPath = Path.Combine(newsDir, photoFileName);
-                            using (var stream = new FileStream(photoPath, FileMode.Create))
-                            {
-                                await photo.CopyToAsync(stream);
-                            }
-                            news.PhotoPaths.Add($"/Files/Uploads/News/{news.Id}/{photoFileName}");
+                            _logger.LogWarning("Photo too large for news ID: {NewsId}, Size: {Size}", news.Id, photo.Length);
+                            throw new ArgumentException("Photo size exceeds 5 MB");
                         }
+
+                        // Проверка типа
+                        var allowedTypes = new[] { "image/png", "image/jpeg", "image/jpg" };
+                        if (!allowedTypes.Contains(photo.ContentType))
+                        {
+                            _logger.LogWarning("Invalid photo type for news ID: {NewsId}, Type: {Type}", news.Id, photo.ContentType);
+                            throw new ArgumentException("Only PNG, JPG, JPEG files are allowed for photos");
+                        }
+
+                        var extension = Path.GetExtension(photo.FileName).ToLower();
+                        var fileName = $"photo_{DateTime.UtcNow:yyyyMMddHHmmss}_{Guid.NewGuid().ToString("N")[..8]}{extension}";
+                        var filePath = Path.Combine(newsDir, fileName);
+
+                        using (var stream = new FileStream(filePath, FileMode.Create))
+                        {
+                            await photo.CopyToAsync(stream);
+                        }
+                        news.PhotoPaths.Add(fileName);
+                        _logger.LogInformation("Uploaded photo for news ID: {NewsId}, Path: {Path}", news.Id, filePath);
                     }
                 }
 
-                // Обновляем новость с путями к файлам
+                // Обновляем новость с путями
                 await _newsRepository.UpdateNewsAsync(news);
             }
             catch (Exception ex)
@@ -150,6 +187,7 @@ namespace OntuPhdApi.Services.News
                 _logger.LogError(ex, "Failed to add news with title {NewsTitle}.", newsDto.Title);
                 throw;
             }
+
         }
 
         public async Task UpdateNewsAsync(int id, NewsCreateUpdateDto newsDto)
@@ -172,47 +210,68 @@ namespace OntuPhdApi.Services.News
 
                 NewsMapper.UpdateEntity(news, newsDto);
 
-                // Создаем директорию для файлов новости, если её нет
-                var newsDir = Path.Combine(_newsUploadsPath, news.Id.ToString());
-                if (!Directory.Exists(newsDir))
-                {
-                    Directory.CreateDirectory(newsDir);
-                }
+                // Создаём директорию, если нет
+                var newsDir = Path.Combine(_newsUploadsPath, id.ToString());
+                Directory.CreateDirectory(newsDir);
 
-                // Обновляем миниатюру, если она загружена
+                // Обновляем миниатюру, если загружена
                 if (newsDto.Thumbnail != null && newsDto.Thumbnail.Length > 0)
                 {
-                    // Удаляем старую миниатюру, если она есть
+                    // Проверка размера
+                    if (newsDto.Thumbnail.Length > 5 * 1024 * 1024)
+                    {
+                        _logger.LogWarning("Thumbnail too large for news ID: {NewsId}, Size: {Size}", id, newsDto.Thumbnail.Length);
+                        throw new ArgumentException("Thumbnail size exceeds 5 MB");
+                    }
+
+                    // Проверка типа
+                    var allowedTypes = new[] { "image/png", "image/jpeg", "image/jpg" };
+                    if (!allowedTypes.Contains(newsDto.Thumbnail.ContentType))
+                    {
+                        _logger.LogWarning("Invalid thumbnail type for news ID: {NewsId}, Type: {Type}", id, newsDto.Thumbnail.ContentType);
+                        throw new ArgumentException("Only PNG, JPG, JPEG files are allowed for thumbnail");
+                    }
+
+                    // Удаляем старую миниатюру, если есть
                     if (!string.IsNullOrEmpty(news.ThumbnailPath))
                     {
-                        var oldThumbnailPath = Path.Combine("wwwroot", news.ThumbnailPath.TrimStart('/'));
-                        if (File.Exists(oldThumbnailPath))
+                        var oldThumbnailPath = Path.Combine(_newsUploadsPath, id.ToString(), Path.GetFileName(news.ThumbnailPath));
+                        if (System.IO.File.Exists(oldThumbnailPath))
                         {
-                            File.Delete(oldThumbnailPath);
+                            System.IO.File.Delete(oldThumbnailPath);
+                            _logger.LogInformation("Deleted old thumbnail for news ID: {NewsId}, Path: {Path}", id, oldThumbnailPath);
                         }
                     }
 
-                    var thumbnailFileName = $"thumb{news.Id}{Path.GetExtension(newsDto.Thumbnail.FileName)}";
-                    var thumbnailPath = Path.Combine(newsDir, thumbnailFileName);
-                    using (var stream = new FileStream(thumbnailPath, FileMode.Create))
+                    var extension = Path.GetExtension(newsDto.Thumbnail.FileName).ToLower();
+                    var fileName = $"thumb_{DateTime.UtcNow:yyyyMMddHHmmss}{extension}";
+                    var filePath = Path.Combine(newsDir, fileName);
+
+                    using (var stream = new FileStream(filePath, FileMode.Create))
                     {
                         await newsDto.Thumbnail.CopyToAsync(stream);
                     }
-                    news.ThumbnailPath = $"/Files/Uploads/News/{news.Id}/{thumbnailFileName}";
+                    news.ThumbnailPath = fileName;
+                    _logger.LogInformation("Uploaded new thumbnail for news ID: {NewsId}, Path: {Path}", id, news.ThumbnailPath);
+                }
+                else
+                {
+                    _logger.LogInformation("No new thumbnail provided for news ID: {NewsId}, keeping existing: {Path}", id, news.ThumbnailPath ?? "none");
                 }
 
-                // Обновляем фотографии, если они загружены
+                // Обновляем фотографии, если загружены
                 if (newsDto.Photos != null && newsDto.Photos.Any())
                 {
-                    // Удаляем старые фотографии, если они есть
+                    // Удаляем старые фотографии
                     if (news.PhotoPaths != null && news.PhotoPaths.Any())
                     {
                         foreach (var oldPhotoPath in news.PhotoPaths)
                         {
-                            var fullPath = Path.Combine("wwwroot", oldPhotoPath.TrimStart('/'));
-                            if (File.Exists(fullPath))
+                            var fullPath = Path.Combine(_newsUploadsPath, id.ToString(), Path.GetFileName(oldPhotoPath));
+                            if (System.IO.File.Exists(fullPath))
                             {
-                                File.Delete(fullPath);
+                                System.IO.File.Delete(fullPath);
+                                _logger.LogInformation("Deleted old photo for news ID: {NewsId}, Path: {Path}", id, fullPath);
                             }
                         }
                     }
@@ -221,18 +280,39 @@ namespace OntuPhdApi.Services.News
                     news.PhotoPaths = new List<string>();
                     foreach (var photo in newsDto.Photos)
                     {
-                        if (photo.Length > 0)
+                        if (photo.Length == 0)
+                            continue;
+
+                        // Проверка размера
+                        if (photo.Length > 5 * 1024 * 1024)
                         {
-                            var uniqueId = Guid.NewGuid().ToString();
-                            var photoFileName = $"photo-{uniqueId}{Path.GetExtension(photo.FileName)}";
-                            var photoPath = Path.Combine(newsDir, photoFileName);
-                            using (var stream = new FileStream(photoPath, FileMode.Create))
-                            {
-                                await photo.CopyToAsync(stream);
-                            }
-                            news.PhotoPaths.Add($"/Files/Uploads/News/{news.Id}/{photoFileName}");
+                            _logger.LogWarning("Photo too large for news ID: {NewsId}, Size: {Size}", id, photo.Length);
+                            throw new ArgumentException("Photo size exceeds 5 MB");
                         }
+
+                        // Проверка типа
+                        var allowedTypes = new[] { "image/png", "image/jpeg", "image/jpg" };
+                        if (!allowedTypes.Contains(photo.ContentType))
+                        {
+                            _logger.LogWarning("Invalid photo type for news ID: {NewsId}, Type: {Type}", id, photo.ContentType);
+                            throw new ArgumentException("Only PNG, JPG, JPEG files are allowed for photos");
+                        }
+
+                        var extension = Path.GetExtension(photo.FileName).ToLower();
+                        var fileName = $"photo_{DateTime.UtcNow:yyyyMMddHHmmss}_{Guid.NewGuid().ToString("N")[..8]}{extension}";
+                        var filePath = Path.Combine(newsDir, fileName);
+
+                        using (var stream = new FileStream(filePath, FileMode.Create))
+                        {
+                            await photo.CopyToAsync(stream);
+                        }
+                        news.PhotoPaths.Add(fileName);
+                        _logger.LogInformation("Uploaded new photo for news ID: {NewsId}, Path: {Path}", id, filePath);
                     }
+                }
+                else
+                {
+                    _logger.LogInformation("No new photos provided for news ID: {NewsId}, keeping existing: {Count}", id, news.PhotoPaths?.Count ?? 0);
                 }
 
                 await _newsRepository.UpdateNewsAsync(news);
@@ -246,49 +326,29 @@ namespace OntuPhdApi.Services.News
 
         public async Task DeleteNewsAsync(int id)
         {
-            _logger.LogInformation("Deleting news with ID {NewsId}.", id);
-            try
+            _logger.LogInformation("Deleting news with ID {NewsId}.", id); try
             {
-                // Находим новость
-                var news = await _newsRepository.GetNewsByIdAsync(id);
-                if (news == null)
-                {
-                    _logger.LogWarning("News with ID {NewsId} not found for deletion.", id);
-                    throw new KeyNotFoundException("News not found.");
+                var news = await _newsRepository.GetNewsByIdAsync(id); 
+                if (news == null) 
+                { 
+                    _logger.LogWarning("News with ID {NewsId} not found for deletion.", id); 
+                    throw new KeyNotFoundException("News not found."); 
                 }
 
-                // Удаляем связанные файлы
-                var newsDir = Path.Combine(_newsUploadsPath, news.Id.ToString());
+                // Удаляем файлы
+                var newsDir = Path.Combine(_newsUploadsPath, id.ToString());
                 if (Directory.Exists(newsDir))
                 {
-                    // Удаляем миниатюру
-                    if (!string.IsNullOrEmpty(news.ThumbnailPath))
+                    foreach (var file in Directory.GetFiles(newsDir))
                     {
-                        var thumbnailPath = Path.Combine("wwwroot", news.ThumbnailPath.TrimStart('/'));
-                        if (File.Exists(thumbnailPath))
-                        {
-                            File.Delete(thumbnailPath);
-                        }
+                        System.IO.File.Delete(file);
+                        _logger.LogInformation("Deleted file for news ID: {NewsId}, File: {File}", id, file);
                     }
-
-                    // Удаляем фотографии
-                    if (news.PhotoPaths != null && news.PhotoPaths.Any())
-                    {
-                        foreach (var photoPath in news.PhotoPaths)
-                        {
-                            var fullPath = Path.Combine("wwwroot", photoPath.TrimStart('/'));
-                            if (File.Exists(fullPath))
-                            {
-                                File.Delete(fullPath);
-                            }
-                        }
-                    }
-
-                    // Удаляем директорию
-                    Directory.Delete(newsDir, true);
+                    Directory.Delete(newsDir);
+                    _logger.LogInformation("Deleted directory for news ID: {NewsId}, Directory: {Dir}", id, newsDir);
                 }
 
-                // Удаляем новость из базы
+                // Удаляем новость
                 await _newsRepository.DeleteNewsAsync(id);
             }
             catch (Exception ex)
@@ -296,6 +356,7 @@ namespace OntuPhdApi.Services.News
                 _logger.LogError(ex, "Failed to delete news with ID {NewsId}.", id);
                 throw;
             }
+
         }
 
     }
