@@ -25,7 +25,8 @@ namespace OntuPhdApi.Utilities.Mappers
                     Members = m.Members?.Select(member => new MemberOfRadaDto
                     {
                         NameSurname = member.NameSurname,
-                        ToolTip = member.ToolTip
+                        ToolTip = member.ToolTip,
+                        Title = member.Title
                     }).ToList()
                 }).ToList(),
                 Files = entity.Files?.Select(f => new DefenseFileDto
@@ -74,7 +75,8 @@ namespace OntuPhdApi.Utilities.Mappers
                     Members = m.Members?.Select(member => new MemberOfRada
                     {
                         NameSurname = member.NameSurname,
-                        ToolTip = member.ToolTip
+                        ToolTip = member.ToolTip,
+                        Title = member.Title
                     }).ToList()
                 }).ToList(),
                 Files = dto.Files?.Select(f => new DefenseFile

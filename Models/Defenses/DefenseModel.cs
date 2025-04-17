@@ -41,6 +41,7 @@ namespace OntuPhdApi.Models.Defense
     public class MemberOfRada
     {
         public string NameSurname { get; set; }
+        public string Title { get; set; }
         public string? ToolTip { get; set; }
     }
 }

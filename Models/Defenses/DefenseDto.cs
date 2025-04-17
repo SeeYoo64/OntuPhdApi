@@ -33,6 +33,7 @@
     public class MemberOfRadaDto
     {
         public string NameSurname { get; set; }
+        public string Title { get; set; }
         public string? ToolTip { get; set; }
     }
 }
