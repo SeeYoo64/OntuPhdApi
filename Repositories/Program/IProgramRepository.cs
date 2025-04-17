@@ -1,5 +1,6 @@
 ﻿using Npgsql;
 using OntuPhdApi.Controllers;
+using OntuPhdApi.Models.Institutes;
 using OntuPhdApi.Models.Programs;
 
 namespace OntuPhdApi.Repositories.Program
@@ -14,5 +15,6 @@ namespace OntuPhdApi.Repositories.Program
         Task<List<ProgramsDegreeDto>> GetProgramsByDegreeAsync(DegreeType? degree);
         Task<List<ProgramComponent>> GetProgramComponentsAsync(int programId);
         Task<List<Job>> GetProgramJobsAsync(int programId);
+        Task<Institute> GetOrCreateInstituteAsync(string instituteName);
     }
 }

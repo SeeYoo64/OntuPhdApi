@@ -112,16 +112,17 @@ namespace OntuPhdApi.Controllers
                         {
                             var (filePath, contentType, fileSize, documentId) = await _fileService.SaveProgramFileFromFormAsync(program.Name, request.File);
                             program.ProgramDocumentId = documentId;
-                            await _programService.AddProgram(program, filePath, contentType, fileSize);
+                            await _programService.AddProgram(program, filePath, contentType, fileSize, request.InstituteName);
                         }
                         else
                         {
-                            await _programService.AddProgram(program, null, null, 0);
+                            await _programService.AddProgram(program, null, null, 0, request.InstituteName);
                         }
 
                         await transaction.CommitAsync();
+                        var programDto = await _programService.GetProgram(program.Id); // Fetch DTO
                         _logger.LogInformation("Program {ProgramName} added with ID {ProgramId}.", program.Name, program.Id);
-                        return CreatedAtAction(nameof(GetProgram), new { id = program.Id }, program);
+                        return CreatedAtAction(nameof(GetProgram), new { id = program.Id }, programDto);
                     }
                     catch (Exception ex)
                     {
@@ -151,27 +152,27 @@ namespace OntuPhdApi.Controllers
                     return NotFound("Program not found.");
                 }
 
-                UpdateProgramModel(existingProgram, request);
+                var program = MapToProgramModel(request);
+                program.Id = id; // Ensure ID is set
                 using (var transaction = await _context.Database.BeginTransactionAsync())
                 {
                     try
                     {
                         if (request.File != null && request.File.Length > 0)
                         {
-                            var (filePath, contentType, fileSize, documentId) = await _fileService.SaveProgramFileFromFormAsync(existingProgram.Name, request.File);
-                            existingProgram.ProgramDocumentId = documentId;
-                            await _programService.UpdateProgramWithDocument(existingProgram, filePath, request.File.FileName, contentType, fileSize);
+                            var (filePath, contentType, fileSize, documentId) = await _fileService.SaveProgramFileFromFormAsync(program.Name, request.File);
+                            program.ProgramDocumentId = documentId;
+                            await _programService.UpdateProgramWithDocument(program, filePath, request.File.FileName, contentType, fileSize, request.InstituteName);
                         }
                         else
                         {
-                            // Если файл не передан, оставляем ProgramDocumentId как есть или очищаем
-                            existingProgram.ProgramDocumentId = existingProgram.ProgramDocumentId; // Оставляем как есть
-                            await _programService.UpdateProgram(existingProgram);
+                            await _programService.UpdateProgram(program, request.InstituteName);
                         }
 
                         await transaction.CommitAsync();
+                        var programDto = await _programService.GetProgram(program.Id); // Fetch DTO
                         _logger.LogInformation("Program with ID {ProgramId} updated successfully.", id);
-                        return Ok(existingProgram);
+                        return Ok(programDto);
                     }
                     catch (Exception ex)
                     {
@@ -253,7 +254,8 @@ namespace OntuPhdApi.Controllers
                 Components = request.Components,
                 Jobs = request.Jobs,
                 Accredited = request.Accredited,
-                ProgramDocumentId = 0
+                ProgramDocumentId = 0,
+                InstituteId = null // Will be set in service
             };
         }
 
@@ -325,7 +327,6 @@ namespace OntuPhdApi.Controllers
             program.Results = request.Results ?? null;
             program.LinkFaculty = request.LinkFaculty ?? null;
             program.Accredited = request.Accredited;
-
             program.ProgramCharacteristics = IsEmptyProgramCharacteristics(request.ProgramCharacteristics) ? null : request.ProgramCharacteristics;
             program.ProgramCompetence = IsEmptyProgramCompetence(request.ProgramCompetence) ? null : new ProgramCompetence
             {
@@ -333,6 +334,7 @@ namespace OntuPhdApi.Controllers
                 SpecialCompetence = request.ProgramCompetence?.SpecialCompetence,
                 IntegralCompetence = request.ProgramCompetence?.IntegralCompetence
             };
+            
         }
 
 

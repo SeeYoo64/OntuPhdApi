@@ -8,8 +8,6 @@
         public DateTime UploadDate { get; set; }
         public long? FileSize { get; set; }
         public string ContentType { get; set; }
-
-
         public ProgramModel? Program { get; set; }
     }
 }

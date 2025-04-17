@@ -12,6 +12,7 @@ using OntuPhdApi.Repositories.ApplyDocument;
 using OntuPhdApi.Repositories.Defense;
 using OntuPhdApi.Repositories.Document;
 using OntuPhdApi.Repositories.Employee;
+using OntuPhdApi.Repositories.Institutes;
 using OntuPhdApi.Repositories.News;
 using OntuPhdApi.Repositories.Program;
 using OntuPhdApi.Services;
@@ -21,6 +22,7 @@ using OntuPhdApi.Services.Defense;
 using OntuPhdApi.Services.Documents;
 using OntuPhdApi.Services.Employees;
 using OntuPhdApi.Services.Files;
+using OntuPhdApi.Services.Institutes;
 using OntuPhdApi.Services.News;
 using OntuPhdApi.Services.Programs;
 
@@ -129,6 +131,9 @@ internal class Program
         builder.Services.AddScoped<IProgramRepository, ProgramRepository>();
         builder.Services.AddScoped<IProgramService, ProgramService>();
         builder.Services.AddScoped<IProgramFileService, ProgramFileService>();
+
+        builder.Services.AddScoped<IInstituteRepository, InstituteRepository>();
+        builder.Services.AddScoped<IInstituteService, InstituteService>();
 
         builder.Services.AddScoped<IDocumentRepository, DocumentRepository>();
         builder.Services.AddScoped<IDocumentService, DocumentService>();

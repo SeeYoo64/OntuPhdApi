@@ -29,14 +29,16 @@ namespace OntuPhdApi.Services.Programs
             _logger = logger;
         }
 
-        public async Task<List<ProgramModel>> GetPrograms()
+        public async Task<List<ProgramModelDto>> GetPrograms()
         {
-            return await _programRepository.GetAllProgramsAsync();
+            var programs = await _programRepository.GetAllProgramsAsync();
+            return programs.Select(MapToDto).ToList();
         }
 
-        public async Task<ProgramModel> GetProgram(int id)
+        public async Task<ProgramModelDto> GetProgram(int id)
         {
-            return await _programRepository.GetProgramByIdAsync(id);
+            var program = await _programRepository.GetProgramByIdAsync(id);
+            return program != null ? MapToDto(program) : null;
         }
 
         public async Task<List<ProgramsDegreeDto>> GetProgramsDegrees(DegreeType? degree)
@@ -57,15 +59,22 @@ namespace OntuPhdApi.Services.Programs
         }
 
 
-        public async Task AddProgram(ProgramModel program, string? filePath, string? contentType, long fileSize)
+        public async Task AddProgram(ProgramModel program, string? filePath, string? contentType, long fileSize, string? instituteName)
         {
             _logger.LogInformation("Adding new program {ProgramName}.", program.Name);
             try
             {
+                if (!string.IsNullOrEmpty(instituteName))
+                {
+                    var institute = await _programRepository.GetOrCreateInstituteAsync(instituteName);
+                    program.InstituteId = institute.Id;
+                }
+
                 int documentId = await _fileService.SaveProgramFileAsync(program.Name, filePath, contentType, fileSize);
                 program.ProgramDocumentId = documentId == 0 ? null : documentId;
                 program.Id = await _programRepository.InsertProgramAsync(program);
-                _logger.LogInformation("Program {ProgramName} added with ID {ProgramId} and document ID {DocumentId}.", program.Name, program.Id, program.ProgramDocumentId);
+                _logger.LogInformation("Program {ProgramName} added with ID {ProgramId}, document ID {DocumentId}, and institute ID {InstituteId}.",
+                    program.Name, program.Id, program.ProgramDocumentId, program.InstituteId);
             }
             catch (Exception ex)
             {
@@ -74,15 +83,26 @@ namespace OntuPhdApi.Services.Programs
             }
         }
 
-        public async Task UpdateProgramWithDocument(ProgramModel program, string filePath, string fileName, string contentType, long fileSize)
+        public async Task UpdateProgramWithDocument(ProgramModel program, string filePath, string fileName, string contentType, long fileSize, string? instituteName)
         {
             _logger.LogInformation("Updating program {ProgramName} with ID {ProgramId} and new file.", program.Name, program.Id);
             try
             {
+                if (!string.IsNullOrEmpty(instituteName))
+                {
+                    var institute = await _programRepository.GetOrCreateInstituteAsync(instituteName);
+                    program.InstituteId = institute.Id;
+                }
+                else
+                {
+                    program.InstituteId = null; // Allow clearing the institute
+                }
+
                 var (newFilePath, documentId) = await _fileService.UpdateProgramFileAsync(program.ProgramDocumentId ?? 0, fileName, filePath, contentType, fileSize);
                 program.ProgramDocumentId = documentId;
                 await _programRepository.UpdateProgramAsync(program);
-                _logger.LogInformation("Program {ProgramName} with ID {ProgramId} updated with new document ID {DocumentId}.", program.Name, program.Id, documentId);
+                _logger.LogInformation("Program {ProgramName} with ID {ProgramId} updated with new document ID {DocumentId} and institute ID {InstituteId}.",
+                    program.Name, program.Id, documentId, program.InstituteId);
             }
             catch (Exception ex)
             {
@@ -91,11 +111,30 @@ namespace OntuPhdApi.Services.Programs
             }
         }
 
-        public async Task UpdateProgram(ProgramModel program)
+        public async Task UpdateProgram(ProgramModel program, string? instituteName)
         {
             _logger.LogInformation("Updating program {ProgramName} with ID {ProgramId}.", program.Name, program.Id);
-            await _programRepository.UpdateProgramAsync(program);
-            _logger.LogInformation("Program {ProgramName} with ID {ProgramId} updated successfully.", program.Name, program.Id);
+            try
+            {
+                if (!string.IsNullOrEmpty(instituteName))
+                {
+                    var institute = await _programRepository.GetOrCreateInstituteAsync(instituteName);
+                    program.InstituteId = institute.Id;
+                }
+                else
+                {
+                    program.InstituteId = null; // Allow clearing the institute
+                }
+
+                await _programRepository.UpdateProgramAsync(program);
+                _logger.LogInformation("Program {ProgramName} with ID {ProgramId} updated with institute ID {InstituteId}.",
+                    program.Name, program.Id, program.InstituteId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to update program {ProgramName} with ID {ProgramId}.", program.Name, program.Id);
+                throw;
+            }
         }
 
         public async Task DeleteProgram(int id)
@@ -125,7 +164,35 @@ namespace OntuPhdApi.Services.Programs
             }
         }
 
-
+        private ProgramModelDto MapToDto(ProgramModel program)
+        {
+            return new ProgramModelDto
+            {
+                Id = program.Id,
+                Degree = program.Degree,
+                Name = program.Name,
+                NameCode = program.NameCode,
+                FieldOfStudy = program.FieldOfStudy,
+                Speciality = program.Speciality,
+                Form = program.Form,
+                Objects = program.Objects,
+                Directions = program.Directions,
+                Descriptions = program.Descriptions,
+                Purpose = program.Purpose,
+                Years = program.Years,
+                Credits = program.Credits,
+                ProgramCharacteristics = program.ProgramCharacteristics,
+                ProgramCompetence = program.ProgramCompetence,
+                Results = program.Results,
+                LinkFaculty = program.LinkFaculty,
+                ProgramDocumentId = program.ProgramDocumentId,
+                ProgramDocument = program.ProgramDocument,
+                Components = program.Components,
+                Jobs = program.Jobs,
+                Accredited = program.Accredited,
+                Institute = program.Institute?.Name
+            };
+        }
 
     }
 }

@@ -9,6 +9,7 @@ using OntuPhdApi.Models.Employees;
 using OntuPhdApi.Models.News;
 using OntuPhdApi.Models.Documents;
 using OntuPhdApi.Models.ApplyDocuments;
+using OntuPhdApi.Models.Institutes;
 
 namespace OntuPhdApi.Data
 {
@@ -16,6 +17,7 @@ namespace OntuPhdApi.Data
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
+        public DbSet<Institute> Institutes { get; set; }
         public DbSet<ProgramModel> Programs { get; set; }
         public DbSet<ProgramDocument> ProgramDocuments { get; set; }
         public DbSet<ProgramComponent> ProgramComponents { get; set; }
@@ -117,6 +119,13 @@ namespace OntuPhdApi.Data
                       .WithOne(e => e.ProgramModel)
                       .HasForeignKey(e => e.ProgramId)
                       .OnDelete(DeleteBehavior.Cascade);
+
+                // Связь один-ко-многим с Institute
+                entity.HasOne(p => p.Institute)
+                .WithMany(i => i.Programs)
+                .HasForeignKey(p => p.InstituteId)
+                .IsRequired(true);
+
             });
 
             modelBuilder.Ignore<FieldOfStudy>();
