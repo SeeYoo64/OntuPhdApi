@@ -27,7 +27,7 @@ namespace OntuPhdApi.Models.Programs
         public ProgramCompetence? ProgramCompetence { get; set; }
         public List<string>? Results { get; set; }
         public List<IFormFile>? Files { get; set; }
-        public string? LinkFaculty { get; set; }
+        public List<LinksFaculties>? LinkFaculty { get; set; }
         public List<ProgramComponent>? Components { get; set; }
         public List<Job>? Jobs { get; set; }
         public bool Accredited { get; set; }

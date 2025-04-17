@@ -98,6 +98,9 @@ namespace OntuPhdApi.Data
                 entity.Property(e => e.Results)
                       .HasColumnType("jsonb");
 
+                entity.Property(e => e.LinkFaculty)
+                       .HasColumnType("jsonb");
+
                 entity.Property(e => e.LinksFile)
                       .HasColumnType("jsonb");
 

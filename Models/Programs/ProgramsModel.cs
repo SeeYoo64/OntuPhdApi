@@ -37,11 +37,17 @@ namespace OntuPhdApi.Models.Programs
         public ProgramCharacteristics? ProgramCharacteristics { get; set; }
         public ProgramCompetence? ProgramCompetence { get; set; }
         public List<string>? Results { get; set; }
-        public string? LinkFaculty { get; set; }
+        public List<LinksFaculties>? LinkFaculty { get; set; }
         public List<ProgramFiles>? LinksFile { get; set; }
         public List<ProgramComponent>? Components { get; set; }
         public List<Job>? Jobs { get; set; }
         public bool Accredited { get; set; }
+    }
+
+    public class LinksFaculties
+    {
+        public string Name { get; set; }
+        public string Link { get; set; }
     }
 
     public class ProgramFiles
