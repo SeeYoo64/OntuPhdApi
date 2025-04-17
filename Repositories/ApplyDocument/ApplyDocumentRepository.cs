@@ -43,14 +43,14 @@ namespace OntuPhdApi.Repositories.ApplyDocument
             }
         }
 
-        public async Task<List<ApplyDocumentModel>> GetApplyDocumentsByNameAsync(string name)
+        public async Task<ApplyDocumentModel> GetApplyDocumentByNameAsync(string name)
         {
             _logger.LogInformation("Fetching apply documents for name {Name} from database.", name);
             try
             {
                 return await _context.ApplyDocuments
-                    .Where(d => EF.Functions.ILike(d.Name, $"%{name}%"))
-                    .ToListAsync();
+                .Where(d => EF.Functions.ILike(d.Name, $"%{name}%"))
+                .FirstOrDefaultAsync();
             }
             catch (Exception ex)
             {

@@ -49,9 +49,9 @@ namespace OntuPhdApi.Services.ApplyDocuments
             }
         }
 
-        public async Task<List<ApplyDocumentDto>> GetApplyDocumentsByNameAsync(string name)
+        public async Task<ApplyDocumentDto> GetApplyDocumentByNameAsync(string name)
         {
-            _logger.LogInformation("Fetching apply documents for name {Name}.", name);
+            _logger.LogInformation("Fetching apply document for name {Name}.", name);
             try
             {
                 if (string.IsNullOrEmpty(name))
@@ -60,8 +60,8 @@ namespace OntuPhdApi.Services.ApplyDocuments
                     throw new ArgumentException("Name parameter cannot be empty or null.");
                 }
 
-                var applyDocuments = await _applyDocumentRepository.GetApplyDocumentsByNameAsync(name);
-                return ApplyDocumentMapper.ToDtoList(applyDocuments);
+                var applyDocuments = await _applyDocumentRepository.GetApplyDocumentByNameAsync(name);
+                return ApplyDocumentMapper.ToDto(applyDocuments);
             }
             catch (Exception ex)
             {

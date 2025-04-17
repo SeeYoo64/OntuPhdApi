@@ -67,7 +67,7 @@ namespace OntuPhdApi.Controllers
                     return StatusCode(400, "Bad request.");
                 }
 
-                var applyDocuments = await _applyDocumentsService.GetApplyDocumentsByNameAsync(name);
+                var applyDocuments = await _applyDocumentsService.GetApplyDocumentByNameAsync(name);
                 return Ok(applyDocuments);
             }
             catch (ArgumentException ex)
