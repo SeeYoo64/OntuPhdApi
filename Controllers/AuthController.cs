@@ -405,8 +405,6 @@ namespace OntuPhdApi.Controllers
             var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             _logger.LogInformation("Extracted user ID from token: {UserId}", userId);
 
-
-
             _logger.LogInformation("Searching for user with ID: {UserId}", userId);
             var user = await _context.Users.FindAsync(userId);
 

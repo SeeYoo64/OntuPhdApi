@@ -17,7 +17,6 @@ namespace OntuPhdApi.Data
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
         public DbSet<ProgramModel> Programs { get; set; }
-        public DbSet<ProgramDocument> ProgramDocuments { get; set; }
         public DbSet<ProgramComponent> ProgramComponents { get; set; }
         public DbSet<Job> Jobs { get; set; }
 
@@ -53,7 +52,6 @@ namespace OntuPhdApi.Data
 
         private void ConfigureProgramEntity(ModelBuilder modelBuilder)
         {
-            ConfigureProgramDocument(modelBuilder);
             ConfigureProgramJobs(modelBuilder);
             ConfigureProgramComponent(modelBuilder);
             ConfigureProgramModel(modelBuilder);
@@ -100,11 +98,8 @@ namespace OntuPhdApi.Data
                 entity.Property(e => e.Results)
                       .HasColumnType("jsonb");
 
-                // Связь один-к-одному с ProgramDocument
-                entity.HasOne(e => e.ProgramDocument)
-                      .WithOne()
-                      .HasForeignKey<ProgramModel>(e => e.ProgramDocumentId)
-                      .OnDelete(DeleteBehavior.SetNull);
+                entity.Property(e => e.LinksFile)
+                      .HasColumnType("jsonb");
 
                 // Связь один-ко-многим с ProgramComponent
                 entity.HasMany(e => e.Components)
@@ -157,19 +152,6 @@ namespace OntuPhdApi.Data
             });
         }
 
-        private void ConfigureProgramDocument(ModelBuilder modelBuilder)
-        {
-            // Конфигурация ProgramDocument
-            modelBuilder.Entity<ProgramDocument>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-                entity.Property(e => e.FileName).IsRequired();
-                entity.Property(e => e.FilePath).IsRequired();
-                entity.Property(e => e.UploadDate).IsRequired();
-                entity.Property(e => e.FileSize).IsRequired();
-                entity.Property(e => e.ContentType).IsRequired();
-            });
-        }
 
         private void ConfigureDefense(ModelBuilder modelBuilder)
         {

@@ -6,13 +6,11 @@ namespace OntuPhdApi.Repositories.Program
 {
     public interface IProgramRepository
     {
-        Task<List<ProgramModel>> GetAllProgramsAsync();
+        Task<IEnumerable<ProgramModel>> GetAllProgramsAsync();
         Task<ProgramModel> GetProgramByIdAsync(int id);
-        Task<int> InsertProgramAsync(ProgramModel program);
+        Task<IEnumerable<ProgramModel>> GetProgramsByDegreeAsync(string degreeType);
+        Task AddProgramAsync(ProgramModel program);
         Task UpdateProgramAsync(ProgramModel program);
         Task DeleteProgramAsync(int id);
-        Task<List<ProgramsDegreeDto>> GetProgramsByDegreeAsync(DegreeType? degree);
-        Task<List<ProgramComponent>> GetProgramComponentsAsync(int programId);
-        Task<List<Job>> GetProgramJobsAsync(int programId);
     }
 }

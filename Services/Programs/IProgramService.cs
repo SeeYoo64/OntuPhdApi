@@ -6,12 +6,11 @@ namespace OntuPhdApi.Services.Programs
 {
     public interface IProgramService
     {
-        Task<List<ProgramModel>> GetPrograms();
-        Task<ProgramModel> GetProgram(int id);
-        Task AddProgram(ProgramModel program, string? filePath, string? contentType, long fileSize);
-        Task UpdateProgramWithDocument(ProgramModel program, string filePath, string fileName, string contentType, long fileSize);
-        Task UpdateProgram(ProgramModel program);
-        Task DeleteProgram(int id);
-        Task<List<ProgramsDegreeDto>> GetProgramsDegrees(DegreeType? degree);
+        Task<IEnumerable<ProgramModel>> GetAllProgramsAsync();
+        Task<ProgramModel> GetProgramByIdAsync(int id);
+        Task AddProgramAsync(ProgramCreateUpdateDto programDto);
+        Task UpdateProgramAsync(int id, ProgramCreateUpdateDto programDto);
+        Task DeleteProgramAsync(int id);
+        Task<IEnumerable<ProgramsDegreeDto>> GetProgramsByDegreeAsync(string degreeType);
     }
 }

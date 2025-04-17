@@ -1,7 +1,6 @@
 ﻿using Npgsql;
 using OntuPhdApi.Models.Employees;
 using OntuPhdApi.Repositories.Employee;
-using OntuPhdApi.Services.Files;
 using OntuPhdApi.Utilities.Mappers;
 
 namespace OntuPhdApi.Services.Employees
@@ -9,17 +8,14 @@ namespace OntuPhdApi.Services.Employees
     public class EmployeesService : IEmployeesService
     {
         private readonly IEmployeeRepository _employeeRepository;
-        private readonly IProgramFileService _fileService;
         private readonly ILogger<EmployeesService> _logger;
         private readonly string _employeesUploadsPath = Path.Combine("wwwroot", "Files", "Uploads", "Employees");
 
         public EmployeesService(
             IEmployeeRepository employeeRepository,
-            IProgramFileService fileService,
             ILogger<EmployeesService> logger)
         {
             _employeeRepository = employeeRepository;
-            _fileService = fileService;
             _logger = logger;
 
             // Создаем директорию для загрузок, если она не существует

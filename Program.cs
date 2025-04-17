@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Hosting;
@@ -20,7 +21,6 @@ using OntuPhdApi.Services.Authorization;
 using OntuPhdApi.Services.Defense;
 using OntuPhdApi.Services.Documents;
 using OntuPhdApi.Services.Employees;
-using OntuPhdApi.Services.Files;
 using OntuPhdApi.Services.News;
 using OntuPhdApi.Services.Programs;
 
@@ -128,7 +128,6 @@ internal class Program
 
         builder.Services.AddScoped<IProgramRepository, ProgramRepository>();
         builder.Services.AddScoped<IProgramService, ProgramService>();
-        builder.Services.AddScoped<IProgramFileService, ProgramFileService>();
 
         builder.Services.AddScoped<IDocumentRepository, DocumentRepository>();
         builder.Services.AddScoped<IDocumentService, DocumentService>();
@@ -168,7 +167,7 @@ internal class Program
             {
                 Title = "OntuPhd API",
                 Version = "v1",
-                Description = """<div style="text-align: center;"><br>  <h2>Hello, FRONTENDERRR! 🌸</h2><br>   """ 
+                Description = """<div style="text-align: center;"><br>  <h2>🌸 haiiii ^_^ hi!! hiiiiiii < 3 haiiiii hi :3 🌸</h2><br>   """
             });
         });
 
