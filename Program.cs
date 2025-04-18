@@ -25,6 +25,8 @@ using OntuPhdApi.Services.Files;
 using OntuPhdApi.Services.Institutes;
 using OntuPhdApi.Services.News;
 using OntuPhdApi.Services.Programs;
+using OntuPhdApi.Utilities.Mappers;
+using static OntuPhdApi.Services.Programs.ProgramService;
 
 internal class Program
 {
@@ -131,6 +133,8 @@ internal class Program
         builder.Services.AddScoped<IProgramRepository, ProgramRepository>();
         builder.Services.AddScoped<IProgramService, ProgramService>();
         builder.Services.AddScoped<IProgramFileService, ProgramFileService>();
+
+        builder.Services.AddScoped<OntuPhdApi.Utilities.Mappers.IProgramMapper, OntuPhdApi.Utilities.Mappers.ProgramMapper>(); // Or OntuPhdApi.Utilities.Mappers
 
         builder.Services.AddScoped<IInstituteRepository, InstituteRepository>();
         builder.Services.AddScoped<IInstituteService, InstituteService>();

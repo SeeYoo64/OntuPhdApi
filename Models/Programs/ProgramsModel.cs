@@ -2,6 +2,7 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 using OntuPhdApi.Models.Institutes;
+using OntuPhdApi.Models.Programs.Components;
 
 namespace OntuPhdApi.Models.Programs
 {
@@ -17,7 +18,7 @@ namespace OntuPhdApi.Models.Programs
         public string Name { get; set; }
 
         public string? NameCode { get; set; }
-
+        [Column(TypeName = "jsonb")]
         public FieldOfStudy? FieldOfStudy { get; set; }
 
         [Column(TypeName = "jsonb")]
@@ -25,6 +26,7 @@ namespace OntuPhdApi.Models.Programs
 
         [Column(TypeName = "jsonb")]
         public List<string>? Form { get; set; }
+
         public string? Objects { get; set; }
 
         [Column(TypeName = "jsonb")]
@@ -33,38 +35,30 @@ namespace OntuPhdApi.Models.Programs
         public string? Descriptions { get; set; }
 
         public string? Purpose { get; set; }
-        [ForeignKey("Institute")]
-        public int? InstituteId { get; set; } 
 
+        public int? InstituteId { get; set; }
         public Institute? Institute { get; set; }
+
         public int? Years { get; set; }
 
         public int? Credits { get; set; }
 
-        [Column(TypeName = "jsonb")]
-        public ProgramCharacteristics? ProgramCharacteristics { get; set; }
-
-        [Column(TypeName = "jsonb")]
-        public ProgramCompetence? ProgramCompetence { get; set; }
-
-        [Column(TypeName = "jsonb")]
         public List<string>? Results { get; set; }
 
-        public string? LinkFaculty { get; set; }
+        public List<LinkFaculty> LinkFaculties { get; set; } = new();
 
-        [JsonIgnore]
         public int? ProgramDocumentId { get; set; }
-
         public ProgramDocument? ProgramDocument { get; set; }
 
-        [JsonIgnore]
-        public List<ProgramComponent>? Components { get; set; }
 
-        [JsonIgnore]
+        public ProgramCharacteristics? ProgramCharacteristics { get; set; }
+        public ProgramCompetence? ProgramCompetence { get; set; }
+        public List<ProgramComponent>? ProgramComponents { get; set; }
         public List<Job>? Jobs { get; set; }
 
         public bool Accredited { get; set; }
     }
+
 
     public class FieldOfStudy
     {
@@ -100,62 +94,4 @@ namespace OntuPhdApi.Models.Programs
         public string? FieldCode { get; set; }
     }
 
-    public class ProgramComponent
-    {
-        [JsonPropertyName("id")]
-        public int? Id { get; set; }
-
-        public int? ProgramId { get; set; }
-
-        public string? ComponentType { get; set; }
-
-        public string? ComponentName { get; set; }
-
-        public int? ComponentCredits { get; set; }
-
-        public int? ComponentHours { get; set; }
-
-        public List<string>? ControlForm { get; set; }
-        [JsonIgnore]
-        public ProgramModel? ProgramModel { get; set; }
-    }
-
-    public class ProgramCompetence
-    {
-        public List<string>? OverallCompetence { get; set; }
-
-        public List<string>? SpecialCompetence { get; set; }
-
-        public string? IntegralCompetence { get; set; }
-    }
-
-    public class ProgramCharacteristics
-    {
-        public Area? Area { get; set; }
-
-        public string? Focus { get; set; }
-
-        public string? Features { get; set; }
-    }
-
-    public class Area
-    {
-        public string? Object { get; set; }
-        public string? Aim { get; set; }
-        public string? Theory { get; set; }
-        public string? Methods { get; set; }
-        public string? Instruments { get; set; }
-    }
-
-    public class Job
-    {
-        public int Id { get; set; }
-        public string Code { get; set; }
-        public string Title { get; set; }
-        [JsonIgnore]
-        public int ProgramId { get; set; }
-        [JsonIgnore]
-        [Column(TypeName = "jsonb")]
-        public ProgramModel ProgramModel { get; set; }
-    }
 }

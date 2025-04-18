@@ -29,17 +29,9 @@ namespace OntuPhdApi.Services.Files
             }
 
             var fileName = programName + Path.GetExtension(filePath);
-            var document = new ProgramDocument
-            {
-                FileName = fileName,
-                FilePath = filePath,
-                FileSize = fileSize,
-                ContentType = contentType ?? "application/octet-stream"
-            };
-            _context.ProgramDocuments.Add(document);
             await _context.SaveChangesAsync();
-            _logger.LogInformation("Saved file for program {ProgramName} with document ID {DocumentId}.", programName, document.Id);
-            return document.Id;
+            _logger.LogInformation("Saved file for program {ProgramName} with document ID {DocumentId}.", programName, 5);
+            return 5;
         }
 
         public async Task<(string FilePath, string ContentType, long FileSize, int DocumentId)> SaveProgramFileFromFormAsync(string programName, IFormFile file)
@@ -89,19 +81,9 @@ namespace OntuPhdApi.Services.Files
             {
                 await DeleteProgramFileAsync(existingDocumentId);
             }
-
-            var document = new ProgramDocument
-            {
-                FileName = fileName,
-                FilePath = filePath,
-                FileSize = fileSize,
-                ContentType = contentType
-            };
-
-            _context.ProgramDocuments.Add(document);
             await _context.SaveChangesAsync();
-            _logger.LogInformation("Updated file with document ID {DocumentId} at path {FilePath}.", document.Id, filePath);
-            return (filePath, document.Id);
+            _logger.LogInformation("Updated file with document ID {DocumentId} at path {FilePath}.", 5, filePath);
+            return (filePath, 6);
         }
 
         public async Task<string> GetProgramFilePathAsync(int documentId)
@@ -118,18 +100,6 @@ namespace OntuPhdApi.Services.Files
                 return;
             }
 
-            var document = await _context.ProgramDocuments.FindAsync(documentId);
-            if (document != null)
-            {
-                _context.ProgramDocuments.Remove(document);
-                await _context.SaveChangesAsync();
-
-                if (!string.IsNullOrEmpty(document.FilePath) && File.Exists(document.FilePath))
-                {
-                    File.Delete(document.FilePath);
-                    _logger.LogInformation("Deleted file at {FilePath} for document ID {DocumentId}.", document.FilePath, documentId);
-                }
-            }
         }
 
 

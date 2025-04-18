@@ -9,6 +9,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using OntuPhdApi.Data;
 using OntuPhdApi.Models.Defense;
 using OntuPhdApi.Models.Programs;
+using OntuPhdApi.Models.Programs.Components;
 
 #nullable disable
 

@@ -17,8 +17,8 @@ using OntuPhdApi.Models.Programs.Components;
 namespace OntuPhdApi.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250416002931_UserUpdate")]
-    partial class UserUpdate
+    [Migration("20250418073254_Update")]
+    partial class Update
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -264,6 +264,23 @@ namespace OntuPhdApi.Migrations
                     b.ToTable("Employees");
                 });
 
+            modelBuilder.Entity("OntuPhdApi.Models.Institutes.Institute", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Institutes");
+                });
+
             modelBuilder.Entity("OntuPhdApi.Models.News.NewsModel", b =>
                 {
                     b.Property<int>("Id")
@@ -310,31 +327,26 @@ namespace OntuPhdApi.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasAnnotation("Relational:JsonPropertyName", "id");
+                        .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Code")
                         .IsRequired()
-                        .HasColumnType("text")
-                        .HasAnnotation("Relational:JsonPropertyName", "code");
+                        .HasColumnType("text");
 
                     b.Property<int>("ProgramId")
                         .HasColumnType("integer");
 
                     b.Property<string>("Title")
                         .IsRequired()
-                        .HasColumnType("text")
-                        .HasAnnotation("Relational:JsonPropertyName", "title");
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
                     b.HasIndex("ProgramId");
 
                     b.ToTable("Jobs");
-
-                    b.HasAnnotation("Relational:JsonPropertyName", "jobs");
                 });
 
             modelBuilder.Entity("OntuPhdApi.Models.Programs.ProgramComponent", b =>
@@ -347,38 +359,30 @@ namespace OntuPhdApi.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<int?>("ComponentCredits")
-                        .HasColumnType("integer")
-                        .HasAnnotation("Relational:JsonPropertyName", "componentCredits");
+                        .HasColumnType("integer");
 
                     b.Property<int?>("ComponentHours")
-                        .HasColumnType("integer")
-                        .HasAnnotation("Relational:JsonPropertyName", "componentHours");
+                        .HasColumnType("integer");
 
                     b.Property<string>("ComponentName")
                         .IsRequired()
-                        .HasColumnType("text")
-                        .HasAnnotation("Relational:JsonPropertyName", "componentName");
+                        .HasColumnType("text");
 
                     b.Property<string>("ComponentType")
                         .IsRequired()
-                        .HasColumnType("text")
-                        .HasAnnotation("Relational:JsonPropertyName", "componentType");
+                        .HasColumnType("text");
 
                     b.PrimitiveCollection<List<string>>("ControlForm")
-                        .HasColumnType("jsonb")
-                        .HasAnnotation("Relational:JsonPropertyName", "controlForm");
+                        .HasColumnType("jsonb");
 
                     b.Property<int?>("ProgramId")
-                        .HasColumnType("integer")
-                        .HasAnnotation("Relational:JsonPropertyName", "programId");
+                        .HasColumnType("integer");
 
                     b.HasKey("Id");
 
                     b.HasIndex("ProgramId");
 
                     b.ToTable("ProgramComponents");
-
-                    b.HasAnnotation("Relational:JsonPropertyName", "components");
                 });
 
             modelBuilder.Entity("OntuPhdApi.Models.Programs.ProgramDocument", b =>
@@ -416,89 +420,75 @@ namespace OntuPhdApi.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasAnnotation("Relational:JsonPropertyName", "id");
+                        .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<bool>("Accredited")
-                        .HasColumnType("boolean")
-                        .HasAnnotation("Relational:JsonPropertyName", "accredited");
+                        .HasColumnType("boolean");
 
                     b.Property<int?>("Credits")
-                        .HasColumnType("integer")
-                        .HasAnnotation("Relational:JsonPropertyName", "credits");
+                        .HasColumnType("integer");
 
                     b.Property<string>("Degree")
                         .IsRequired()
-                        .HasColumnType("text")
-                        .HasAnnotation("Relational:JsonPropertyName", "degree");
+                        .HasColumnType("text");
 
                     b.Property<string>("Descriptions")
-                        .HasColumnType("text")
-                        .HasAnnotation("Relational:JsonPropertyName", "descriptions");
+                        .HasColumnType("text");
 
                     b.Property<List<string>>("Directions")
-                        .HasColumnType("jsonb")
-                        .HasAnnotation("Relational:JsonPropertyName", "directions");
+                        .HasColumnType("jsonb");
 
                     b.Property<FieldOfStudy>("FieldOfStudy")
-                        .HasColumnType("jsonb")
-                        .HasAnnotation("Relational:JsonPropertyName", "fieldOfStudy");
+                        .HasColumnType("jsonb");
 
                     b.Property<List<string>>("Form")
-                        .HasColumnType("jsonb")
-                        .HasAnnotation("Relational:JsonPropertyName", "form");
+                        .HasColumnType("jsonb");
+
+                    b.Property<int>("InstituteId")
+                        .HasColumnType("integer");
 
                     b.Property<string>("LinkFaculty")
-                        .HasColumnType("text")
-                        .HasAnnotation("Relational:JsonPropertyName", "linkFaculty");
+                        .HasColumnType("text");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("text")
-                        .HasAnnotation("Relational:JsonPropertyName", "name");
+                        .HasColumnType("text");
 
                     b.Property<string>("NameCode")
-                        .HasColumnType("text")
-                        .HasAnnotation("Relational:JsonPropertyName", "nameCode");
+                        .HasColumnType("text");
 
                     b.Property<string>("Objects")
-                        .HasColumnType("text")
-                        .HasAnnotation("Relational:JsonPropertyName", "objects");
+                        .HasColumnType("text");
 
                     b.Property<ProgramCharacteristics>("ProgramCharacteristics")
-                        .HasColumnType("jsonb")
-                        .HasAnnotation("Relational:JsonPropertyName", "programCharacteristics");
+                        .HasColumnType("jsonb");
 
                     b.Property<ProgramCompetence>("ProgramCompetence")
-                        .HasColumnType("jsonb")
-                        .HasAnnotation("Relational:JsonPropertyName", "programCompetence");
+                        .HasColumnType("jsonb");
 
                     b.Property<int?>("ProgramDocumentId")
-                        .HasColumnType("integer")
-                        .HasAnnotation("Relational:JsonPropertyName", "programDocumentId");
+                        .HasColumnType("integer");
 
                     b.Property<int?>("ProgramDocumentId1")
                         .HasColumnType("integer");
 
                     b.Property<string>("Purpose")
-                        .HasColumnType("text")
-                        .HasAnnotation("Relational:JsonPropertyName", "purpose");
+                        .HasColumnType("text");
 
                     b.Property<List<string>>("Results")
-                        .HasColumnType("jsonb")
-                        .HasAnnotation("Relational:JsonPropertyName", "results");
+                        .HasColumnType("jsonb");
 
                     b.Property<Speciality>("Speciality")
-                        .HasColumnType("jsonb")
-                        .HasAnnotation("Relational:JsonPropertyName", "speciality");
+                        .HasColumnType("jsonb");
 
                     b.Property<int?>("Years")
-                        .HasColumnType("integer")
-                        .HasAnnotation("Relational:JsonPropertyName", "years");
+                        .HasColumnType("integer");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("InstituteId");
 
                     b.HasIndex("ProgramDocumentId")
                         .IsUnique();
@@ -507,8 +497,6 @@ namespace OntuPhdApi.Migrations
                         .IsUnique();
 
                     b.ToTable("Programs");
-
-                    b.HasAnnotation("Relational:JsonPropertyName", "programDocument");
                 });
 
             modelBuilder.Entity("OntuPhdApi.Models.Authorization.Account", b =>
@@ -556,6 +544,12 @@ namespace OntuPhdApi.Migrations
 
             modelBuilder.Entity("OntuPhdApi.Models.Programs.ProgramModel", b =>
                 {
+                    b.HasOne("OntuPhdApi.Models.Institutes.Institute", "Institute")
+                        .WithMany("Programs")
+                        .HasForeignKey("InstituteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("OntuPhdApi.Models.Programs.ProgramDocument", "ProgramDocument")
                         .WithOne()
                         .HasForeignKey("OntuPhdApi.Models.Programs.ProgramModel", "ProgramDocumentId")
@@ -565,12 +559,19 @@ namespace OntuPhdApi.Migrations
                         .WithOne("Program")
                         .HasForeignKey("OntuPhdApi.Models.Programs.ProgramModel", "ProgramDocumentId1");
 
+                    b.Navigation("Institute");
+
                     b.Navigation("ProgramDocument");
                 });
 
             modelBuilder.Entity("OntuPhdApi.Models.Authorization.User", b =>
                 {
                     b.Navigation("Accounts");
+                });
+
+            modelBuilder.Entity("OntuPhdApi.Models.Institutes.Institute", b =>
+                {
+                    b.Navigation("Programs");
                 });
 
             modelBuilder.Entity("OntuPhdApi.Models.Programs.ProgramDocument", b =>

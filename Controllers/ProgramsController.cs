@@ -7,6 +7,10 @@ using OntuPhdApi.Services.Files;
 using System;
 using System.Threading.Tasks;
 using OntuPhdApi.Data;
+using OntuPhdApi.Models.Programs.Components;
+using Microsoft.EntityFrameworkCore;
+using OntuPhdApi.Models.Institutes;
+using OntuPhdApi.Utilities.Mappers;
 
 namespace OntuPhdApi.Controllers
 {
@@ -25,11 +29,13 @@ namespace OntuPhdApi.Controllers
         private readonly AppDbContext _context;
         private readonly ILogger<ProgramsController> _logger;
 
+
         public ProgramsController(
             IProgramService programService,
             IProgramFileService fileService,
             AppDbContext context,
-            ILogger<ProgramsController> logger)
+            ILogger<ProgramsController> logger
+            )
         {
             _programService = programService ?? throw new ArgumentNullException(nameof(programService));
             _fileService = fileService ?? throw new ArgumentNullException(nameof(fileService));
@@ -38,12 +44,12 @@ namespace OntuPhdApi.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetPrograms()
+        public async Task<ActionResult<IEnumerable<ProgramResponseDto>>> GetAllPrograms()
         {
             _logger.LogInformation("Fetching all programs.");
             try
             {
-                var programs = await _programService.GetPrograms();
+                var programs = await _programService.GetAllProgramsAsync();
                 return Ok(programs);
             }
             catch (Exception ex)
@@ -55,13 +61,14 @@ namespace OntuPhdApi.Controllers
 
 
         [HttpGet("degrees")]
-        public async Task<IActionResult> GetProgramsDegrees([FromQuery] DegreeType? degree)
+        public async Task<IActionResult> GetProgramsDegrees([FromQuery] DegreeType? degreeType)
         {
+            string degree = degreeType.ToString();
             _logger.LogInformation("Fetching programs for degree {Degree}.", degree?.ToString() ?? "all");
             try
             {
-                var programsDegrees = await _programService.GetProgramsDegrees(degree);
-                return Ok(programsDegrees);
+                var programs = await _programService.GetProgramsByDegreeAsync(degree);
+                return Ok(programs);
             }
             catch (Exception ex)
             {
@@ -71,16 +78,15 @@ namespace OntuPhdApi.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetProgram(int id)
+        public async Task<ActionResult<ProgramResponseDto>> GetProgram(int id)
         {
             _logger.LogInformation("Fetching program with ID {ProgramId}.", id);
             try
             {
-                var program = await _programService.GetProgram(id);
+                var program = await _programService.GetProgramByIdAsync(id);
                 if (program == null)
                 {
-                    _logger.LogWarning("Program with ID {ProgramId} not found.", id);
-                    return NotFound("Program not found.");
+                    return NotFound();
                 }
                 return Ok(program);
             }
@@ -92,250 +98,36 @@ namespace OntuPhdApi.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> AddProgram([FromForm] ProgramRequestDto request)
+        public async Task<ActionResult<ProgramResponseDto>> CreateProgram(ProgramCreateDto programDto)
         {
-            _logger.LogInformation("Adding new program with name {ProgramName}.", request.Name);
-            try
-            {
-                if (!IsValidProgramRequest(request, out string errorMessage))
-                {
-                    _logger.LogWarning("Invalid program data: {ErrorMessage}.", errorMessage);
-                    return BadRequest(errorMessage);
-                }
-
-                var program = MapToProgramModel(request);
-                using (var transaction = await _context.Database.BeginTransactionAsync())
-                {
-                    try
-                    {
-                        if (request.File != null && request.File.Length > 0)
-                        {
-                            var (filePath, contentType, fileSize, documentId) = await _fileService.SaveProgramFileFromFormAsync(program.Name, request.File);
-                            program.ProgramDocumentId = documentId;
-                            await _programService.AddProgram(program, filePath, contentType, fileSize, request.InstituteName);
-                        }
-                        else
-                        {
-                            await _programService.AddProgram(program, null, null, 0, request.InstituteName);
-                        }
-
-                        await transaction.CommitAsync();
-                        var programDto = await _programService.GetProgram(program.Id); // Fetch DTO
-                        _logger.LogInformation("Program {ProgramName} added with ID {ProgramId}.", program.Name, program.Id);
-                        return CreatedAtAction(nameof(GetProgram), new { id = program.Id }, programDto);
-                    }
-                    catch (Exception ex)
-                    {
-                        await transaction.RollbackAsync();
-                        _logger.LogError(ex, "Failed to add program {ProgramName}. Rolling back transaction.", request.Name);
-                        throw;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to add program {ProgramName}.", request.Name);
-                return StatusCode(500, "An error occurred while adding the program.");
-            }
+            var createdProgram = await _programService.CreateProgramAsync(programDto);
+            return CreatedAtAction(nameof(GetProgram), new { id = createdProgram.Id }, createdProgram);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateProgram(int id, [FromForm] ProgramRequestDto request)
+        public async Task<IActionResult> UpdateProgram(int id, ProgramUpdateDto programDto)
         {
-            _logger.LogInformation("Updating program with ID {ProgramId}.", id);
-            try
+            var result = await _programService.UpdateProgramAsync(id, programDto);
+            if (!result)
             {
-                var existingProgram = await _programService.GetProgram(id);
-                if (existingProgram == null)
-                {
-                    _logger.LogWarning("Program with ID {ProgramId} not found.", id);
-                    return NotFound("Program not found.");
-                }
-
-                var program = MapToProgramModel(request);
-                program.Id = id; // Ensure ID is set
-                using (var transaction = await _context.Database.BeginTransactionAsync())
-                {
-                    try
-                    {
-                        if (request.File != null && request.File.Length > 0)
-                        {
-                            var (filePath, contentType, fileSize, documentId) = await _fileService.SaveProgramFileFromFormAsync(program.Name, request.File);
-                            program.ProgramDocumentId = documentId;
-                            await _programService.UpdateProgramWithDocument(program, filePath, request.File.FileName, contentType, fileSize, request.InstituteName);
-                        }
-                        else
-                        {
-                            await _programService.UpdateProgram(program, request.InstituteName);
-                        }
-
-                        await transaction.CommitAsync();
-                        var programDto = await _programService.GetProgram(program.Id); // Fetch DTO
-                        _logger.LogInformation("Program with ID {ProgramId} updated successfully.", id);
-                        return Ok(programDto);
-                    }
-                    catch (Exception ex)
-                    {
-                        await transaction.RollbackAsync();
-                        _logger.LogError(ex, "Failed to update program with ID {ProgramId}. Rolling back transaction.", id);
-                        throw;
-                    }
-                }
+                return NotFound();
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to update program with ID {ProgramId}.", id);
-                return StatusCode(500, "An error occurred while updating the program.");
-            }
+            return NoContent();
         }
 
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProgram(int id)
         {
-            _logger.LogInformation("Deleting program with ID {ProgramId}.", id);
-            try
+            var result = await _programService.DeleteProgramAsync(id);
+            if (!result)
             {
-                using (var transaction = await _context.Database.BeginTransactionAsync())
-                {
-                    try
-                    {
-                        await _programService.DeleteProgram(id);
-                        await transaction.CommitAsync();
-                        _logger.LogInformation("Program with ID {ProgramId} deleted successfully.", id);
-                        return NoContent();
-                    }
-                    catch (Exception ex)
-                    {
-                        await transaction.RollbackAsync();
-                        _logger.LogError(ex, "Failed to delete program with ID {ProgramId}. Rolling back transaction.", id);
-                        throw;
-                    }
-                }
+                return NotFound();
             }
-            catch (Exception ex)
-            {
-                if (ex.Message.Contains("not found"))
-                {
-                    _logger.LogWarning("Program with ID {ProgramId} not found for deletion.", id);
-                    return NotFound("Program not found.");
-                }
-                _logger.LogError(ex, "Failed to delete program with ID {ProgramId}.", id);
-                return StatusCode(500, "An error occurred while deleting the program.");
-            }
+            return NoContent();
         }
 
-        // Additional methods
-        private ProgramModel MapToProgramModel(ProgramRequestDto request)
-        {
-            return new ProgramModel
-            {
-                Degree = request.Degree,
-                Name = request.Name,
-                NameCode = request.NameCode,
-                FieldOfStudy = IsEmptyFieldOfStudy(request.FieldOfStudy) ? null : request.FieldOfStudy,
-                Speciality = IsEmptySpeciality(request.Speciality) ? null : request.Speciality,
-                Form = request.Form,
-                Objects = request.Objects,
-                Directions = request.Directions,
-                Descriptions = request.Descriptions,
-                Purpose = request.Purpose,
-                Years = request.Years,
-                Credits = request.Credits,
-                ProgramCharacteristics = IsEmptyProgramCharacteristics(request.ProgramCharacteristics) ? null : request.ProgramCharacteristics,
-                ProgramCompetence = IsEmptyProgramCompetence(request.ProgramCompetence) ? null : new ProgramCompetence
-                {
-                    OverallCompetence = request.ProgramCompetence?.OverallCompetence,
-                    SpecialCompetence = request.ProgramCompetence?.SpecialCompetence,
-                    IntegralCompetence = request.ProgramCompetence?.IntegralCompetence
-                },
-                Results = request.Results,
-                LinkFaculty = request.LinkFaculty,
-                Components = request.Components,
-                Jobs = request.Jobs,
-                Accredited = request.Accredited,
-                ProgramDocumentId = 0,
-                InstituteId = null // Will be set in service
-            };
-        }
-
-        private bool IsValidProgramRequest(ProgramRequestDto request, out string errorMessage)
-        {
-            if (string.IsNullOrEmpty(request.Name) || string.IsNullOrEmpty(request.Degree))
-            {
-                errorMessage = "Invalid program data. Name and Degree are required.";
-                return false;
-            }
-            errorMessage = null;
-            return true;
-        }
-
-        private bool IsEmptyFieldOfStudy(FieldOfStudy? fieldOfStudy)
-        {
-            return fieldOfStudy == null ||
-                   (string.IsNullOrEmpty(fieldOfStudy.Name) && string.IsNullOrEmpty(fieldOfStudy.Code));
-        }
-
-        private bool IsEmptySpeciality(Speciality? speciality)
-        {
-            return speciality == null ||
-                   (string.IsNullOrEmpty(speciality.Name) &&
-                    string.IsNullOrEmpty(speciality.Code) &&
-                    string.IsNullOrEmpty(speciality.FieldCode));
-        }
-
-        private bool IsEmptyArea(Area? area)
-        {
-            return area == null ||
-                   (string.IsNullOrEmpty(area.Aim) &&
-                    string.IsNullOrEmpty(area.Object) &&
-                    string.IsNullOrEmpty(area.Theory) &&
-                    string.IsNullOrEmpty(area.Methods) &&
-                    string.IsNullOrEmpty(area.Instruments));
-        }
-
-        private bool IsEmptyProgramCharacteristics(ProgramCharacteristics? programCharacteristics)
-        {
-            return programCharacteristics == null ||
-                   (IsEmptyArea(programCharacteristics.Area) &&
-                    string.IsNullOrEmpty(programCharacteristics.Focus) &&
-                    string.IsNullOrEmpty(programCharacteristics.Features));
-        }
-
-        private bool IsEmptyProgramCompetence(ProgramCompetence? programCompetence)
-        {
-            return programCompetence == null ||
-                   (string.IsNullOrEmpty(programCompetence.IntegralCompetence) &&
-                    (programCompetence.OverallCompetence == null || !programCompetence.OverallCompetence.Any()) &&
-                    (programCompetence.SpecialCompetence == null || !programCompetence.SpecialCompetence.Any()));
-        }
-
-        private void UpdateProgramModel(ProgramModel program, ProgramRequestDto request)
-        {
-            program.Degree = request.Degree;
-            program.Name = request.Name;
-            program.NameCode = request.NameCode ?? null;
-            program.FieldOfStudy = IsEmptyFieldOfStudy(request.FieldOfStudy) ? null : request.FieldOfStudy;
-            program.Speciality = IsEmptySpeciality(request.Speciality) ? null : request.Speciality;
-            program.Form = request.Form ?? null;
-            program.Objects = request.Objects ?? null;
-            program.Directions = request.Directions ?? null;
-            program.Descriptions = request.Descriptions ?? null;
-            program.Purpose = request.Purpose ?? null;
-            program.Years = request.Years ?? null;
-            program.Credits = request.Credits ?? null;
-            program.Results = request.Results ?? null;
-            program.LinkFaculty = request.LinkFaculty ?? null;
-            program.Accredited = request.Accredited;
-            program.ProgramCharacteristics = IsEmptyProgramCharacteristics(request.ProgramCharacteristics) ? null : request.ProgramCharacteristics;
-            program.ProgramCompetence = IsEmptyProgramCompetence(request.ProgramCompetence) ? null : new ProgramCompetence
-            {
-                OverallCompetence = request.ProgramCompetence?.OverallCompetence,
-                SpecialCompetence = request.ProgramCompetence?.SpecialCompetence,
-                IntegralCompetence = request.ProgramCompetence?.IntegralCompetence
-            };
-            
-        }
+       
 
 
     }
