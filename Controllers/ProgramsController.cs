@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Npgsql;
-using OntuPhdApi.Models.Programs;
 using OntuPhdApi.Services.Programs;
 using OntuPhdApi.Services.Files;
 using System;
@@ -11,6 +10,9 @@ using OntuPhdApi.Models.Programs.Components;
 using Microsoft.EntityFrameworkCore;
 using OntuPhdApi.Models.Institutes;
 using OntuPhdApi.Utilities.Mappers;
+using OntuPhdApi.Models.Programs.Dto;
+using System.Text.Json.Serialization;
+using System.Text.Json;
 
 namespace OntuPhdApi.Controllers
 {
@@ -26,15 +28,17 @@ namespace OntuPhdApi.Controllers
     {
         private readonly IProgramService _programService;
         private readonly ILogger<ProgramsController> _logger;
-
+        private readonly IProgramMapper _mapper;
 
         public ProgramsController(
             IProgramService programService,
-            ILogger<ProgramsController> logger
+            ILogger<ProgramsController> logger,
+            IProgramMapper mapper
             )
         {
             _programService = programService ?? throw new ArgumentNullException(nameof(programService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _mapper = mapper;
         }
 
         [HttpGet]
@@ -55,7 +59,7 @@ namespace OntuPhdApi.Controllers
 
 
         [HttpGet("degrees")]
-        public async Task<IActionResult> GetProgramsDegrees([FromQuery] DegreeType? degreeType)
+        public async Task<IActionResult> GetProgramsDegrees([FromQuery] DegreeType degreeType)
         {
             string degree = degreeType.ToString();
             _logger.LogInformation("Fetching programs for degree {Degree}.", degree?.ToString() ?? "all");

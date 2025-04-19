@@ -94,6 +94,7 @@ namespace OntuPhdApi.Repositories.Program
 
         }
 
+
         public async Task AddAsync(ProgramModel program)
         {
             await using var transaction = await _context.Database.BeginTransactionAsync();
@@ -105,13 +106,15 @@ namespace OntuPhdApi.Repositories.Program
                 var programComponents = program.ProgramComponents;
                 var jobs = program.Jobs;
                 var linkFaculties = program.LinkFaculties;
+                var Institute = program.Institute;
 
+                program.Institute = null;
                 program.ProgramCharacteristics = null;
                 program.ProgramCompetence = null;
                 program.ProgramComponents = null;
                 program.Jobs = null;
                 program.LinkFaculties = null;
-
+                
                 // Save ProgramModel first to generate its Id
                 await _context.Programs.AddAsync(program);
                 await _context.SaveChangesAsync();
@@ -207,6 +210,31 @@ namespace OntuPhdApi.Repositories.Program
                     }
                     await _context.SaveChangesAsync();
                 }
+
+
+                if (Institute != null)
+                {
+                    var existingInstitute = await _context.Institutes
+                        .FirstOrDefaultAsync(i => i.Name.ToLower() == program.Institute.Name.ToLower());
+
+                    if (existingInstitute != null)
+                    {
+                        program.InstituteId = existingInstitute.Id;
+                    }
+                    else
+                    {
+                        var newInstitute = new Institute
+                        {
+                            Name = program.Institute.Name
+                        };
+                        await _context.Institutes.AddAsync(newInstitute);
+                        await _context.SaveChangesAsync();
+
+                        program.InstituteId = newInstitute.Id;
+                    }
+
+                }
+
 
                 await transaction.CommitAsync();
             }

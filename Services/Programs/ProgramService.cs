@@ -1,7 +1,7 @@
 ﻿using OntuPhdApi.Controllers;
 using OntuPhdApi.Data;
-using OntuPhdApi.Models.Programs;
 using OntuPhdApi.Models.Programs.Components;
+using OntuPhdApi.Models.Programs.Dto;
 using OntuPhdApi.Repositories.Program;
 using OntuPhdApi.Services.Institutes;
 using OntuPhdApi.Utilities.Mappers;

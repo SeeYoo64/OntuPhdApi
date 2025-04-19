@@ -1,6 +1,6 @@
 ﻿using Npgsql;
 using OntuPhdApi.Controllers;
-using OntuPhdApi.Models.Programs;
+using OntuPhdApi.Models.Programs.Dto;
 
 namespace OntuPhdApi.Services.Programs
 {

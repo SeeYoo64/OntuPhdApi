@@ -25,6 +25,7 @@ using OntuPhdApi.Services.Files;
 using OntuPhdApi.Services.Institutes;
 using OntuPhdApi.Services.News;
 using OntuPhdApi.Services.Programs;
+using OntuPhdApi.Utilities;
 using OntuPhdApi.Utilities.Mappers;
 using static OntuPhdApi.Services.Programs.ProgramService;
 
@@ -87,9 +88,9 @@ internal class Program
         builder.Services.AddControllers()
             .AddJsonOptions(options =>
             {
+
                 options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
                 options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
-
             });
 
 

@@ -1,6 +1,7 @@
 ﻿using OntuPhdApi.Models.Programs.Components;
 using OntuPhdApi.Models.Programs;
 using System.Xml.Linq;
+using OntuPhdApi.Models.Programs.Dto;
 
 namespace OntuPhdApi.Utilities.Mappers
 {
@@ -18,22 +19,22 @@ namespace OntuPhdApi.Utilities.Mappers
                 NameCode = model.NameCode,
                 FieldOfStudy = MapFieldOfStudy(model.FieldOfStudy),
                 Speciality = MapSpeciality(model.Speciality),
-                Form = model.Form ?? new List<string>(),
+                Form = model.Form,
                 Objects = model.Objects,
-                Directions = model.Directions ?? new List<string>(),
+                Directions = model.Directions,
                 Descriptions = model.Descriptions,
                 Purpose = model.Purpose,
-                Institute = model.Institute.Name,
+                Institute = model.Institute?.Name, 
                 Years = model.Years,
                 Credits = model.Credits,
-                Results = model.Results ?? new List<string>(),
+                Results = model.Results,
                 ProgramDocumentId = model.ProgramDocumentId,
                 ProgramDocument = model.ProgramDocument,
-                LinkFaculties = model.LinkFaculties?.Select(MapLinkFaculty).ToList() ?? new List<LinkFacultyDto>(),
+                LinkFaculties = model.LinkFaculties?.Select(MapLinkFaculty).ToList(),
                 ProgramCharacteristics = MapCharacteristics(model.ProgramCharacteristics),
                 ProgramCompetence = MapCompetence(model.ProgramCompetence),
-                ProgramComponents = model.ProgramComponents?.Select(MapProgramComponent).ToList() ?? new List<ProgramComponentDto>(),
-                Jobs = model.Jobs?.Select(MapJob).ToList() ?? new List<JobDto>(),
+                ProgramComponents = model.ProgramComponents?.Select(MapProgramComponent).ToList(),
+                Jobs = model.Jobs?.Select(MapJob).ToList(),
                 Accredited = model.Accredited
             };
         }
@@ -61,7 +62,7 @@ namespace OntuPhdApi.Utilities.Mappers
                 ControlForms = pc.ControlForms?.Select(o => new ControlFormDto
                 {
                     Type = o.Type
-                }).ToList() ?? new List<ControlFormDto>()
+                }).ToList() ?? null
 
             };
         }
@@ -121,12 +122,12 @@ namespace OntuPhdApi.Utilities.Mappers
                 OverallCompetences = comp.OverallCompetences?.Select(o => new OverallCompetenceDto
                 {
                     Description = o.Description
-                }).ToList() ?? new List<OverallCompetenceDto>(),
+                }).ToList() ?? null,
 
                 SpecialCompetence = comp.SpecialCompetences?.Select(s => new SpecialCompetenceDto
                 {
                     Description = s.Description
-                }).ToList() ?? new List<SpecialCompetenceDto>()
+                }).ToList() ?? null
             };
         }
 
@@ -134,6 +135,12 @@ namespace OntuPhdApi.Utilities.Mappers
         {
             return models.Select(ToProgramResponseDto).ToList();
         }
+
+        public IEnumerable<ProgramResponseDto> ToProgramResponseDto1s(IEnumerable<ProgramModel> models)
+        {
+            return models.Select(ToProgramResponseDto).ToList();
+        }
+
 
         public ProgramDegreeDto ToProgramDegree(ProgramModel program)
         {
@@ -167,12 +174,19 @@ namespace OntuPhdApi.Utilities.Mappers
                 Directions = programDto.Directions,
                 Descriptions = programDto.Descriptions,
                 Purpose = programDto.Purpose,
-                InstituteId = programDto.InstituteId,
                 Years = programDto.Years,
                 Credits = programDto.Credits,
                 Results = programDto.Results,
                 Accredited = programDto.Accredited
             };
+
+            if (programDto.Institute != null)
+            {
+                program.Institute = new Models.Institutes.Institute
+                {
+                    Name = programDto.Institute
+                };
+            }
 
             if (programDto.LinkFaculties != null)
             {

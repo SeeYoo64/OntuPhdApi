@@ -2,7 +2,7 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 
-namespace OntuPhdApi.Models.Programs
+namespace OntuPhdApi.Models.Programs.Dto
 {
     public class ProgramDegreeDto
     {
