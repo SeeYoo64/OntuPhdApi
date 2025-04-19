@@ -35,26 +35,23 @@ namespace OntuPhdApi.Models.Programs
     }
 
 
-    public class FieldOfStudy
-    {
-        public string? Code { get; set; }
-
-        public string? Name { get; set; }
-    }
-
     public class FieldOfStudyDto
     {
         public string? Code { get; set; }
 
         public string? Name { get; set; }
+    }
 
-        [Column(TypeName = "jsonb")]
-        public List<Speciality>? Specialities { get; set; }
+    public class FieldOfStudy
+    {
+        public string? Code { get; set; }
+
+        public string? Name { get; set; }
 
         public string? Degree { get; set; }
     }
 
-    public class ShortSpeciality
+    public class SpecialityDto
     {
         public string? Code { get; set; }
 

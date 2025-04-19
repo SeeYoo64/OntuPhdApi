@@ -43,7 +43,7 @@ namespace OntuPhdApi.Utilities.Mappers
                     Name = entity.Program.Name,
                     Degree = entity.Program.Degree,
                     FieldOfStudy = entity.Program.FieldOfStudy,
-                    Speciality = new ShortSpeciality{
+                    Speciality = new SpecialityDto{
                         Code =  entity.Program.Speciality.Code,
                         Name = entity.Program.Speciality.Name
                     }

@@ -53,8 +53,13 @@ namespace OntuPhdApi.Repositories.Program
                 .Include(p => p.LinkFaculties)
                 .Include(p => p.ProgramDocument)
                 .Include(p => p.ProgramCharacteristics)
+                    .ThenInclude(pc => pc.Area)
                 .Include(p => p.ProgramCompetence)
+                    .ThenInclude(pc => pc.OverallCompetences)
+                .Include(p => p.ProgramCompetence)
+                    .ThenInclude(pc => pc.SpecialCompetences)
                 .Include(p => p.ProgramComponents)
+                    .ThenInclude(pc => pc.ControlForms)
                 .Include(p => p.Jobs)
                 .OrderBy(p => p.Degree == "phd" ? 0 : 1)
                 .ThenBy(p => p.Id)
@@ -65,9 +70,6 @@ namespace OntuPhdApi.Repositories.Program
         {
             _logger.LogInformation("Fetching programs for degree {Degree}.", degree?.ToString() ?? "all");
             return await _context.Programs
-                .Include(p => p.Institute)
-                .Include(p => p.FieldOfStudy)
-                .Include(p => p.Speciality)
                 .Where(p => p.Degree == degree)
                 .ToListAsync();
         }
@@ -80,9 +82,13 @@ namespace OntuPhdApi.Repositories.Program
                 .Include(p => p.LinkFaculties)
                 .Include(p => p.ProgramDocument)
                 .Include(p => p.ProgramCharacteristics)
-                    .ThenInclude(c => c.Area)
+                    .ThenInclude(pc => pc.Area)
                 .Include(p => p.ProgramCompetence)
+                    .ThenInclude(pc => pc.OverallCompetences)
+                .Include(p => p.ProgramCompetence)
+                    .ThenInclude(pc => pc.SpecialCompetences)
                 .Include(p => p.ProgramComponents)
+                    .ThenInclude(pc => pc.ControlForms)
                 .Include(p => p.Jobs)
                 .FirstOrDefaultAsync(p => p.Id == id);
 

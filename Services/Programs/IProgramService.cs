@@ -11,6 +11,6 @@ namespace OntuPhdApi.Services.Programs
         Task<ProgramResponseDto> CreateProgramAsync(ProgramCreateDto programDto);
         Task<bool> UpdateProgramAsync(int id, ProgramUpdateDto programDto);
         Task<bool> DeleteProgramAsync(int id);
-        Task<IEnumerable<ProgramResponseDto>> GetProgramsByDegreeAsync(string degree);
+        Task<IEnumerable<ProgramDegreeDto>> GetProgramsByDegreeAsync(string degree);
     }
 }

@@ -13,7 +13,6 @@ namespace OntuPhdApi.Models.Programs.Components
         public int? ComponentHours { get; set; }
 
         public List<ControlForm> ControlForms { get; set; }
-
         public ProgramModel ProgramModel { get; set; }
     }
 

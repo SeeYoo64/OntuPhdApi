@@ -1,4 +1,6 @@
-﻿namespace OntuPhdApi.Models.Programs.Components
+﻿using System.Text.Json.Serialization;
+
+namespace OntuPhdApi.Models.Programs.Components
 {
     public class ProgramCompetence
     {
@@ -9,6 +11,7 @@
 
         public List<OverallCompetence> OverallCompetences { get; set; }
         public List<SpecialCompetence> SpecialCompetences { get; set; }
+        [JsonIgnore]
 
         public ProgramModel Program { get; set; }
     }
@@ -19,7 +22,7 @@
         public int ProgramCompetenceId { get; set; }
 
         public string Description { get; set; }
-
+        [JsonIgnore]
         public ProgramCompetence ProgramCompetence { get; set; }
     }
 
@@ -29,7 +32,7 @@
         public int ProgramCompetenceId { get; set; }
 
         public string Description { get; set; }
-
+        [JsonIgnore]
         public ProgramCompetence ProgramCompetence { get; set; }
     }
 }

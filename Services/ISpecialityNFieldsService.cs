@@ -6,7 +6,7 @@ namespace OntuPhdApi.Services
     {
         List<FieldOfStudyDto> GetSpecialitiesNFields(string degree = null);
 
-        List<ShortSpeciality> GetSpecialitiesByCode(string code);
+        List<SpecialityDto> GetSpecialitiesByCode(string code);
 
     }
 }

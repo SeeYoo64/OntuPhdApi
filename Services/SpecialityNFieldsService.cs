@@ -44,17 +44,6 @@ namespace OntuPhdApi.Services
                         {
                             string fieldCode = reader.GetString(reader.GetOrdinal("code"));
 
-                            // Если ещё не добавлен, добавляем FieldOfStudyDto
-                            if (!fieldsDict.TryGetValue(fieldCode, out var fieldDto))
-                            {
-                                fieldDto = new FieldOfStudyDto
-                                {
-                                    Code = fieldCode,
-                                    Name = reader.GetString(reader.GetOrdinal("name")),
-                                    Degree = reader.GetString(2)
-                                };
-                                fieldsDict.Add(fieldCode, fieldDto);
-                            }
 
                         }
                     }
@@ -64,9 +53,9 @@ namespace OntuPhdApi.Services
             return fieldsDict.Values.ToList();
         }
 
-        public List<ShortSpeciality> GetSpecialitiesByCode(string code)
+        public List<SpecialityDto> GetSpecialitiesByCode(string code)
         {
-            var ShortSpecialityList = new List<ShortSpeciality>();
+            var SpecialityDtoList = new List<SpecialityDto>();
 
             using (var connection = new NpgsqlConnection(_connectionString))
             {
@@ -86,7 +75,7 @@ namespace OntuPhdApi.Services
                     {
                         while (reader.Read())
                         {
-                            ShortSpecialityList.Add(new ShortSpeciality
+                            SpecialityDtoList.Add(new SpecialityDto
                             {
                                 Code = reader.GetString(0),
                                 Name = reader.GetString(1)
@@ -97,7 +86,7 @@ namespace OntuPhdApi.Services
                 }
             }
 
-            return ShortSpecialityList;
+            return SpecialityDtoList;
         }
 
 

@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 
 namespace OntuPhdApi.Models.Programs
 {
-    public class ProgramsDegreeDto
+    public class ProgramDegreeDto
     {
         [Key]
         public int Id { get; set; }
@@ -14,10 +14,8 @@ namespace OntuPhdApi.Models.Programs
 
         [Required]
         public string Name { get; set; }
-        [Column(TypeName = "jsonb")]
-        public FieldOfStudy FieldOfStudy { get; set; }
+        public FieldOfStudyDto FieldOfStudy { get; set; }
 
-        [Column(TypeName = "jsonb")]
-        public ShortSpeciality Speciality { get; set; }
+        public SpecialityDto Speciality { get; set; }
     }
 }

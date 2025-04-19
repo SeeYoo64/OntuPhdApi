@@ -70,10 +70,10 @@ namespace OntuPhdApi.Services.Programs
             return true;
         }
 
-        public async Task<IEnumerable<ProgramResponseDto>> GetProgramsByDegreeAsync(string degree)
+        public async Task<IEnumerable<ProgramDegreeDto>> GetProgramsByDegreeAsync(string degree)
         {
             var programs = await _programRepository.GetByDegreeAsync(degree);
-            return _mapper.ToProgramResponseDtos(programs);
+            return _mapper.ToProgramDegrees(programs);
         }
 
 

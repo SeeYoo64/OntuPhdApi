@@ -8,6 +8,6 @@ namespace OntuPhdApi.Models.Defense
         public string Name { get; set; }
         public string Degree { get; set; }
         public FieldOfStudy? FieldOfStudy { get; set; }
-        public ShortSpeciality? Speciality { get; set; }
+        public SpecialityDto? Speciality { get; set; }
     }
 }

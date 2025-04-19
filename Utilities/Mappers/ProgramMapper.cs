@@ -1,51 +1,157 @@
 ﻿using OntuPhdApi.Models.Programs.Components;
 using OntuPhdApi.Models.Programs;
+using System.Xml.Linq;
 
 namespace OntuPhdApi.Utilities.Mappers
 {
     public class ProgramMapper : IProgramMapper
     {
-        public ProgramResponseDto ToProgramResponseDto(ProgramModel program)
+        public ProgramResponseDto ToProgramResponseDto(ProgramModel model)
         {
-            if (program == null) return null;
+            if (model == null) return null;
 
             return new ProgramResponseDto
+            {
+                Id = model.Id,
+                Degree = model.Degree,
+                Name = model.Name,
+                NameCode = model.NameCode,
+                FieldOfStudy = MapFieldOfStudy(model.FieldOfStudy),
+                Speciality = MapSpeciality(model.Speciality),
+                Form = model.Form ?? new List<string>(),
+                Objects = model.Objects,
+                Directions = model.Directions ?? new List<string>(),
+                Descriptions = model.Descriptions,
+                Purpose = model.Purpose,
+                Institute = model.Institute.Name,
+                Years = model.Years,
+                Credits = model.Credits,
+                Results = model.Results ?? new List<string>(),
+                ProgramDocumentId = model.ProgramDocumentId,
+                ProgramDocument = model.ProgramDocument,
+                LinkFaculties = model.LinkFaculties?.Select(MapLinkFaculty).ToList() ?? new List<LinkFacultyDto>(),
+                ProgramCharacteristics = MapCharacteristics(model.ProgramCharacteristics),
+                ProgramCompetence = MapCompetence(model.ProgramCompetence),
+                ProgramComponents = model.ProgramComponents?.Select(MapProgramComponent).ToList() ?? new List<ProgramComponentDto>(),
+                Jobs = model.Jobs?.Select(MapJob).ToList() ?? new List<JobDto>(),
+                Accredited = model.Accredited
+            };
+        }
+
+        private JobDto MapJob(Job? j)
+        {
+            return j == null ? null : new JobDto
+            {
+                Code = j.Code,
+                Title = j.Title
+            };
+        }
+
+        private ProgramComponentDto MapProgramComponent(ProgramComponent? pc)
+        {
+            if (pc == null) return new ProgramComponentDto();
+            return new ProgramComponentDto
+            {
+
+                ComponentName = pc.ComponentName,
+                ComponentType = pc.ComponentType,
+                ComponentCredits = pc.ComponentCredits,
+                ComponentHours = pc.ComponentHours,
+
+                ControlForms = pc.ControlForms?.Select(o => new ControlFormDto
+                {
+                    Type = o.Type
+                }).ToList() ?? new List<ControlFormDto>()
+
+            };
+        }
+
+        private FieldOfStudyDto MapFieldOfStudy(FieldOfStudy? fos)
+        {
+            return fos == null ? null : new FieldOfStudyDto
+            {
+                Code = fos.Code,
+                Name = fos.Name
+            };
+        }
+
+        private SpecialityDto MapSpeciality(Speciality? spec)
+        {
+            return spec == null ? null : new SpecialityDto
+            {
+                Code = spec.Code,
+                Name = spec.Name
+            };
+        }
+
+        private LinkFacultyDto MapLinkFaculty(LinkFaculty lf)
+        {
+            return new LinkFacultyDto
+            {
+                Name = lf.Name,
+                Link = lf.Link
+            };
+        }
+
+        private ProgramCharacteristicsDto MapCharacteristics(ProgramCharacteristics? pc)
+        {
+            if (pc == null) return new ProgramCharacteristicsDto();
+            return new ProgramCharacteristicsDto
+            {
+                Focus = pc.Focus,
+                Features = pc.Features,
+                Area = new AreaDto
+                {
+                    Aim = pc.Area.Aim,
+                    Object = pc.Area.Object,
+                    Instruments = pc.Area.Instruments,
+                    Methods = pc.Area.Methods,
+                    Theory = pc.Area.Theory
+                }                
+                
+            };
+        }
+
+        private ProgramCompetenceDto MapCompetence(ProgramCompetence? comp)
+        {
+            return comp == null ? new ProgramCompetenceDto()
+            : new ProgramCompetenceDto
+            {
+                IntegralCompetence = comp.IntegralCompetence,
+                OverallCompetences = comp.OverallCompetences?.Select(o => new OverallCompetenceDto
+                {
+                    Description = o.Description
+                }).ToList() ?? new List<OverallCompetenceDto>(),
+
+                SpecialCompetence = comp.SpecialCompetences?.Select(s => new SpecialCompetenceDto
+                {
+                    Description = s.Description
+                }).ToList() ?? new List<SpecialCompetenceDto>()
+            };
+        }
+
+        public List<ProgramResponseDto> ToProgramResponseDtos(IEnumerable<ProgramModel> models)
+        {
+            return models.Select(ToProgramResponseDto).ToList();
+        }
+
+        public ProgramDegreeDto ToProgramDegree(ProgramModel program)
+        {
+            return new ProgramDegreeDto
             {
                 Id = program.Id,
                 Degree = program.Degree,
                 Name = program.Name,
-                NameCode = program.NameCode,
-                FieldOfStudy = program.FieldOfStudy,
-                Speciality = program.Speciality,
-                Form = program.Form,
-                Objects = program.Objects,
-                Directions = program.Directions,
-                Descriptions = program.Descriptions,
-                Purpose = program.Purpose,
-                InstituteId = program.InstituteId,
-                Years = program.Years,
-                Credits = program.Credits,
-                Results = program.Results,
-                LinkFaculties = program.LinkFaculties?.Select(lf => new LinkFacultyDto
-                {
-                    Name = lf.Name,
-                    Link = lf.Link
-                }).ToList(),
-                ProgramDocument = program.ProgramDocument != null ? new ProgramDocumentDto
-                {
-                    Id = program.ProgramDocument.Id,
-                    FileName = program.ProgramDocument.FileName,
-                    ContentType = program.ProgramDocument.ContentType,
-                    FileSize = program.ProgramDocument.FileSize ?? 0
-                } : null,
-                Accredited = program.Accredited
+                FieldOfStudy = MapFieldOfStudy(program.FieldOfStudy),
+                Speciality = MapSpeciality(program.Speciality),
             };
         }
 
-        public IEnumerable<ProgramResponseDto> ToProgramResponseDtos(IEnumerable<ProgramModel> programs)
+        public List<ProgramDegreeDto> ToProgramDegrees(IEnumerable<ProgramModel> models)
         {
-            return programs.Select(ToProgramResponseDto).Where(dto => dto != null);
+            return models.Select(ToProgramDegree).ToList();
         }
+
 
         public ProgramModel ToProgramModel(ProgramCreateDto programDto)
         {
