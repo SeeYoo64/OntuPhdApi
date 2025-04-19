@@ -95,23 +95,12 @@ namespace OntuPhdApi.Models.Programs
 
 
 
-
-
-
-
-
-
-
-
-
     public class ProgramCreateDto
     {
         [Required]
-        public string Degree { get; set; }
-
-        [Required]
         public string Name { get; set; }
-
+        [Required]
+        public string Degree { get; set; }
         public string NameCode { get; set; }
         public FieldOfStudy FieldOfStudy { get; set; }
         public Speciality Speciality { get; set; }
