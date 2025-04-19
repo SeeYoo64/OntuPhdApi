@@ -11,6 +11,8 @@ using OntuPhdApi.Models.Documents;
 using OntuPhdApi.Models.ApplyDocuments;
 using OntuPhdApi.Models.Institutes;
 using OntuPhdApi.Models.Programs.Components;
+using OntuPhdApi.Models;
+using System.Reflection.Metadata;
 
 namespace OntuPhdApi.Data
 {
@@ -18,18 +20,18 @@ namespace OntuPhdApi.Data
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
-        public DbSet<Institute> Institutes { get; set; }
         public DbSet<ProgramModel> Programs { get; set; }
-        public DbSet<ProgramDocument> ProgramDocuments { get; set; }
         public DbSet<ProgramCharacteristics> ProgramCharacteristics { get; set; }
-        public DbSet<Area> Areas { get; set; }
         public DbSet<ProgramCompetence> ProgramCompetences { get; set; }
+        public DbSet<ProgramComponent> ProgramComponents { get; set; }
+        public DbSet<Area> Areas { get; set; }
         public DbSet<OverallCompetence> OverallCompetences { get; set; }
         public DbSet<SpecialCompetence> SpecialCompetences { get; set; }
-        public DbSet<ProgramComponent> ProgramComponents { get; set; }
         public DbSet<ControlForm> ControlForms { get; set; }
-        public DbSet<Job> Jobs { get; set; }
         public DbSet<LinkFaculty> LinkFaculties { get; set; }
+        public DbSet<Job> Jobs { get; set; }
+        public DbSet<ProgramDocument> ProgramDocuments { get; set; }
+        public DbSet<Institute> Institutes { get; set; }
 
 
         public DbSet<DefenseModel> Defenses { get; set; }
@@ -65,161 +67,116 @@ namespace OntuPhdApi.Data
         private void ConfigureProgramEntity(ModelBuilder modelBuilder)
         {
             ConfigureProgramModel(modelBuilder);
-            ConfigureProgramDocument(modelBuilder);
-            ConfigureProgramJobs(modelBuilder);
-            ConfigureProgramComponent(modelBuilder);
-            ConfigureFaculty(modelBuilder);
-            ConfigureControlForm(modelBuilder);
-            ConfigureProgramCompetence(modelBuilder);
-            ConfigureArea(modelBuilder);
             ConfigureProgramCharacteristics(modelBuilder);
+            ConfigureProgramCompetence(modelBuilder);
+            ConfigureProgramComponent(modelBuilder);
+            ConfigureControlForm(modelBuilder);
+            ConfigureProgramDocument(modelBuilder);
         }
 
         private void ConfigureProgramModel(ModelBuilder modelBuilder)
         {
-            base.OnModelCreating(modelBuilder);
-            // Конфигурация ProgramModel
             modelBuilder.Entity<ProgramModel>(entity =>
             {
-                // Первичный ключ
                 entity.HasKey(e => e.Id);
 
-                // Обязательные поля
                 entity.Property(e => e.Name).IsRequired();
                 entity.Property(e => e.Degree).IsRequired();
 
-                // Поля с типом jsonb
-                entity.Property(e => e.FieldOfStudy)
-                      .HasColumnType("jsonb"); 
+                entity.Property(e => e.FieldOfStudy).HasColumnType("jsonb");
+                entity.Property(e => e.Speciality).HasColumnType("jsonb");
+                entity.Property(e => e.Form).HasColumnType("jsonb");
+                entity.Property(e => e.Directions).HasColumnType("jsonb");
+                entity.Property(e => e.Results).HasColumnType("jsonb");
 
-                entity.Property(e => e.Speciality)
-                      .HasColumnType("jsonb");
-
-                entity.Property(e => e.Form)
-                      .HasColumnType("jsonb");
-
-                entity.Property(e => e.Directions)
-                      .HasColumnType("jsonb");
-
-                entity.Property(e => e.Results)
-                      .HasColumnType("jsonb");
-
-                // Связь один-к-одному с ProgramDocument
-                entity.HasOne(e => e.ProgramDocument)
-                      .WithOne()
-                      .HasForeignKey<ProgramModel>(e => e.ProgramDocumentId)
-                      .OnDelete(DeleteBehavior.SetNull);
-
-                // Связь один-ко-многим с ProgramComponent
-                entity.HasMany(e => e.ProgramComponents)
-                      .WithOne(e => e.ProgramModel)
-                      .HasForeignKey(e => e.ProgramId)
+                // One-to-many: ProgramModel → Jobs
+                entity.HasMany(p => p.Jobs)
+                      .WithOne(j => j.ProgramModel)
+                      .HasForeignKey(j => j.ProgramId)
                       .OnDelete(DeleteBehavior.Cascade);
 
-                // Связь один-ко-многим с Job
-                entity.HasMany(e => e.Jobs)
-                      .WithOne(e => e.ProgramModel)
-                      .HasForeignKey(e => e.ProgramId)
-                      .OnDelete(DeleteBehavior.Cascade);
-
-                // Связь один-ко-многим с Institute
-                entity.HasOne(p => p.Institute)
-                      .WithMany(i => i.Programs)
-                      .HasForeignKey(p => p.InstituteId)
-                      .IsRequired();
-
+                // One-to-many: ProgramModel → LinkFaculties
                 entity.HasMany(p => p.LinkFaculties)
-                      .WithOne(f => f.ProgramModel)
-                      .HasForeignKey(f => f.ProgramId)
+                      .WithOne(lf => lf.ProgramModel)
+                      .HasForeignKey(lf => lf.ProgramId)
                       .OnDelete(DeleteBehavior.Cascade);
 
-            });
+                // One-to-one: ProgramModel → ProgramCharacteristics
+                entity.HasOne(p => p.ProgramCharacteristics)
+                      .WithOne(pc => pc.Program)
+                      .HasForeignKey<ProgramCharacteristics>(pc => pc.ProgramId)
+                      .OnDelete(DeleteBehavior.Cascade);
 
-            modelBuilder.Ignore<FieldOfStudy>();
-            modelBuilder.Ignore<Speciality>();
-            modelBuilder.Ignore<ShortSpeciality>();
-            modelBuilder.Ignore<ProgramCharacteristics>();
-            modelBuilder.Ignore<ProgramCompetence>();
-            modelBuilder.Ignore<Area>();
-            modelBuilder.Ignore<DefenseFile>();
-            modelBuilder.Ignore<CompositionOfRada>();
-            modelBuilder.Ignore<MemberOfRada>();
+                // One-to-one: ProgramModel → ProgramCompetence
+                entity.HasOne(p => p.ProgramCompetence)
+                      .WithOne(pc => pc.Program)
+                      .HasForeignKey<ProgramCompetence>(pc => pc.ProgramId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                // One-to-many: ProgramModel → ProgramComponents
+                entity.HasMany(p => p.ProgramComponents)
+                      .WithOne(pc => pc.ProgramModel)
+                      .HasForeignKey(pc => pc.ProgramId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                // One-to-one: ProgramModel → ProgramDocument
+                entity.HasOne(p => p.ProgramDocument)
+                      .WithOne(pd => pd.Program)
+                      .HasForeignKey<ProgramModel>(p => p.ProgramDocumentId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                // Many-to-one: ProgramModel → Institute
+                entity.HasOne(p => p.Institute)
+                      .WithMany()
+                      .HasForeignKey(p => p.InstituteId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
         }
 
         private void ConfigureProgramCharacteristics(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<ProgramCharacteristics>()
-                .HasOne(p => p.Program)
-                .WithOne()
-                .HasForeignKey<ProgramCharacteristics>(p => p.ProgramId);
-        }
-
-        private void ConfigureArea(ModelBuilder modelBuilder)
-        {
-            modelBuilder.Entity<Area>()
-                .HasOne(a => a.ProgramCharacteristics)
-                .WithOne()
-                .HasForeignKey<Area>(a => a.ProgramCharacteristicsId);
+                .HasOne(pc => pc.Area)
+                .WithOne(a => a.ProgramCharacteristics)
+                .HasForeignKey<Area>(a => a.ProgramCharacteristicsId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
 
         private void ConfigureProgramCompetence(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<ProgramCompetence>()
-                .HasOne(p => p.Program)
-                .WithOne()
-                .HasForeignKey<ProgramCompetence>(p => p.ProgramId);
+                .HasMany(pc => pc.OverallCompetences)
+                .WithOne(oc => oc.ProgramCompetence)
+                .HasForeignKey(oc => oc.ProgramCompetenceId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-            modelBuilder.Entity<OverallCompetence>()
-                .HasOne(o => o.ProgramCompetence)
-                .WithMany()
-                .HasForeignKey(o => o.ProgramCompetenceId);
-
-            modelBuilder.Entity<SpecialCompetence>()
-                .HasOne(s => s.ProgramCompetence)
-                .WithMany()
-                .HasForeignKey(s => s.ProgramCompetenceId);
+            modelBuilder.Entity<ProgramCompetence>()
+                .HasMany(pc => pc.SpecialCompetences)
+                .WithOne(sc => sc.ProgramCompetence)
+                .HasForeignKey(sc => sc.ProgramCompetenceId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
 
         private void ConfigureProgramComponent(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<ProgramComponent>(entity =>
-            {
-                modelBuilder.Entity<ProgramComponent>()
-                    .HasOne(p => p.ProgramModel)
-                    .WithMany()
-                    .HasForeignKey(p => p.ProgramId);
-            });
+            modelBuilder.Entity<ProgramComponent>()
+                .HasOne(pc => pc.ProgramModel)
+                .WithMany(pm => pm.ProgramComponents)
+                .HasForeignKey(pc => pc.ProgramId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
 
         private void ConfigureControlForm(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<ControlForm>()
-                .HasOne(c => c.ProgramComponent)
-                .WithMany()
-                .HasForeignKey(c => c.ProgramComponentId);
+                .HasOne(cf => cf.ProgramComponent)
+                .WithMany(pc => pc.ControlForms)
+                .HasForeignKey(cf => cf.ProgramComponentId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
-
-        private void ConfigureFaculty(ModelBuilder modelBuilder)
-        {
-            modelBuilder.Entity<LinkFaculty>()
-                .HasOne(l => l.ProgramModel)
-                .WithMany()
-                .HasForeignKey(l => l.ProgramId);
-        }
-
-
-        private void ConfigureProgramJobs(ModelBuilder modelBuilder)
-        {
-            modelBuilder.Entity<Job>()
-                .HasOne(j => j.ProgramModel)
-                .WithMany()
-                .HasForeignKey(j => j.ProgramId);
-        }
-
 
         private void ConfigureProgramDocument(ModelBuilder modelBuilder)
         {
-            // Конфигурация ProgramDocument
             modelBuilder.Entity<ProgramDocument>(entity =>
             {
                 entity.HasKey(e => e.Id);
@@ -230,6 +187,7 @@ namespace OntuPhdApi.Data
                 entity.Property(e => e.ContentType).IsRequired();
             });
         }
+
 
         private void ConfigureDefense(ModelBuilder modelBuilder)
         {

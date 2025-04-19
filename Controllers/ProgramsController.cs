@@ -25,21 +25,15 @@ namespace OntuPhdApi.Controllers
     public class ProgramsController : ControllerBase
     {
         private readonly IProgramService _programService;
-        private readonly IProgramFileService _fileService;
-        private readonly AppDbContext _context;
         private readonly ILogger<ProgramsController> _logger;
 
 
         public ProgramsController(
             IProgramService programService,
-            IProgramFileService fileService,
-            AppDbContext context,
             ILogger<ProgramsController> logger
             )
         {
             _programService = programService ?? throw new ArgumentNullException(nameof(programService));
-            _fileService = fileService ?? throw new ArgumentNullException(nameof(fileService));
-            _context = context ?? throw new ArgumentNullException(nameof(context));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 

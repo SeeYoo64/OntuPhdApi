@@ -342,18 +342,12 @@ namespace OntuPhdApi.Migrations
                     b.Property<int>("ProgramCharacteristicsId")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("ProgramCharacteristicsId1")
-                        .HasColumnType("integer");
-
                     b.Property<string>("Theory")
                         .HasColumnType("text");
 
                     b.HasKey("Id");
 
                     b.HasIndex("ProgramCharacteristicsId")
-                        .IsUnique();
-
-                    b.HasIndex("ProgramCharacteristicsId1")
                         .IsUnique();
 
                     b.ToTable("Areas");
@@ -370,9 +364,6 @@ namespace OntuPhdApi.Migrations
                     b.Property<int>("ProgramComponentId")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("ProgramComponentId1")
-                        .HasColumnType("integer");
-
                     b.Property<string>("Type")
                         .IsRequired()
                         .HasColumnType("text");
@@ -380,8 +371,6 @@ namespace OntuPhdApi.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ProgramComponentId");
-
-                    b.HasIndex("ProgramComponentId1");
 
                     b.ToTable("ControlForms");
                 });
@@ -401,9 +390,6 @@ namespace OntuPhdApi.Migrations
                     b.Property<int>("ProgramId")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("ProgramModelId")
-                        .HasColumnType("integer");
-
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasColumnType("text");
@@ -411,8 +397,6 @@ namespace OntuPhdApi.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ProgramId");
-
-                    b.HasIndex("ProgramModelId");
 
                     b.ToTable("Jobs");
                 });
@@ -436,14 +420,9 @@ namespace OntuPhdApi.Migrations
                     b.Property<int>("ProgramId")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("ProgramModelId")
-                        .HasColumnType("integer");
-
                     b.HasKey("Id");
 
                     b.HasIndex("ProgramId");
-
-                    b.HasIndex("ProgramModelId");
 
                     b.ToTable("LinkFaculties");
                 });
@@ -463,14 +442,9 @@ namespace OntuPhdApi.Migrations
                     b.Property<int>("ProgramCompetenceId")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("ProgramCompetenceId1")
-                        .HasColumnType("integer");
-
                     b.HasKey("Id");
 
                     b.HasIndex("ProgramCompetenceId");
-
-                    b.HasIndex("ProgramCompetenceId1");
 
                     b.ToTable("OverallCompetences");
                 });
@@ -545,14 +519,9 @@ namespace OntuPhdApi.Migrations
                     b.Property<int>("ProgramId")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("ProgramModelId")
-                        .HasColumnType("integer");
-
                     b.HasKey("Id");
 
                     b.HasIndex("ProgramId");
-
-                    b.HasIndex("ProgramModelId");
 
                     b.ToTable("ProgramComponents");
                 });
@@ -603,14 +572,9 @@ namespace OntuPhdApi.Migrations
                     b.Property<int>("ProgramCompetenceId")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("ProgramCompetenceId1")
-                        .HasColumnType("integer");
-
                     b.HasKey("Id");
 
                     b.HasIndex("ProgramCompetenceId");
-
-                    b.HasIndex("ProgramCompetenceId1");
 
                     b.ToTable("SpecialCompetences");
                 });
@@ -634,18 +598,22 @@ namespace OntuPhdApi.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("Descriptions")
+                        .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<List<string>>("Directions")
+                    b.PrimitiveCollection<List<string>>("Directions")
+                        .IsRequired()
                         .HasColumnType("jsonb");
 
                     b.Property<FieldOfStudy>("FieldOfStudy")
+                        .IsRequired()
                         .HasColumnType("jsonb");
 
-                    b.Property<List<string>>("Form")
+                    b.PrimitiveCollection<List<string>>("Form")
+                        .IsRequired()
                         .HasColumnType("jsonb");
 
-                    b.Property<int>("InstituteId")
+                    b.Property<int?>("InstituteId")
                         .HasColumnType("integer");
 
                     b.Property<string>("Name")
@@ -653,30 +621,26 @@ namespace OntuPhdApi.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("NameCode")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("Objects")
+                        .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<int?>("ProgramCharacteristicsId")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("ProgramCompetenceId")
-                        .HasColumnType("integer");
 
                     b.Property<int?>("ProgramDocumentId")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("ProgramDocumentId1")
-                        .HasColumnType("integer");
-
                     b.Property<string>("Purpose")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.PrimitiveCollection<List<string>>("Results")
+                        .IsRequired()
                         .HasColumnType("jsonb");
 
                     b.Property<Speciality>("Speciality")
+                        .IsRequired()
                         .HasColumnType("jsonb");
 
                     b.Property<int?>("Years")
@@ -686,14 +650,7 @@ namespace OntuPhdApi.Migrations
 
                     b.HasIndex("InstituteId");
 
-                    b.HasIndex("ProgramCharacteristicsId");
-
-                    b.HasIndex("ProgramCompetenceId");
-
                     b.HasIndex("ProgramDocumentId")
-                        .IsUnique();
-
-                    b.HasIndex("ProgramDocumentId1")
                         .IsUnique();
 
                     b.ToTable("Programs");
@@ -724,14 +681,10 @@ namespace OntuPhdApi.Migrations
             modelBuilder.Entity("OntuPhdApi.Models.Programs.Components.Area", b =>
                 {
                     b.HasOne("OntuPhdApi.Models.Programs.Components.ProgramCharacteristics", "ProgramCharacteristics")
-                        .WithOne()
+                        .WithOne("Area")
                         .HasForeignKey("OntuPhdApi.Models.Programs.Components.Area", "ProgramCharacteristicsId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("OntuPhdApi.Models.Programs.Components.ProgramCharacteristics", null)
-                        .WithOne("Area")
-                        .HasForeignKey("OntuPhdApi.Models.Programs.Components.Area", "ProgramCharacteristicsId1");
 
                     b.Navigation("ProgramCharacteristics");
                 });
@@ -739,14 +692,10 @@ namespace OntuPhdApi.Migrations
             modelBuilder.Entity("OntuPhdApi.Models.Programs.Components.ControlForm", b =>
                 {
                     b.HasOne("OntuPhdApi.Models.Programs.Components.ProgramComponent", "ProgramComponent")
-                        .WithMany()
+                        .WithMany("ControlForms")
                         .HasForeignKey("ProgramComponentId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("OntuPhdApi.Models.Programs.Components.ProgramComponent", null)
-                        .WithMany("ControlForms")
-                        .HasForeignKey("ProgramComponentId1");
 
                     b.Navigation("ProgramComponent");
                 });
@@ -754,14 +703,10 @@ namespace OntuPhdApi.Migrations
             modelBuilder.Entity("OntuPhdApi.Models.Programs.Components.Job", b =>
                 {
                     b.HasOne("OntuPhdApi.Models.Programs.ProgramModel", "ProgramModel")
-                        .WithMany()
+                        .WithMany("Jobs")
                         .HasForeignKey("ProgramId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("OntuPhdApi.Models.Programs.ProgramModel", null)
-                        .WithMany("Jobs")
-                        .HasForeignKey("ProgramModelId");
 
                     b.Navigation("ProgramModel");
                 });
@@ -769,14 +714,10 @@ namespace OntuPhdApi.Migrations
             modelBuilder.Entity("OntuPhdApi.Models.Programs.Components.LinkFaculty", b =>
                 {
                     b.HasOne("OntuPhdApi.Models.Programs.ProgramModel", "ProgramModel")
-                        .WithMany()
+                        .WithMany("LinkFaculties")
                         .HasForeignKey("ProgramId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("OntuPhdApi.Models.Programs.ProgramModel", null)
-                        .WithMany("LinkFaculties")
-                        .HasForeignKey("ProgramModelId");
 
                     b.Navigation("ProgramModel");
                 });
@@ -784,14 +725,10 @@ namespace OntuPhdApi.Migrations
             modelBuilder.Entity("OntuPhdApi.Models.Programs.Components.OverallCompetence", b =>
                 {
                     b.HasOne("OntuPhdApi.Models.Programs.Components.ProgramCompetence", "ProgramCompetence")
-                        .WithMany()
+                        .WithMany("OverallCompetences")
                         .HasForeignKey("ProgramCompetenceId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("OntuPhdApi.Models.Programs.Components.ProgramCompetence", null)
-                        .WithMany("OverallCompetences")
-                        .HasForeignKey("ProgramCompetenceId1");
 
                     b.Navigation("ProgramCompetence");
                 });
@@ -799,7 +736,7 @@ namespace OntuPhdApi.Migrations
             modelBuilder.Entity("OntuPhdApi.Models.Programs.Components.ProgramCharacteristics", b =>
                 {
                     b.HasOne("OntuPhdApi.Models.Programs.ProgramModel", "Program")
-                        .WithOne()
+                        .WithOne("ProgramCharacteristics")
                         .HasForeignKey("OntuPhdApi.Models.Programs.Components.ProgramCharacteristics", "ProgramId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -810,7 +747,7 @@ namespace OntuPhdApi.Migrations
             modelBuilder.Entity("OntuPhdApi.Models.Programs.Components.ProgramCompetence", b =>
                 {
                     b.HasOne("OntuPhdApi.Models.Programs.ProgramModel", "Program")
-                        .WithOne()
+                        .WithOne("ProgramCompetence")
                         .HasForeignKey("OntuPhdApi.Models.Programs.Components.ProgramCompetence", "ProgramId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -821,14 +758,10 @@ namespace OntuPhdApi.Migrations
             modelBuilder.Entity("OntuPhdApi.Models.Programs.Components.ProgramComponent", b =>
                 {
                     b.HasOne("OntuPhdApi.Models.Programs.ProgramModel", "ProgramModel")
-                        .WithMany()
+                        .WithMany("ProgramComponents")
                         .HasForeignKey("ProgramId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("OntuPhdApi.Models.Programs.ProgramModel", null)
-                        .WithMany("ProgramComponents")
-                        .HasForeignKey("ProgramModelId");
 
                     b.Navigation("ProgramModel");
                 });
@@ -836,14 +769,10 @@ namespace OntuPhdApi.Migrations
             modelBuilder.Entity("OntuPhdApi.Models.Programs.Components.SpecialCompetence", b =>
                 {
                     b.HasOne("OntuPhdApi.Models.Programs.Components.ProgramCompetence", "ProgramCompetence")
-                        .WithMany()
+                        .WithMany("SpecialCompetences")
                         .HasForeignKey("ProgramCompetenceId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("OntuPhdApi.Models.Programs.Components.ProgramCompetence", null)
-                        .WithMany("SpecialCompetences")
-                        .HasForeignKey("ProgramCompetenceId1");
 
                     b.Navigation("ProgramCompetence");
                 });
@@ -851,33 +780,16 @@ namespace OntuPhdApi.Migrations
             modelBuilder.Entity("OntuPhdApi.Models.Programs.ProgramModel", b =>
                 {
                     b.HasOne("OntuPhdApi.Models.Institutes.Institute", "Institute")
-                        .WithMany("Programs")
+                        .WithMany()
                         .HasForeignKey("InstituteId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("OntuPhdApi.Models.Programs.Components.ProgramCharacteristics", "ProgramCharacteristics")
-                        .WithMany()
-                        .HasForeignKey("ProgramCharacteristicsId");
-
-                    b.HasOne("OntuPhdApi.Models.Programs.Components.ProgramCompetence", "ProgramCompetence")
-                        .WithMany()
-                        .HasForeignKey("ProgramCompetenceId");
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("OntuPhdApi.Models.Programs.Components.ProgramDocument", "ProgramDocument")
-                        .WithOne()
-                        .HasForeignKey("OntuPhdApi.Models.Programs.ProgramModel", "ProgramDocumentId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("OntuPhdApi.Models.Programs.Components.ProgramDocument", null)
                         .WithOne("Program")
-                        .HasForeignKey("OntuPhdApi.Models.Programs.ProgramModel", "ProgramDocumentId1");
+                        .HasForeignKey("OntuPhdApi.Models.Programs.ProgramModel", "ProgramDocumentId")
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("Institute");
-
-                    b.Navigation("ProgramCharacteristics");
-
-                    b.Navigation("ProgramCompetence");
 
                     b.Navigation("ProgramDocument");
                 });
@@ -885,11 +797,6 @@ namespace OntuPhdApi.Migrations
             modelBuilder.Entity("OntuPhdApi.Models.Authorization.User", b =>
                 {
                     b.Navigation("Accounts");
-                });
-
-            modelBuilder.Entity("OntuPhdApi.Models.Institutes.Institute", b =>
-                {
-                    b.Navigation("Programs");
                 });
 
             modelBuilder.Entity("OntuPhdApi.Models.Programs.Components.ProgramCharacteristics", b =>
@@ -920,6 +827,12 @@ namespace OntuPhdApi.Migrations
                     b.Navigation("Jobs");
 
                     b.Navigation("LinkFaculties");
+
+                    b.Navigation("ProgramCharacteristics")
+                        .IsRequired();
+
+                    b.Navigation("ProgramCompetence")
+                        .IsRequired();
 
                     b.Navigation("ProgramComponents");
                 });

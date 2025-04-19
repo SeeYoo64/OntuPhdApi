@@ -77,6 +77,67 @@ namespace OntuPhdApi.Utilities.Mappers
                 }).ToList();
             }
 
+            if (programDto.ProgramCharacteristics != null)
+            {
+                program.ProgramCharacteristics = new ProgramCharacteristics
+                {
+                    Focus = programDto.ProgramCharacteristics.Focus,
+                    Features = programDto.ProgramCharacteristics.Features
+                };
+
+                if (programDto.ProgramCharacteristics.Area != null)
+                {
+                    program.ProgramCharacteristics.Area = new Area
+                    {
+                        Object = programDto.ProgramCharacteristics.Area.Object,
+                        Aim = programDto.ProgramCharacteristics.Area.Aim,
+                        Theory = programDto.ProgramCharacteristics.Area.Theory,
+                        Methods = programDto.ProgramCharacteristics.Area.Methods,
+                        Instruments = programDto.ProgramCharacteristics.Area.Instruments
+                    };
+                }
+            }
+
+            if (programDto.ProgramCompetence != null)
+            {
+                program.ProgramCompetence = new ProgramCompetence
+                {
+                    IntegralCompetence = programDto.ProgramCompetence.IntegralCompetence,
+                    OverallCompetences = programDto.ProgramCompetence.OverallCompetences?.Select(oc => new OverallCompetence
+                    {
+                        Description = oc.Description
+                    }).ToList() ?? new List<OverallCompetence>(),
+                    SpecialCompetences = programDto.ProgramCompetence.SpecialCompetences?.Select(sc => new SpecialCompetence
+                    {
+                        Description = sc.Description
+                    }).ToList() ?? new List<SpecialCompetence>()
+                };
+            }
+
+            if (programDto.ProgramComponents != null)
+            {
+                program.ProgramComponents = programDto.ProgramComponents.Select(pc => new ProgramComponent
+                {
+                    ComponentType = pc.ComponentType,
+                    ComponentName = pc.ComponentName,
+                    ComponentCredits = pc.ComponentCredits,
+                    ComponentHours = pc.ComponentHours,
+                    ControlForms = pc.ControlForms?.Select(cf => new ControlForm
+                    {
+                        Type = cf.Type
+                    }).ToList() ?? new List<ControlForm>()
+                }).ToList();
+            }
+
+            if (programDto.Jobs != null)
+            {
+                program.Jobs = programDto.Jobs.Select(j => new Job
+                {
+                    Code = j.Code,
+                    Title = j.Title
+                }).ToList();
+            }
+
             return program;
         }
 
@@ -110,4 +171,5 @@ namespace OntuPhdApi.Utilities.Mappers
             }
         }
     }
+    
 }

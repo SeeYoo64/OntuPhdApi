@@ -7,6 +7,7 @@ using OntuPhdApi.Controllers;
 using OntuPhdApi.Data;
 using OntuPhdApi.Models.Institutes;
 using OntuPhdApi.Models.Programs;
+using OntuPhdApi.Models.Programs.Components;
 using OntuPhdApi.Repositories.Institutes;
 using OntuPhdApi.Utilities;
 
@@ -48,11 +49,10 @@ namespace OntuPhdApi.Repositories.Program
         {
             _logger.LogInformation("Fetching all programs from database.");
             return await _context.Programs
-                .Include(p => p.ProgramDocument)
                 .Include(p => p.Institute)
                 .Include(p => p.LinkFaculties)
+                .Include(p => p.ProgramDocument)
                 .Include(p => p.ProgramCharacteristics)
-                    .ThenInclude(c => c.Area)
                 .Include(p => p.ProgramCompetence)
                 .Include(p => p.ProgramComponents)
                 .Include(p => p.Jobs)
@@ -76,9 +76,9 @@ namespace OntuPhdApi.Repositories.Program
         {
             _logger.LogInformation("Fetching program with ID {ProgramId}.", id);
             return await _context.Programs
-                .Include(p => p.ProgramDocument)
                 .Include(p => p.Institute)
                 .Include(p => p.LinkFaculties)
+                .Include(p => p.ProgramDocument)
                 .Include(p => p.ProgramCharacteristics)
                     .ThenInclude(c => c.Area)
                 .Include(p => p.ProgramCompetence)
@@ -90,8 +90,125 @@ namespace OntuPhdApi.Repositories.Program
 
         public async Task AddAsync(ProgramModel program)
         {
-            await _context.Programs.AddAsync(program);
-            await _context.SaveChangesAsync();
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                // Temporarily detach related entities to save ProgramModel first
+                var programCharacteristics = program.ProgramCharacteristics;
+                var programCompetence = program.ProgramCompetence;
+                var programComponents = program.ProgramComponents;
+                var jobs = program.Jobs;
+                var linkFaculties = program.LinkFaculties;
+
+                program.ProgramCharacteristics = null;
+                program.ProgramCompetence = null;
+                program.ProgramComponents = null;
+                program.Jobs = null;
+                program.LinkFaculties = null;
+
+                // Save ProgramModel first to generate its Id
+                await _context.Programs.AddAsync(program);
+                await _context.SaveChangesAsync();
+
+                // Reattach and update ProgramId for ProgramCharacteristics
+                if (programCharacteristics != null)
+                {
+                    programCharacteristics.ProgramId = program.Id;
+                    if (programCharacteristics.Area != null)
+                    {
+                        // Temporarily detach Area
+                        var area = programCharacteristics.Area;
+                        programCharacteristics.Area = null;
+                        await _context.ProgramCharacteristics.AddAsync(programCharacteristics);
+                        await _context.SaveChangesAsync();
+
+                        // Reattach Area with correct ProgramCharacteristicsId
+                        area.ProgramCharacteristicsId = programCharacteristics.Id;
+                        await _context.Areas.AddAsync(area);
+                    }
+                    else
+                    {
+                        await _context.ProgramCharacteristics.AddAsync(programCharacteristics);
+                    }
+                    await _context.SaveChangesAsync();
+                }
+
+                // Reattach and update ProgramId for ProgramCompetence
+                if (programCompetence != null)
+                {
+                    programCompetence.ProgramId = program.Id;
+                    var overallCompetences = programCompetence.OverallCompetences ?? new List<OverallCompetence>();
+                    var specialCompetences = programCompetence.SpecialCompetences ?? new List<SpecialCompetence>();
+
+                    // Temporarily detach OverallCompetences and SpecialCompetences
+                    programCompetence.OverallCompetences = null;
+                    programCompetence.SpecialCompetences = null;
+                    await _context.ProgramCompetences.AddAsync(programCompetence);
+                    await _context.SaveChangesAsync();
+
+                    // Reattach OverallCompetences and SpecialCompetences
+                    foreach (var oc in overallCompetences)
+                    {
+                        oc.ProgramCompetenceId = programCompetence.Id;
+                        await _context.OverallCompetences.AddAsync(oc);
+                    }
+                    foreach (var sc in specialCompetences)
+                    {
+                        sc.ProgramCompetenceId = programCompetence.Id;
+                        await _context.SpecialCompetences.AddAsync(sc);
+                    }
+                    await _context.SaveChangesAsync();
+                }
+
+                // Reattach and update ProgramId for ProgramComponents
+                if (programComponents != null && programComponents.Any())
+                {
+                    foreach (var component in programComponents)
+                    {
+                        component.ProgramId = program.Id;
+                        var controlForms = component.ControlForms ?? new List<ControlForm>();
+                        component.ControlForms = null;
+                        await _context.ProgramComponents.AddAsync(component);
+                        await _context.SaveChangesAsync();
+
+                        foreach (var cf in controlForms)
+                        {
+                            cf.ProgramComponentId = component.Id;
+                            await _context.ControlForms.AddAsync(cf);
+                        }
+                    }
+                    await _context.SaveChangesAsync();
+                }
+
+                // Reattach and update ProgramId for Jobs
+                if (jobs != null && jobs.Any())
+                {
+                    foreach (var job in jobs)
+                    {
+                        job.ProgramId = program.Id;
+                        await _context.Jobs.AddAsync(job);
+                    }
+                    await _context.SaveChangesAsync();
+                }
+
+                // Reattach and update ProgramId for LinkFaculties
+                if (linkFaculties != null && linkFaculties.Any())
+                {
+                    foreach (var faculty in linkFaculties)
+                    {
+                        faculty.ProgramId = program.Id;
+                        await _context.LinkFaculties.AddAsync(faculty);
+                    }
+                    await _context.SaveChangesAsync();
+                }
+
+                await transaction.CommitAsync();
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
 
         public async Task UpdateAsync(ProgramModel program)
@@ -109,9 +226,6 @@ namespace OntuPhdApi.Repositories.Program
                 await _context.SaveChangesAsync();
             }
         }
-
-
-
 
 
     }

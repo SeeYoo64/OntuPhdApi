@@ -20,9 +20,8 @@ namespace OntuPhdApi.Models.Programs.Components
     public class ControlForm
     {
         public int Id { get; set; }
-        public int ProgramComponentId { get; set; }
         public string Type { get; set; }
-
+        public int ProgramComponentId { get; set; }
         public ProgramComponent ProgramComponent { get; set; }
     }
 
