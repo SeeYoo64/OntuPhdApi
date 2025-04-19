@@ -38,7 +38,7 @@ namespace OntuPhdApi.Services.Programs
             return program != null ? _mapper.ToProgramResponseDto(program) : null;
         }
 
-        public async Task<ProgramResponseDto> CreateProgramAsync(ProgramCreateDto programDto)
+        public async Task<ProgramResponseDto> CreateProgramAsync(ProgramCreateUpdateDto programDto)
         {
             var program = _mapper.ToProgramModel(programDto);
             await _programRepository.AddAsync(program);

@@ -7,7 +7,7 @@ namespace OntuPhdApi.Utilities.Mappers
     {
         ProgramResponseDto ToProgramResponseDto(ProgramModel model);
         List<ProgramResponseDto> ToProgramResponseDtos(IEnumerable<ProgramModel> models);
-        ProgramModel ToProgramModel(ProgramCreateDto programDto);
+        ProgramModel ToProgramModel(ProgramCreateUpdateDto programDto);
         void UpdateProgramModel(ProgramModel program, ProgramUpdateDto programDto);
         ProgramDegreeDto ToProgramDegree(ProgramModel program);
         List<ProgramDegreeDto> ToProgramDegrees(IEnumerable<ProgramModel> models);

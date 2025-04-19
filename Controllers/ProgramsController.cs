@@ -96,7 +96,7 @@ namespace OntuPhdApi.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<ProgramResponseDto>> CreateProgram(ProgramCreateDto programDto)
+        public async Task<ActionResult<ProgramResponseDto>> CreateProgram(ProgramCreateUpdateDto programDto)
         {
             var createdProgram = await _programService.CreateProgramAsync(programDto);
             return CreatedAtAction(nameof(GetProgram), new { id = createdProgram.Id }, createdProgram);

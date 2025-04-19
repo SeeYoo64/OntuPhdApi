@@ -19,22 +19,28 @@ namespace OntuPhdApi.Utilities.Mappers
                 NameCode = model.NameCode,
                 FieldOfStudy = MapFieldOfStudy(model.FieldOfStudy),
                 Speciality = MapSpeciality(model.Speciality),
-                Form = model.Form,
+                Form = model.Form?.Any() == true ? model.Form : null,
                 Objects = model.Objects,
-                Directions = model.Directions,
+                Directions = model.Directions?.Any() == true ? model.Directions : null,
                 Descriptions = model.Descriptions,
                 Purpose = model.Purpose,
-                Institute = model.Institute?.Name, 
+                Institute = model.Institute?.Name,
                 Years = model.Years,
                 Credits = model.Credits,
-                Results = model.Results,
+                Results = model.Results?.Any() == true ? model.Results : null,
                 ProgramDocumentId = model.ProgramDocumentId,
                 ProgramDocument = model.ProgramDocument,
-                LinkFaculties = model.LinkFaculties?.Select(MapLinkFaculty).ToList(),
-                ProgramCharacteristics = MapCharacteristics(model.ProgramCharacteristics),
-                ProgramCompetence = MapCompetence(model.ProgramCompetence),
-                ProgramComponents = model.ProgramComponents?.Select(MapProgramComponent).ToList(),
-                Jobs = model.Jobs?.Select(MapJob).ToList(),
+                LinkFaculties = model.LinkFaculties?.Any() == true
+            ? model.LinkFaculties.Select(MapLinkFaculty).ToList()
+            : null,
+                ProgramCharacteristics = CleanCharacteristics(MapCharacteristics(model.ProgramCharacteristics)),
+                ProgramCompetence = CleanCompetence(MapCompetence(model.ProgramCompetence)),
+                ProgramComponents = model.ProgramComponents?.Any() == true
+            ? model.ProgramComponents.Select(MapProgramComponent).ToList()
+            : null,
+                Jobs = model.Jobs?.Any() == true
+            ? model.Jobs.Select(MapJob).ToList()
+            : null,
                 Accredited = model.Accredited
             };
         }
@@ -115,7 +121,7 @@ namespace OntuPhdApi.Utilities.Mappers
 
         private ProgramCompetenceDto MapCompetence(ProgramCompetence? comp)
         {
-            return comp == null ? new ProgramCompetenceDto()
+            return comp == null ? null
             : new ProgramCompetenceDto
             {
                 IntegralCompetence = comp.IntegralCompetence,
@@ -130,6 +136,39 @@ namespace OntuPhdApi.Utilities.Mappers
                 }).ToList() ?? null
             };
         }
+
+        private ProgramCharacteristicsDto? CleanCharacteristics(ProgramCharacteristicsDto? dto)
+        {
+            if (dto == null) return null;
+
+            bool isEmpty =
+                string.IsNullOrWhiteSpace(dto.Focus) &&
+                string.IsNullOrWhiteSpace(dto.Features) &&
+                (dto.Area == null || (
+                    string.IsNullOrWhiteSpace(dto.Area.Aim) &&
+                    string.IsNullOrWhiteSpace(dto.Area.Object) &&
+                    string.IsNullOrWhiteSpace(dto.Area.Instruments) &&
+                    string.IsNullOrWhiteSpace(dto.Area.Methods) &&
+                    string.IsNullOrWhiteSpace(dto.Area.Theory)
+                ));
+
+            return isEmpty ? null : dto;
+        }
+
+        private ProgramCompetenceDto? CleanCompetence(ProgramCompetenceDto? dto)
+        {
+            if (dto == null) return null;
+
+            bool isEmpty =
+                string.IsNullOrWhiteSpace(dto.IntegralCompetence) &&
+                (dto.OverallCompetences == null || !dto.OverallCompetences.Any(o => !string.IsNullOrWhiteSpace(o.Description))) &&
+                (dto.SpecialCompetence == null || !dto.SpecialCompetence.Any(s => !string.IsNullOrWhiteSpace(s.Description)));
+
+            return isEmpty ? null : dto;
+        }
+
+
+
 
         public List<ProgramResponseDto> ToProgramResponseDtos(IEnumerable<ProgramModel> models)
         {
@@ -160,7 +199,7 @@ namespace OntuPhdApi.Utilities.Mappers
         }
 
 
-        public ProgramModel ToProgramModel(ProgramCreateDto programDto)
+        public ProgramModel ToProgramModel(ProgramCreateUpdateDto programDto)
         {
             var program = new ProgramModel
             {

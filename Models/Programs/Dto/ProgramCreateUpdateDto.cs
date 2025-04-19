@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace OntuPhdApi.Models.Programs.Dto
 {
-    public class ProgramCreateDto
+    public class ProgramCreateUpdateDto
     {
         [Required]
         public string Name { get; set; }

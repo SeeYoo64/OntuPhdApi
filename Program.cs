@@ -91,6 +91,8 @@ internal class Program
 
                 options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
                 options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+         //       options.JsonSerializerOptions.Converters.Add(new IgnoreEmptyCollectionsConverter());
+        //        options.JsonSerializerOptions.Converters.Add(new IgnoreEmptyObjectsConverter());
             });
 
 
