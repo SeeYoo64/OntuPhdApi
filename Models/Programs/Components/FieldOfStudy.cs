@@ -24,6 +24,11 @@ namespace OntuPhdApi.Models.Programs.Components
     }
 
 
-
+    public class FieldOfStudyResponseDto
+    {
+        public string Code { get; set; }
+        public string Name { get; set; }
+        public string Degree { get; set; }
+    }
 
 }

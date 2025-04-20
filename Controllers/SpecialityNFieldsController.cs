@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using OntuPhdApi.Models.Programs;
 using OntuPhdApi.Models.Programs.Components;
-using OntuPhdApi.Services;
 using OntuPhdApi.Services.News;
+using OntuPhdApi.Services.SpecAndFields;
 
 namespace OntuPhdApi.Controllers
 {
@@ -12,20 +12,18 @@ namespace OntuPhdApi.Controllers
     {
         private readonly ISpecialityNFieldsService _specNFieldsService;
 
-        public SpecialityNFieldsController(ISpecialityNFieldsService specNFieldsService, IWebHostEnvironment environment)
+        public SpecialityNFieldsController(ISpecialityNFieldsService specNFieldsService)
         {
             _specNFieldsService = specNFieldsService;
-            _environment = environment;
         }
-        private readonly IWebHostEnvironment _environment;
 
 
         [HttpGet]
-        public ActionResult<List<FieldOfStudyDto>> GetFieldsWithSpecialities([FromQuery] string? degree)
+        public async Task<ActionResult<List<FieldOfStudyDto>>> GetFieldsWithSpecialities([FromQuery] string? degree)
         {
             try
             {
-                var fields = _specNFieldsService.GetSpecialitiesNFields(degree);
+                var fields = await _specNFieldsService.GetFieldsWithSpecialitiesAsync(degree);
                 return Ok(fields);
             }
             catch (Exception ex)
@@ -35,16 +33,13 @@ namespace OntuPhdApi.Controllers
         }
 
         [HttpGet("{code}")]
-        public IActionResult GetSpecialitiesByCode(string code)
+        public async Task<IActionResult> GetSpecialitiesByCode(string code)
         {
             try
             {
-                var specs = _specNFieldsService.GetSpecialitiesByCode(code);
-                if (specs == null)
-                {
-                    return NotFound($"Specs with code {code} not found.");
-                }
-                return Ok(specs);
+                var specialities = await _specNFieldsService.GetSpecialitiesByCodeAsync(code);
+                return Ok(specialities);
+
             }
             catch (Exception ex)
             {
