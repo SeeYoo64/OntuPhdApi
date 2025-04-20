@@ -1,7 +1,7 @@
 ﻿using Npgsql;
 using Npgsql.Internal.Postgres;
-using OntuPhdApi.Models;
 using OntuPhdApi.Models.News;
+using OntuPhdApi.Models.Roadmap;
 using System.Reflection.Metadata;
 using System.Text.Json;
 
@@ -12,9 +12,9 @@ namespace OntuPhdApi.Services
         private readonly string _connectionString = configuration.GetConnectionString("DefaultConnection");
 
 
-        public List<Roadmap> GetRoadmaps()
+        public List<RoadmapModel> GetRoadmaps()
         {
-            var roadmaps = new List<Roadmap>();
+            var roadmaps = new List<RoadmapModel>();
 
             using (var connection = new NpgsqlConnection(_connectionString))
             {
@@ -26,7 +26,7 @@ namespace OntuPhdApi.Services
                 {
                     while (reader.Read())
                     {
-                        roadmaps.Add(new Roadmap
+                        roadmaps.Add(new RoadmapModel
                         {
                             Id = reader.GetInt32(0),
                             Type = reader.GetString(1),
@@ -43,9 +43,9 @@ namespace OntuPhdApi.Services
         }
 
 
-        public Roadmap GetRoadmapById(int id)
+        public RoadmapModel GetRoadmapById(int id)
         {
-            Roadmap roadmap = null;
+            RoadmapModel roadmap = null;
 
             using (var connection = new NpgsqlConnection(_connectionString))
             {
@@ -58,7 +58,7 @@ namespace OntuPhdApi.Services
                     {
                         if (reader.Read())
                         {
-                            roadmap = new Roadmap
+                            roadmap = new RoadmapModel
                             {
                                 Id = reader.GetInt32(0),
                                 Type = reader.GetString(1),
@@ -75,9 +75,9 @@ namespace OntuPhdApi.Services
             return roadmap;
         }
 
-        public List<Roadmap> GetRoadmapsByType(string type)
+        public List<RoadmapModel> GetRoadmapsByType(string type)
         {
-            var roadmaps = new List<Roadmap>();
+            var roadmaps = new List<RoadmapModel>();
 
             using (var connection = new NpgsqlConnection(_connectionString))
             {
@@ -90,7 +90,7 @@ namespace OntuPhdApi.Services
                     {
                         while (reader.Read())
                         {
-                            roadmaps.Add(new Roadmap
+                            roadmaps.Add(new RoadmapModel
                             {
                                 Id = reader.GetInt32(0),
                                 Type = reader.GetString(1),
@@ -108,7 +108,7 @@ namespace OntuPhdApi.Services
         }
 
 
-        public void AddRoadmap(Roadmap roadmap)
+        public void AddRoadmap(RoadmapModel roadmap)
         {
             using (var connection = new NpgsqlConnection(_connectionString))
             {

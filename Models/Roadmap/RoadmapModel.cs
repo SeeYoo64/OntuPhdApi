@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace OntuPhdApi.Models
+namespace OntuPhdApi.Models.Roadmap
 {
     public enum RoadmapStatus
     {
@@ -9,7 +9,7 @@ namespace OntuPhdApi.Models
         NotStarted
     }
 
-    public class Roadmap
+    public class RoadmapModel
     {
         public int Id { get; set; }
         public string Type { get; set; }

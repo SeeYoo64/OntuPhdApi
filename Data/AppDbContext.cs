@@ -12,6 +12,7 @@ using OntuPhdApi.Models.ApplyDocuments;
 using OntuPhdApi.Models.Programs.Components;
 using OntuPhdApi.Models;
 using System.Reflection.Metadata;
+using OntuPhdApi.Models.Roadmap;
 
 namespace OntuPhdApi.Data
 {
@@ -34,6 +35,7 @@ namespace OntuPhdApi.Data
         public DbSet<ProgramDocument> ProgramDocuments { get; set; }
         public DbSet<Institute> Institutes { get; set; }
 
+        public DbSet<RoadmapModel> Roadmaps { get; set; }
 
         public DbSet<DefenseModel> Defenses { get; set; }
 
@@ -63,6 +65,8 @@ namespace OntuPhdApi.Data
             ConfigureDocument(modelBuilder);
 
             ConfigureApplyDocument(modelBuilder);
+
+            ConfigureRoadmap(modelBuilder);
         }
 
         private void ConfigureProgramEntity(ModelBuilder modelBuilder)
@@ -288,6 +292,33 @@ namespace OntuPhdApi.Data
             });
         }
 
+
+        private void ConfigureRoadmap(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<RoadmapModel>(entity =>
+            {
+
+                entity.HasKey(r => r.Id);
+
+
+                entity.Property(r => r.DataStart)
+                      .IsRequired();
+
+                entity.Property(r => r.DataEnd)
+                      .IsRequired(false);
+
+                entity.Property(r => r.AdditionalTime)
+                      .HasMaxLength(100);
+
+                entity.Property(r => r.Description)
+                      .IsRequired(false);
+
+                // Status is computed, not mapped
+                entity.Ignore(r => r.Status);
+            });
+        }
 
 
         private void ConfigureAuthEntities(ModelBuilder modelBuilder)

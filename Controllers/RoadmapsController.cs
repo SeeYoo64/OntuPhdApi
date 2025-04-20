@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using OntuPhdApi.Models;
+using OntuPhdApi.Models.Roadmap;
 using OntuPhdApi.Services;
+using OntuPhdApi.Services.Roadmap;
 
 namespace OntuPhdApi.Controllers
 {
@@ -8,83 +9,35 @@ namespace OntuPhdApi.Controllers
     [Route("api/[controller]")]
     public class RoadmapsController : ControllerBase
     {
-        private readonly DatabaseService _dbService;
+        private readonly IRoadmapService _service;
 
-        public RoadmapsController(DatabaseService dbService)
+        public RoadmapsController(IRoadmapService service)
         {
-            _dbService = dbService;
+            _service = service;
         }
 
         [HttpGet]
-        public IActionResult GetRoadmaps([FromQuery] string? type)
+        public async Task<IActionResult> GetRoadmaps([FromQuery] string? type)
         {
-            try
-            {
-                List<Roadmap> roadmaps;
-                if (!string.IsNullOrEmpty(type))
-                {
-                    roadmaps = _dbService.GetRoadmapsByType(type);
-                }
-                else
-                {
-                    roadmaps = _dbService.GetRoadmaps();
-                }
-
-                // Сортировка по Status: Completed -> Ontime -> NotStarted, затем по DataStart
-                roadmaps = roadmaps
-                    .OrderBy(r => r.Status switch
-                    {
-                        RoadmapStatus.Completed => 1,
-                        RoadmapStatus.Ontime => 2,
-                        RoadmapStatus.NotStarted => 3,
-                        _ => 4
-                    })
-                    .ThenBy(r => r.DataStart)
-                    .ToList();
-
-                return Ok(roadmaps);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
+            var result = await _service.GetAllAsync(type);
+            return Ok(result);
         }
 
         [HttpGet("{id}")]
-        public IActionResult GetRoadmap(int id)
+        public async Task<IActionResult> GetRoadmap(int id)
         {
-            try
-            {
-                var roadmap = _dbService.GetRoadmapById(id);
-                if (roadmap == null)
-                {
-                    return NotFound($"Roadmap with ID {id} not found.");
-                }
-                return Ok(roadmap);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
+            var roadmap = await _service.GetByIdAsync(id);
+            return roadmap is null ? NotFound() : Ok(roadmap);
         }
 
         [HttpPost]
-        public IActionResult AddRoadmap([FromBody] Roadmap roadmap)
+        public async Task<IActionResult> AddRoadmap([FromBody] RoadmapModelDto dto)
         {
-            if (roadmap == null || string.IsNullOrEmpty(roadmap.Type) || string.IsNullOrEmpty(roadmap.Description))
-            {
-                return BadRequest("Invalid roadmap data. Type and Description are required.");
-            }
+            if (string.IsNullOrWhiteSpace(dto.Type) || string.IsNullOrWhiteSpace(dto.Description))
+                return BadRequest("Type and Description are required.");
 
-            try
-            {
-                _dbService.AddRoadmap(roadmap);
-                return CreatedAtAction(nameof(GetRoadmap), new { id = roadmap.Id }, roadmap);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
+            var result = await _service.AddAsync(dto);
+            return CreatedAtAction(nameof(GetRoadmap), new { id = result.Id }, result);
         }
 
     }

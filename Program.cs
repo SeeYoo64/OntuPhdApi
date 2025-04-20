@@ -15,6 +15,7 @@ using OntuPhdApi.Repositories.Employee;
 using OntuPhdApi.Repositories.Institutes;
 using OntuPhdApi.Repositories.News;
 using OntuPhdApi.Repositories.Program;
+using OntuPhdApi.Repositories.Roadmap;
 using OntuPhdApi.Repositories.SpecAndField;
 using OntuPhdApi.Services;
 using OntuPhdApi.Services.ApplyDocuments;
@@ -26,6 +27,7 @@ using OntuPhdApi.Services.Files;
 using OntuPhdApi.Services.Institutes;
 using OntuPhdApi.Services.News;
 using OntuPhdApi.Services.Programs;
+using OntuPhdApi.Services.Roadmap;
 using OntuPhdApi.Services.SpecAndFields;
 using OntuPhdApi.Utilities;
 using OntuPhdApi.Utilities.Mappers;
@@ -165,6 +167,9 @@ internal class Program
 
         builder.Services.AddScoped<ISpecialityNFieldsService, SpecialityNFieldsService>();
         builder.Services.AddScoped<ISpecAndFieldRepository, SpecAndFieldRepository>();
+
+        builder.Services.AddScoped<IRoadmapService, RoadmapService>();
+        builder.Services.AddScoped<IRoadmapRepository, RoadmapRepository>();
 
         builder.Services.AddScoped<IAuthService, AuthService>();
 
