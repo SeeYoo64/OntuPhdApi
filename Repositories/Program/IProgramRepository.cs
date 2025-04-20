@@ -1,7 +1,4 @@
-﻿using Npgsql;
-using OntuPhdApi.Controllers;
-using OntuPhdApi.Models.Institutes;
-using OntuPhdApi.Models.Programs;
+﻿using OntuPhdApi.Models.Programs;
 
 namespace OntuPhdApi.Repositories.Program
 {

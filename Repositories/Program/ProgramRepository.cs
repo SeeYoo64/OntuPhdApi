@@ -5,7 +5,6 @@ using Npgsql;
 using NpgsqlTypes;
 using OntuPhdApi.Controllers;
 using OntuPhdApi.Data;
-using OntuPhdApi.Models.Institutes;
 using OntuPhdApi.Models.Programs;
 using OntuPhdApi.Models.Programs.Components;
 using OntuPhdApi.Repositories.Institutes;
@@ -49,6 +48,8 @@ namespace OntuPhdApi.Repositories.Program
         {
             _logger.LogInformation("Fetching all programs from database.");
             return await _context.Programs
+                .Include(p => p.FieldOfStudy)
+                .Include(p => p.Speciality)
                 .Include(p => p.Institute)
                 .Include(p => p.LinkFaculties)
                 .Include(p => p.ProgramDocument)
@@ -78,6 +79,8 @@ namespace OntuPhdApi.Repositories.Program
         {
             _logger.LogInformation("Fetching program with ID {ProgramId}.", id);
             return await _context.Programs
+                .Include(p => p.FieldOfStudy)
+                .Include(p => p.Speciality)
                 .Include(p => p.Institute)
                 .Include(p => p.LinkFaculties)
                 .Include(p => p.ProgramDocument)
@@ -106,8 +109,12 @@ namespace OntuPhdApi.Repositories.Program
                 var programComponents = program.ProgramComponents;
                 var jobs = program.Jobs;
                 var linkFaculties = program.LinkFaculties;
-                var Institute = program.Institute;
+                var institute = program.Institute;
+                var fieldOfStudy = program.FieldOfStudy;
+                var speciality = program.Speciality;
 
+                program.FieldOfStudy = null;
+                program.Speciality = null;
                 program.Institute = null;
                 program.ProgramCharacteristics = null;
                 program.ProgramCompetence = null;
@@ -118,6 +125,44 @@ namespace OntuPhdApi.Repositories.Program
                 // Save ProgramModel first to generate its Id
                 await _context.Programs.AddAsync(program);
                 await _context.SaveChangesAsync();
+
+                // Handle FieldOfStudy
+                if (fieldOfStudy != null)
+                {
+                    var existingFieldOfStudy = await _context.FieldOfStudies
+                        .FirstOrDefaultAsync(f => f.Code.ToLower() == fieldOfStudy.Code.ToLower());
+
+                    if (existingFieldOfStudy != null)
+                    {
+                        program.FieldOfStudyId = existingFieldOfStudy.Id;
+                    }
+                    else
+                    {
+                        await _context.FieldOfStudies.AddAsync(fieldOfStudy);
+                        await _context.SaveChangesAsync();
+                        program.FieldOfStudyId = fieldOfStudy.Id;
+                    }
+                }
+
+                // Handle Speciality
+                if (speciality != null)
+                {
+                    var existingSpeciality = await _context.Specialities
+                        .FirstOrDefaultAsync(s => s.Code.ToLower() == speciality.Code.ToLower());
+
+                    if (existingSpeciality != null)
+                    {
+                        program.SpecialityId = existingSpeciality.Id;
+                    }
+                    else
+                    {
+                        speciality.FieldOfStudyId = (int)program.FieldOfStudyId;
+                        await _context.Specialities.AddAsync(speciality);
+                        await _context.SaveChangesAsync();
+                        program.SpecialityId = speciality.Id;
+                    }
+                }
+
 
                 // Reattach and update ProgramId for ProgramCharacteristics
                 if (programCharacteristics != null)
@@ -212,10 +257,10 @@ namespace OntuPhdApi.Repositories.Program
                 }
 
 
-                if (Institute != null)
+                if (institute != null && !string.IsNullOrEmpty(institute.Name))
                 {
                     var existingInstitute = await _context.Institutes
-                        .FirstOrDefaultAsync(i => i.Name.ToLower() == program.Institute.Name.ToLower());
+                            .FirstOrDefaultAsync(i => i.Name.ToLower() == institute.Name.ToLower());
 
                     if (existingInstitute != null)
                     {
@@ -225,14 +270,12 @@ namespace OntuPhdApi.Repositories.Program
                     {
                         var newInstitute = new Institute
                         {
-                            Name = program.Institute.Name
+                            Name = institute.Name
                         };
                         await _context.Institutes.AddAsync(newInstitute);
                         await _context.SaveChangesAsync();
-
                         program.InstituteId = newInstitute.Id;
                     }
-
                 }
 
 

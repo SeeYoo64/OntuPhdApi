@@ -10,6 +10,7 @@ using OntuPhdApi.Data;
 using OntuPhdApi.Models.ApplyDocuments;
 using OntuPhdApi.Models.Defense;
 using OntuPhdApi.Models.Programs;
+using OntuPhdApi.Models.Programs.Components;
 
 #nullable disable
 

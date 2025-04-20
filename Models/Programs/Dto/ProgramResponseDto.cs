@@ -1,6 +1,4 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.Text.Json.Serialization;
-using OntuPhdApi.Models.Institutes;
 using OntuPhdApi.Models.Programs.Components;
 
 namespace OntuPhdApi.Models.Programs.Dto

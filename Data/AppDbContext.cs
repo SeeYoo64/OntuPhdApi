@@ -9,7 +9,6 @@ using OntuPhdApi.Models.Employees;
 using OntuPhdApi.Models.News;
 using OntuPhdApi.Models.Documents;
 using OntuPhdApi.Models.ApplyDocuments;
-using OntuPhdApi.Models.Institutes;
 using OntuPhdApi.Models.Programs.Components;
 using OntuPhdApi.Models;
 using System.Reflection.Metadata;
@@ -21,6 +20,8 @@ namespace OntuPhdApi.Data
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
         public DbSet<ProgramModel> Programs { get; set; }
+        public DbSet<FieldOfStudy> FieldOfStudies { get; set; }
+        public DbSet<Speciality> Specialities { get; set; }
         public DbSet<ProgramCharacteristics> ProgramCharacteristics { get; set; }
         public DbSet<ProgramCompetence> ProgramCompetences { get; set; }
         public DbSet<ProgramComponent> ProgramComponents { get; set; }
@@ -83,11 +84,27 @@ namespace OntuPhdApi.Data
                 entity.Property(e => e.Name).IsRequired();
                 entity.Property(e => e.Degree).IsRequired();
 
-                entity.Property(e => e.FieldOfStudy).HasColumnType("jsonb");
-                entity.Property(e => e.Speciality).HasColumnType("jsonb");
                 entity.Property(e => e.Form).HasColumnType("jsonb");
                 entity.Property(e => e.Directions).HasColumnType("jsonb");
                 entity.Property(e => e.Results).HasColumnType("jsonb");
+
+                modelBuilder.Entity<ProgramModel>()
+                    .HasOne(p => p.Speciality)
+                    .WithMany(s => s.Programs)
+                    .HasForeignKey(p => p.SpecialityId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                modelBuilder.Entity<ProgramModel>()
+                    .HasOne(p => p.FieldOfStudy)
+                    .WithMany(f => f.Programs)
+                    .HasForeignKey(p => p.FieldOfStudyId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                modelBuilder.Entity<Speciality>()
+                    .HasOne(s => s.FieldOfStudy)
+                    .WithMany(f => f.Specialities)
+                    .HasForeignKey(s => s.FieldOfStudyId)
+                    .OnDelete(DeleteBehavior.Cascade);
 
                 // One-to-many: ProgramModel → Jobs
                 entity.HasMany(p => p.Jobs)

@@ -91,8 +91,7 @@ internal class Program
 
                 options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
                 options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
-         //       options.JsonSerializerOptions.Converters.Add(new IgnoreEmptyCollectionsConverter());
-        //        options.JsonSerializerOptions.Converters.Add(new IgnoreEmptyObjectsConverter());
+
             });
 
 
@@ -101,7 +100,12 @@ internal class Program
         var dataSource = dataSourceBuilder.Build();
 
         builder.Services.AddDbContext<AppDbContext>(options =>
-            options.UseNpgsql(dataSource));
+        {
+            options.UseNpgsql(dataSource);
+            options.EnableSensitiveDataLogging();
+        });
+
+
 
         // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
         builder.Services.AddEndpointsApiExplorer();
@@ -137,7 +141,7 @@ internal class Program
         builder.Services.AddScoped<IProgramService, ProgramService>();
         builder.Services.AddScoped<IProgramFileService, ProgramFileService>();
 
-        builder.Services.AddScoped<OntuPhdApi.Utilities.Mappers.IProgramMapper, OntuPhdApi.Utilities.Mappers.ProgramMapper>(); // Or OntuPhdApi.Utilities.Mappers
+        builder.Services.AddScoped<OntuPhdApi.Utilities.Mappers.IProgramMapper, OntuPhdApi.Utilities.Mappers.ProgramMapper>();
 
         builder.Services.AddScoped<IInstituteRepository, InstituteRepository>();
         builder.Services.AddScoped<IInstituteService, InstituteService>();

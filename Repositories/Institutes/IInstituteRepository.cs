@@ -1,4 +1,4 @@
-﻿using OntuPhdApi.Models.Institutes;
+﻿using OntuPhdApi.Models.Programs.Components;
 
 namespace OntuPhdApi.Repositories.Institutes
 {

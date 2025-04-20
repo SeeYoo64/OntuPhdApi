@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using OntuPhdApi.Models.Programs;
+using OntuPhdApi.Models.Programs.Components;
 using OntuPhdApi.Services;
 using OntuPhdApi.Services.News;
 

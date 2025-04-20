@@ -1,7 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
-using OntuPhdApi.Models.Institutes;
 using OntuPhdApi.Models.Programs.Components;
 
 namespace OntuPhdApi.Models.Programs
@@ -12,8 +11,13 @@ namespace OntuPhdApi.Models.Programs
         public string Degree { get; set; }
         public string Name { get; set; }
         public string? NameCode { get; set; }
+
+        public int? FieldOfStudyId { get; set; }
         public FieldOfStudy? FieldOfStudy { get; set; }
+
+        public int? SpecialityId { get; set; }
         public Speciality? Speciality { get; set; }
+
         public List<string>? Form { get; set; }
         public string? Objects { get; set; }
         public List<string>? Directions { get; set; }
@@ -34,36 +38,5 @@ namespace OntuPhdApi.Models.Programs
         public bool Accredited { get; set; }
     }
 
-
-    public class FieldOfStudyDto
-    {
-        public string? Code { get; set; }
-
-        public string? Name { get; set; }
-    }
-
-    public class FieldOfStudy
-    {
-        public string? Code { get; set; }
-
-        public string? Name { get; set; }
-
-        public string? Degree { get; set; }
-    }
-
-    public class SpecialityDto
-    {
-        public string? Code { get; set; }
-
-        public string? Name { get; set; }
-    }
-
-    public class Speciality
-    {
-        public string? Code { get; set; }
-
-        public string? Name { get; set; }
-        public string? FieldCode { get; set; }
-    }
 
 }

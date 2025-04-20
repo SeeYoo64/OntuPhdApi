@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using OntuPhdApi.Data;
-using OntuPhdApi.Models.Institutes;
+using OntuPhdApi.Models.Programs.Components;
 using OntuPhdApi.Repositories.Institutes;
 
 namespace OntuPhdApi.Services.Institutes

@@ -1,6 +1,7 @@
 ﻿using Npgsql;
 using OntuPhdApi.Models.News;
 using OntuPhdApi.Models.Programs;
+using OntuPhdApi.Models.Programs.Components;
 using System.Data;
 using System.Text.Json;
 

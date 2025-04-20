@@ -52,7 +52,6 @@ namespace OntuPhdApi.Controllers
             return Ok(new { admins });
         }
 
-        [Authorize]
         [HttpPost("create-admin")]
         public async Task<IActionResult> CreateAdmin([FromBody] CreateAdminRequest request)
         {

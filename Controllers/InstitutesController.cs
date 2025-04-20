@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using OntuPhdApi.Models.Institutes;
+using OntuPhdApi.Models.Programs.Components;
 using OntuPhdApi.Services.Institutes;
 
 namespace OntuPhdApi.Controllers

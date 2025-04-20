@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore.Migrations;
 using OntuPhdApi.Models.Programs;
+using OntuPhdApi.Models.Programs.Components;
 
 #nullable disable
 

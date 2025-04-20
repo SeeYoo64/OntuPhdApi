@@ -10,8 +10,8 @@ namespace OntuPhdApi.Models.Programs.Dto
         [Required]
         public string Degree { get; set; }
         public string? NameCode { get; set; }
-        public FieldOfStudy? FieldOfStudy { get; set; }
-        public Speciality? Speciality { get; set; }
+        public FieldOfStudyDto? FieldOfStudy { get; set; }
+        public SpecialityDto? Speciality { get; set; }
         public List<string>? Form { get; set; }
         public string? Objects { get; set; }
         public List<string>? Directions { get; set; }

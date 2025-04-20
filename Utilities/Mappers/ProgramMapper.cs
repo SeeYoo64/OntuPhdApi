@@ -206,8 +206,6 @@ namespace OntuPhdApi.Utilities.Mappers
                 Degree = programDto.Degree,
                 Name = programDto.Name,
                 NameCode = programDto.NameCode,
-                FieldOfStudy = programDto.FieldOfStudy,
-                Speciality = programDto.Speciality,
                 Form = programDto.Form,
                 Objects = programDto.Objects,
                 Directions = programDto.Directions,
@@ -219,9 +217,28 @@ namespace OntuPhdApi.Utilities.Mappers
                 Accredited = programDto.Accredited
             };
 
+            if (programDto.FieldOfStudy != null && programDto.Speciality != null)
+            {
+                program.FieldOfStudy = new FieldOfStudy
+                {
+                    Code = programDto.FieldOfStudy.Code,
+                    Name = programDto.FieldOfStudy.Name,
+                    Degree = programDto.Degree
+                };
+
+                program.Speciality = new Speciality
+                {
+                    Code = programDto.Speciality.Code,
+                    Name = programDto.Speciality.Name,
+                    FieldCode = programDto.FieldOfStudy.Code
+                };
+
+            }
+
+
             if (programDto.Institute != null)
             {
-                program.Institute = new Models.Institutes.Institute
+                program.Institute = new Models.Programs.Components.Institute
                 {
                     Name = programDto.Institute
                 };
