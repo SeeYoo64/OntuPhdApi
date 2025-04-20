@@ -87,7 +87,6 @@ internal class Program
 
         // Add services to the container.
         builder.Services.AddControllers();
-        builder.Services.AddScoped<DatabaseService>();
 
         builder.Services.AddControllers()
             .AddJsonOptions(options =>
