@@ -351,7 +351,7 @@ namespace OntuPhdApi.Utilities.Mappers
                 if (program.Institute == null)
                     program.Institute = new Institute();
 
-                program.Institute.Name = dto.Institute;
+                program.Institute = dto.Institute;
             }
             else
             {
