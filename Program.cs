@@ -142,7 +142,6 @@ internal class Program
 
         builder.Services.AddScoped<IProgramRepository, ProgramRepository>();
         builder.Services.AddScoped<IProgramService, ProgramService>();
-        builder.Services.AddScoped<IProgramFileService, ProgramFileService>();
 
         builder.Services.AddScoped<OntuPhdApi.Utilities.Mappers.IProgramMapper, OntuPhdApi.Utilities.Mappers.ProgramMapper>();
 
