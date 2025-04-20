@@ -259,8 +259,10 @@ namespace OntuPhdApi.Repositories.Program
 
                 if (institute != null && !string.IsNullOrEmpty(institute.Name))
                 {
+                    var normalizedName = institute.Name.Trim().ToLowerInvariant();
+
                     var existingInstitute = await _context.Institutes
-                            .FirstOrDefaultAsync(i => i.Name.ToLower() == institute.Name.ToLower());
+                        .FirstOrDefaultAsync(i => i.Name.ToLower().Trim() == normalizedName);
 
                     if (existingInstitute != null)
                     {
@@ -270,7 +272,7 @@ namespace OntuPhdApi.Repositories.Program
                     {
                         var newInstitute = new Institute
                         {
-                            Name = institute.Name
+                            Name = institute.Name.Trim() 
                         };
                         await _context.Institutes.AddAsync(newInstitute);
                         await _context.SaveChangesAsync();

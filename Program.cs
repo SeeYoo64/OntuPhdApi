@@ -23,7 +23,6 @@ using OntuPhdApi.Services.Authorization;
 using OntuPhdApi.Services.Defense;
 using OntuPhdApi.Services.Documents;
 using OntuPhdApi.Services.Employees;
-using OntuPhdApi.Services.Files;
 using OntuPhdApi.Services.Institutes;
 using OntuPhdApi.Services.News;
 using OntuPhdApi.Services.Programs;

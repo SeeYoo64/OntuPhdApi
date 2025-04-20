@@ -2,7 +2,6 @@
 using Npgsql;
 using OntuPhdApi.Models.News;
 using OntuPhdApi.Repositories.News;
-using OntuPhdApi.Services.Files;
 using OntuPhdApi.Utilities.Mappers;
 using System.Text.Json;
 
@@ -11,17 +10,14 @@ namespace OntuPhdApi.Services.News
     public class NewsService : INewsService
     {
         private readonly INewsRepository _newsRepository;
-        private readonly IProgramFileService _fileService; 
         private readonly ILogger<NewsService> _logger;
         private readonly string _newsUploadsPath = Path.Combine("wwwroot", "Files", "Uploads", "News");
 
         public NewsService(
             INewsRepository newsRepository,
-            IProgramFileService fileService,
             ILogger<NewsService> logger)
         {
             _newsRepository = newsRepository;
-            _fileService = fileService;
             _logger = logger;
 
             // Создаем директорию для загрузок, если она не существует
