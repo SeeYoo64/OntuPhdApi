@@ -45,7 +45,7 @@ namespace OntuPhdApi.Services.Programs
             return _mapper.ToProgramResponseDto(program);
         }
 
-        public async Task<bool> UpdateProgramAsync(int id, ProgramUpdateDto programDto)
+        public async Task<bool> UpdateProgramAsync(int id, ProgramCreateUpdateDto programDto)
         {
             var existingProgram = await _programRepository.GetByIdAsync(id);
             if (existingProgram == null)
@@ -54,6 +54,7 @@ namespace OntuPhdApi.Services.Programs
             }
 
             _mapper.UpdateProgramModel(existingProgram, programDto);
+
             await _programRepository.UpdateAsync(existingProgram);
             return true;
         }

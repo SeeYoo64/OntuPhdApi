@@ -2,11 +2,21 @@
 using OntuPhdApi.Models.Programs;
 using System.Xml.Linq;
 using OntuPhdApi.Models.Programs.Dto;
+using Microsoft.EntityFrameworkCore;
+using OntuPhdApi.Data;
 
 namespace OntuPhdApi.Utilities.Mappers
 {
     public class ProgramMapper : IProgramMapper
     {
+
+        private readonly AppDbContext context;
+
+        public ProgramMapper(AppDbContext appDbContext)
+        {
+            context = appDbContext;
+        }
+
         public ProgramResponseDto ToProgramResponseDto(ProgramModel model)
         {
             if (model == null) return null;
@@ -317,35 +327,164 @@ namespace OntuPhdApi.Utilities.Mappers
             return program;
         }
 
-        public void UpdateProgramModel(ProgramModel program, ProgramUpdateDto programDto)
+        public void UpdateProgramModel(ProgramModel program, ProgramCreateUpdateDto dto)
         {
-            program.Degree = programDto.Degree;
-            program.Name = programDto.Name;
-            program.NameCode = programDto.NameCode;
-            program.FieldOfStudy = programDto.FieldOfStudy;
-            program.Speciality = programDto.Speciality;
-            program.Form = programDto.Form;
-            program.Objects = programDto.Objects;
-            program.Directions = programDto.Directions;
-            program.Descriptions = programDto.Descriptions;
-            program.Purpose = programDto.Purpose;
-            program.InstituteId = programDto.InstituteId;
-            program.Years = programDto.Years;
-            program.Credits = programDto.Credits;
-            program.Results = programDto.Results;
-            program.Accredited = programDto.Accredited;
+            program.Name = dto.Name;
+            program.Degree = dto.Degree;
+            program.NameCode = dto.NameCode;
+            program.Form = dto.Form;
+            program.Objects = dto.Objects;
+            program.Directions = dto.Directions;
+            program.Descriptions = dto.Descriptions;
+            program.Purpose = dto.Purpose;
+            program.Years = dto.Years;
+            program.Credits = dto.Credits;
+            program.Results = dto.Results;
+            program.Accredited = dto.Accredited;
 
-            if (programDto.LinkFaculties != null)
+
+
+
+
+            if (dto.Institute != null)
             {
-                program.LinkFaculties.Clear();
-                program.LinkFaculties.AddRange(programDto.LinkFaculties.Select(lf => new LinkFaculty
-                {
-                    Name = lf.Name,
-                    Link = lf.Link,
-                    ProgramId = program.Id
-                }));
+                if (program.Institute == null)
+                    program.Institute = new Institute();
+
+                program.Institute.Name = dto.Institute;
             }
+            else
+            {
+                program.Institute = null;
+            }
+
+            if (dto.FieldOfStudy != null && dto.Speciality != null)
+            {
+                program.FieldOfStudy.Name = dto.FieldOfStudy.Name;
+                program.FieldOfStudy.Code = dto.FieldOfStudy.Code;
+                program.FieldOfStudy.Degree = program.Degree;
+
+
+                program.Speciality.Name = dto.Speciality.Name;
+                program.Speciality.Code = dto.Speciality.Code;
+                program.Speciality.FieldCode = dto.FieldOfStudy.Code;
+
+            }
+
+
+            // --- LinkFaculties ---
+            context.LinkFaculties.RemoveRange(context.LinkFaculties.Where(x => x.ProgramId == program.Id));
+            if (dto.LinkFaculties != null)
+            {
+                program.LinkFaculties = dto.LinkFaculties.Select(x => new LinkFaculty
+                {
+                    Name = x.Name,
+                    Link = x.Link,
+                    ProgramId = program.Id
+                }).ToList();
+            }
+
+            // --- ProgramCharacteristics & Area ---
+            var oldCharacteristics = context.ProgramCharacteristics.FirstOrDefault(x => x.ProgramId == program.Id);
+            if (oldCharacteristics != null)
+            {
+                var area = context.Areas.FirstOrDefault(a => a.ProgramCharacteristicsId == oldCharacteristics.Id);
+                if (area != null) context.Areas.Remove(area);
+                context.ProgramCharacteristics.Remove(oldCharacteristics);
+            }
+
+            if (dto.ProgramCharacteristics != null)
+            {
+                var newChar = new ProgramCharacteristics
+                {
+                    Focus = dto.ProgramCharacteristics.Focus,
+                    Features = dto.ProgramCharacteristics.Features,
+                    ProgramId = program.Id,
+                };
+
+                if (dto.ProgramCharacteristics.Area != null)
+                {
+                    newChar.Area = new Area
+                    {
+                        Aim = dto.ProgramCharacteristics.Area.Aim,
+                        Object = dto.ProgramCharacteristics.Area.Object,
+                        Theory = dto.ProgramCharacteristics.Area.Theory,
+                        Methods = dto.ProgramCharacteristics.Area.Methods,
+                        Instruments = dto.ProgramCharacteristics.Area.Instruments,
+                    };
+                }
+
+                program.ProgramCharacteristics = newChar;
+            }
+
+            // ========== ProgramCompetence + SpecialCompetences + OverallCompetences ==========
+            var oldCompetence = context.ProgramCompetences.FirstOrDefault(x => x.ProgramId == program.Id);
+            if (oldCompetence != null)
+            {
+                var spec = context.SpecialCompetences.Where(x => x.ProgramCompetenceId == oldCompetence.Id);
+                var over = context.OverallCompetences.Where(x => x.ProgramCompetenceId == oldCompetence.Id);
+                context.SpecialCompetences.RemoveRange(spec);
+                context.OverallCompetences.RemoveRange(over);
+                context.ProgramCompetences.Remove(oldCompetence);
+            }
+
+            if (dto.ProgramCompetence != null)
+            {
+                var newComp = new ProgramCompetence
+                {
+                    IntegralCompetence = dto.ProgramCompetence.IntegralCompetence,
+                    ProgramId = program.Id,
+                    SpecialCompetences = dto.ProgramCompetence.SpecialCompetences?.Select(x => new SpecialCompetence
+                    {
+                        Description = x.Description
+                    }).ToList(),
+                    OverallCompetences = dto.ProgramCompetence.OverallCompetences?.Select(x => new OverallCompetence
+                    {
+                        Description = x.Description
+                    }).ToList()
+                };
+
+                program.ProgramCompetence = newComp;
+            }
+
+            // --- ProgramComponents + ControlForms ---
+            var oldComponents = context.ProgramComponents.Where(x => x.ProgramId == program.Id).ToList();
+            context.ProgramComponents.RemoveRange(oldComponents);
+
+            if (dto.ProgramComponents != null)
+            {
+                program.ProgramComponents = dto.ProgramComponents.Select(c => new ProgramComponent
+                {
+                    ComponentName = c.ComponentName,
+                    ComponentType = c.ComponentType,
+                    ComponentHours = c.ComponentHours,
+                    ComponentCredits = c.ComponentCredits,
+                    ProgramId = program.Id,
+                    ControlForms = c.ControlForms?.Select(cf => new ControlForm
+                    {
+                        Type = cf.Type,
+                    }).ToList()
+                }).ToList();
+            }
+
+            // ========== Jobs ==========
+            context.Jobs.RemoveRange(context.Jobs.Where(x => x.ProgramId == program.Id));
+            if (dto.Jobs != null)
+            {
+                program.Jobs = dto.Jobs.Select(j => new Job
+                {
+                    Title = j.Title,
+                    Code = j.Code,
+                    ProgramId = program.Id
+                }).ToList();
+            }
+
+
         }
+
+
+
+
     }
     
 }

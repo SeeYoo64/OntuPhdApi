@@ -11,7 +11,6 @@ namespace OntuPhdApi.Models.Programs.Components
     public class InstituteDto
     {
         public int Id { get; set; }
-        [Required]
         public string Name { get; set; }
     }
 

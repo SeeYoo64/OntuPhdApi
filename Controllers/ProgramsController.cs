@@ -92,7 +92,7 @@ namespace OntuPhdApi.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateProgram(int id, ProgramUpdateDto programDto)
+        public async Task<IActionResult> UpdateProgram(int id, ProgramCreateUpdateDto programDto)
         {
             var result = await _programService.UpdateProgramAsync(id, programDto);
             if (!result)
