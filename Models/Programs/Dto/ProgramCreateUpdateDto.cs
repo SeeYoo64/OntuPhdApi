@@ -17,7 +17,7 @@ namespace OntuPhdApi.Models.Programs.Dto
         public List<string>? Directions { get; set; }
         public string? Descriptions { get; set; }
         public string? Purpose { get; set; }
-        public string? Institute { get; set; }
+        public Institute? Institute { get; set; }
         public int? Years { get; set; }
         public int? Credits { get; set; }
         public List<string>? Results { get; set; }
