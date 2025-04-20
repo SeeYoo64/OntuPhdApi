@@ -246,11 +246,11 @@ namespace OntuPhdApi.Utilities.Mappers
             }
 
 
-            if (programDto.Institute != null)
+            if (!string.IsNullOrWhiteSpace(programDto.Institute))
             {
                 program.Institute = new Models.Programs.Components.Institute
                 {
-                    Name = programDto.Institute
+                    Name = programDto.Institute.Trim()
                 };
             }
 
