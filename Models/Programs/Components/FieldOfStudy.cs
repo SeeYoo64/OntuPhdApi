@@ -20,7 +20,6 @@ namespace OntuPhdApi.Models.Programs.Components
     public class FieldOfStudyDto
     {
         public string? Code { get; set; }
-
         public string? Name { get; set; }
     }
 

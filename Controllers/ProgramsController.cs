@@ -48,18 +48,18 @@ namespace OntuPhdApi.Controllers
 
 
         [HttpGet("degrees")]
-        public async Task<IActionResult> GetProgramsDegrees([FromQuery] DegreeType? degreeType)
+        public async Task<IActionResult> GetProgramsDegrees([FromQuery] DegreeType? degree)
         {
-            string degree = degreeType.ToString();
+            string degreeType = degree.ToString();
             _logger.LogInformation("Fetching programs for degree {Degree}.", degree?.ToString() ?? "all");
             try
             {
-                var programs = await _programService.GetProgramsByDegreeAsync(degree);
+                var programs = await _programService.GetProgramsByDegreeAsync(degreeType);
                 return Ok(programs);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to fetch programs for degree {Degree}.", degree);
+                _logger.LogError(ex, "Failed to fetch programs for degree {Degree}.", degreeType);
                 return StatusCode(500, "An error occurred while retrieving programs by degree.");
             }
         }
