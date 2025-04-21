@@ -343,9 +343,6 @@ namespace OntuPhdApi.Utilities.Mappers
             program.Accredited = dto.Accredited;
 
 
-
-
-
             if (dto.Institute != null)
             {
                 if (program.Institute == null)

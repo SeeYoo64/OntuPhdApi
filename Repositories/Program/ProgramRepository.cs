@@ -280,7 +280,7 @@ namespace OntuPhdApi.Repositories.Program
                     }
                 }
 
-
+                await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
             }
             catch
