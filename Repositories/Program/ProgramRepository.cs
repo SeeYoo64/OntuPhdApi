@@ -262,7 +262,7 @@ namespace OntuPhdApi.Repositories.Program
                     var instituteId = institute.Id;
 
                     var existingInstitute = await _context.Institutes
-                        .FirstOrDefaultAsync(i => i.Id == instituteId);
+                        .FirstAsync(i => i.Id == instituteId);
 
                     if (existingInstitute != null)
                     {
