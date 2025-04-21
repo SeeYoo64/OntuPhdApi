@@ -121,7 +121,30 @@ namespace OntuPhdApi.Repositories.Program
                 program.ProgramComponents = null;
                 program.Jobs = null;
                 program.LinkFaculties = null;
-                
+
+                if (institute != null)
+                {
+                    var instituteId = institute.Id;
+
+                    var existingInstitute = await _context.Institutes
+                        .FirstAsync(i => i.Id == instituteId);
+
+                    if (existingInstitute != null)
+                    {
+                        program.InstituteId = existingInstitute.Id;
+                    }
+                    else
+                    {
+                        var newInstitute = new Institute
+                        {
+                            Name = institute.Name
+                        };
+                        await _context.Institutes.AddAsync(newInstitute);
+                        await _context.SaveChangesAsync();
+                        program.InstituteId = newInstitute.Id;
+                    }
+                }
+
                 // Save ProgramModel first to generate its Id
                 await _context.Programs.AddAsync(program);
                 await _context.SaveChangesAsync();
@@ -256,29 +279,6 @@ namespace OntuPhdApi.Repositories.Program
                     await _context.SaveChangesAsync();
                 }
 
-
-                if (institute != null)
-                {
-                    var instituteId = institute.Id;
-
-                    var existingInstitute = await _context.Institutes
-                        .FirstAsync(i => i.Id == instituteId);
-
-                    if (existingInstitute != null)
-                    {
-                        program.InstituteId = existingInstitute.Id;
-                    }
-                    else
-                    {
-                        var newInstitute = new Institute
-                        {
-                            Name = institute.Name
-                        };
-                        await _context.Institutes.AddAsync(newInstitute);
-                        await _context.SaveChangesAsync();
-                        program.InstituteId = newInstitute.Id;
-                    }
-                }
 
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();

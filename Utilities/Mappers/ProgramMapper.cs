@@ -250,6 +250,7 @@ namespace OntuPhdApi.Utilities.Mappers
             {
                 program.Institute = new Models.Programs.Components.Institute
                 {
+                    Id = programDto.Institute.Id,
                     Name = programDto.Institute.Name
                 };
             }
