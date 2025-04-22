@@ -85,7 +85,10 @@ namespace OntuPhdApi.Utilities.Mappers
 
         private FieldOfStudyDto MapFieldOfStudy(FieldOfStudy? fos)
         {
-            return fos == null ? null : new FieldOfStudyDto
+            if (fos == null)
+                return null;
+
+            return new FieldOfStudyDto
             {
                 Code = fos.Code,
                 Name = fos.Name
@@ -200,6 +203,7 @@ namespace OntuPhdApi.Utilities.Mappers
                 Name = program.Name,
                 FieldOfStudy = MapFieldOfStudy(program.FieldOfStudy),
                 Speciality = MapSpeciality(program.Speciality),
+                Institute = program.Institute?.Name
             };
         }
 
@@ -346,23 +350,19 @@ namespace OntuPhdApi.Utilities.Mappers
 
             if (dto.Institute != null)
             {
-                if (program.Institute == null)
-                    program.Institute = new Institute();
+                program.Institute = dto.Institute;  
+            }
 
-                program.Institute = dto.Institute;
-            }
-            else
-            {
-                program.Institute = null;
-            }
 
             if (dto.FieldOfStudy != null && dto.Speciality != null)
             {
+                program.FieldOfStudy ??= new FieldOfStudy();
+
                 program.FieldOfStudy.Name = dto.FieldOfStudy.Name;
                 program.FieldOfStudy.Code = dto.FieldOfStudy.Code;
                 program.FieldOfStudy.Degree = program.Degree;
 
-
+                program.Speciality ??= new Speciality();
                 program.Speciality.Name = dto.Speciality.Name;
                 program.Speciality.Code = dto.Speciality.Code;
                 program.Speciality.FieldCode = dto.FieldOfStudy.Code;
@@ -370,11 +370,9 @@ namespace OntuPhdApi.Utilities.Mappers
             }
 
 
-            // --- LinkFaculties ---
-            context.LinkFaculties.RemoveRange(context.LinkFaculties.Where(x => x.ProgramId == program.Id));
             if (dto.LinkFaculties != null)
             {
-                program.LinkFaculties = dto.LinkFaculties.Select(x => new LinkFaculty
+                program.LinkFaculties = dto.LinkFaculties?.Select(x => new LinkFaculty
                 {
                     Name = x.Name,
                     Link = x.Link,
@@ -383,17 +381,9 @@ namespace OntuPhdApi.Utilities.Mappers
             }
 
             // --- ProgramCharacteristics & Area ---
-            var oldCharacteristics = context.ProgramCharacteristics.FirstOrDefault(x => x.ProgramId == program.Id);
-            if (oldCharacteristics != null)
-            {
-                var area = context.Areas.FirstOrDefault(a => a.ProgramCharacteristicsId == oldCharacteristics.Id);
-                if (area != null) context.Areas.Remove(area);
-                context.ProgramCharacteristics.Remove(oldCharacteristics);
-            }
-
             if (dto.ProgramCharacteristics != null)
             {
-                var newChar = new ProgramCharacteristics
+                var characteristics = new ProgramCharacteristics
                 {
                     Focus = dto.ProgramCharacteristics.Focus,
                     Features = dto.ProgramCharacteristics.Features,
@@ -402,33 +392,27 @@ namespace OntuPhdApi.Utilities.Mappers
 
                 if (dto.ProgramCharacteristics.Area != null)
                 {
-                    newChar.Area = new Area
+                    characteristics.Area = new Area
                     {
                         Aim = dto.ProgramCharacteristics.Area.Aim,
                         Object = dto.ProgramCharacteristics.Area.Object,
                         Theory = dto.ProgramCharacteristics.Area.Theory,
                         Methods = dto.ProgramCharacteristics.Area.Methods,
-                        Instruments = dto.ProgramCharacteristics.Area.Instruments,
+                        Instruments = dto.ProgramCharacteristics.Area.Instruments
                     };
                 }
 
-                program.ProgramCharacteristics = newChar;
+                program.ProgramCharacteristics = characteristics;
+            }
+            else
+            {
+                program.ProgramCharacteristics = null;
             }
 
             // ========== ProgramCompetence + SpecialCompetences + OverallCompetences ==========
-            var oldCompetence = context.ProgramCompetences.FirstOrDefault(x => x.ProgramId == program.Id);
-            if (oldCompetence != null)
-            {
-                var spec = context.SpecialCompetences.Where(x => x.ProgramCompetenceId == oldCompetence.Id);
-                var over = context.OverallCompetences.Where(x => x.ProgramCompetenceId == oldCompetence.Id);
-                context.SpecialCompetences.RemoveRange(spec);
-                context.OverallCompetences.RemoveRange(over);
-                context.ProgramCompetences.Remove(oldCompetence);
-            }
-
             if (dto.ProgramCompetence != null)
             {
-                var newComp = new ProgramCompetence
+                var competence = new ProgramCompetence
                 {
                     IntegralCompetence = dto.ProgramCompetence.IntegralCompetence,
                     ProgramId = program.Id,
@@ -442,13 +426,14 @@ namespace OntuPhdApi.Utilities.Mappers
                     }).ToList()
                 };
 
-                program.ProgramCompetence = newComp;
+                program.ProgramCompetence = competence;
+            }
+            else
+            {
+                program.ProgramCompetence = null;
             }
 
             // --- ProgramComponents + ControlForms ---
-            var oldComponents = context.ProgramComponents.Where(x => x.ProgramId == program.Id).ToList();
-            context.ProgramComponents.RemoveRange(oldComponents);
-
             if (dto.ProgramComponents != null)
             {
                 program.ProgramComponents = dto.ProgramComponents.Select(c => new ProgramComponent
@@ -460,16 +445,15 @@ namespace OntuPhdApi.Utilities.Mappers
                     ProgramId = program.Id,
                     ControlForms = c.ControlForms?.Select(cf => new ControlForm
                     {
-                        Type = cf.Type,
+                        Type = cf.Type
                     }).ToList()
                 }).ToList();
             }
 
             // ========== Jobs ==========
-            context.Jobs.RemoveRange(context.Jobs.Where(x => x.ProgramId == program.Id));
             if (dto.Jobs != null)
             {
-                program.Jobs = dto.Jobs.Select(j => new Job
+                program.Jobs = dto.Jobs?.Select(j => new Job
                 {
                     Title = j.Title,
                     Code = j.Code,

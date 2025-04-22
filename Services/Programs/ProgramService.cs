@@ -1,4 +1,5 @@
-﻿using OntuPhdApi.Controllers;
+﻿using Microsoft.EntityFrameworkCore;
+using OntuPhdApi.Controllers;
 using OntuPhdApi.Data;
 using OntuPhdApi.Models.Programs.Components;
 using OntuPhdApi.Models.Programs.Dto;
@@ -13,16 +14,18 @@ namespace OntuPhdApi.Services.Programs
         private readonly IProgramRepository _programRepository;
         private readonly IProgramMapper _mapper;
         private readonly ILogger<ProgramService> _logger;
+        private readonly AppDbContext _context;
 
         public ProgramService(
             IProgramRepository programRepository, IProgramMapper mapper,
             AppDbContext context,
-            ILogger<ProgramService> logger, IInstituteService instituteService
+            ILogger<ProgramService> logger
             )
         {
             _programRepository = programRepository;
             _mapper = mapper;
             _logger = logger;
+            _context = context;
         }
 
 
@@ -49,14 +52,28 @@ namespace OntuPhdApi.Services.Programs
         {
             var existingProgram = await _programRepository.GetByIdAsync(id);
             if (existingProgram == null)
+                return false;
+
+            try
             {
+
+                if (programDto.Institute.Id != null)
+                {
+                    var institute = await _context.Institutes.FindAsync(programDto.Institute.Id);
+                    if (institute == null) return false;
+                    existingProgram.Institute = institute;
+                }
+
+                _mapper.UpdateProgramModel(existingProgram, programDto);
+                await _programRepository.UpdateAsync(existingProgram);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error while updating program ID = {ProgramId}", id);
                 return false;
             }
-
-            _mapper.UpdateProgramModel(existingProgram, programDto);
-
-            await _programRepository.UpdateAsync(existingProgram);
-            return true;
         }
 
         public async Task<bool> DeleteProgramAsync(int id)

@@ -71,6 +71,9 @@ namespace OntuPhdApi.Repositories.Program
         {
             _logger.LogInformation("Fetching programs for degree {Degree}.", degree?.ToString() ?? "all");
             return await _context.Programs
+                .Include(p => p.FieldOfStudy)
+                .Include(p => p.Speciality)
+                .Include(p => p.Institute)
                 .Where(p => p.Degree == degree)
                 .ToListAsync();
         }
@@ -292,7 +295,6 @@ namespace OntuPhdApi.Repositories.Program
 
         public async Task UpdateAsync(ProgramModel program)
         {
-            _context.Programs.Update(program);
             await _context.SaveChangesAsync();
         }
 
