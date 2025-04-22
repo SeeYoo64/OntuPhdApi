@@ -99,7 +99,7 @@ namespace OntuPhdApi.Controllers
             {
                 return NotFound();
             }
-            return NoContent();
+            return Ok(result);
         }
 
 
