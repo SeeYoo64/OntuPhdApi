@@ -21,7 +21,7 @@ namespace OntuPhdApi.Repositories.Document
             _logger.LogInformation("Fetching all documents from database.");
             try
             {
-                return await _context.Documents.ToListAsync();
+                return await _context.Documents.OrderBy(dc => dc.Id).ToListAsync();
             }
             catch (Exception ex)
             {
