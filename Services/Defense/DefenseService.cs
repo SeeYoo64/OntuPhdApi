@@ -31,7 +31,7 @@ namespace OntuPhdApi.Services.Defense
             try
             {
                 var defenses = await _defenseRepository.GetAllDefensesAsync();
-                return DefenseMapper.ToDtoList(defenses);
+                return DefenseMapper.ToDtoList(defenses, _context);
             }
             catch (Exception ex)
             {
@@ -52,7 +52,7 @@ namespace OntuPhdApi.Services.Defense
                     _logger.LogWarning("Defense with ID {DefenseId} not found.", id);
                     return null;
                 }
-                return DefenseMapper.ToDto(defense);
+                return DefenseMapper.ToDto(defense, _context);
             }
             catch (Exception ex)
             {
@@ -67,7 +67,7 @@ namespace OntuPhdApi.Services.Defense
             try
             {
                 var defenses = await _defenseRepository.GetDefensesByDegreeAsync(degree);
-                return DefenseMapper.ToDtoList(defenses);
+                return DefenseMapper.ToDtoList(defenses, _context);
             }
             catch (Exception ex)
             {

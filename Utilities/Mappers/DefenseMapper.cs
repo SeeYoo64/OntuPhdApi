@@ -1,4 +1,5 @@
-﻿using OntuPhdApi.Models.Defense;
+﻿using OntuPhdApi.Data;
+using OntuPhdApi.Models.Defense;
 using OntuPhdApi.Models.Programs;
 using OntuPhdApi.Models.Programs.Components;
 
@@ -6,9 +7,14 @@ namespace OntuPhdApi.Utilities.Mappers
 {
     public class DefenseMapper
     {
-        public static DefenseDto ToDto(DefenseModel entity)
+        public static DefenseDto ToDto(DefenseModel entity, AppDbContext context)
         {
             if (entity == null) return null;
+
+            var fieldOfStudy = context.FieldOfStudies
+                .FirstOrDefault(f => f.Id == entity.Program.FieldOfStudyId);
+            var speciality = context.Specialities
+                .FirstOrDefault(s => s.Id == entity.Program.SpecialityId);
 
             return new DefenseDto
             {
@@ -43,18 +49,25 @@ namespace OntuPhdApi.Utilities.Mappers
                     Id = entity.Program.Id,
                     Name = entity.Program.Name,
                     Degree = entity.Program.Degree,
-                    FieldOfStudy = entity.Program.FieldOfStudy,
-                    Speciality = new SpecialityDto{
-                        Code =  entity.Program.Speciality.Code,
+                    FieldOfStudy = entity.Program.FieldOfStudy != null ? new FieldOfStudyDto
+                    {
+                        Code = entity.Program.FieldOfStudy.Code,
+                        Name = entity.Program.FieldOfStudy.Name
+                    } : null,
+                    Speciality = entity.Program.Speciality != null ? new SpecialityDto
+                    {
+                        Code = entity.Program.Speciality.Code,
                         Name = entity.Program.Speciality.Name
-                    }
+                    } : null
                 } : null
             };
         }
 
-        public static List<DefenseDto> ToDtoList(List<DefenseModel> entities)
+        public static List<DefenseDto> ToDtoList(List<DefenseModel> entities, AppDbContext context)
         {
-            return entities?.Select(ToDto).Where(dto => dto != null).ToList() ?? new List<DefenseDto>();
+            return entities?.Select(entity => ToDto(entity, context))
+                   .Where(dto => dto != null)
+                   .ToList() ?? new List<DefenseDto>();
         }
 
         public static DefenseModel ToEntity(DefenseCreateDto dto)
