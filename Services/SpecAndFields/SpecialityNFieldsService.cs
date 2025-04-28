@@ -25,7 +25,14 @@ namespace OntuPhdApi.Services.SpecAndFields
                 Code = f.Code,
                 Name = f.Name,
                 Degree = f.Degree
-            }).ToList();
+            }).OrderBy(f => f.Degree.ToLower() 
+                switch
+                    {
+                        "phd" => 1,
+                        "doc" => 2,
+                        _ => 3
+                    })
+                .ToList();
         }
 
         public async Task<List<SpecialityDto>> GetSpecialitiesByCodeAsync(string code)

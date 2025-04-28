@@ -91,6 +91,7 @@ namespace OntuPhdApi.Services.Documents
                     var programExists = await _context.Programs.AnyAsync(p => p.Id == documentDto.ProgramId.Value);
                     if (!programExists)
                     {
+                        documentDto.ProgramId = null;
                         //_logger.LogWarning("Program with ID {ProgramId} not found for document creation.", documentDto.ProgramId);
                         //throw new KeyNotFoundException("Program not found.");
                     }
