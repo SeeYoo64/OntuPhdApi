@@ -26,7 +26,7 @@ namespace OntuPhdApi.Controllers
             try
             {
                 var defenses = await _defenseService.GetDefensesAsync();
-                return Ok(defenses);
+                return Ok(defenses.OrderByDescending(d => d.DefenseDate));
             }
             catch (Exception ex)
             {

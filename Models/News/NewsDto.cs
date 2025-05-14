@@ -55,8 +55,8 @@ namespace OntuPhdApi.Models.News
         [JsonConverter(typeof(DateOnlyConverter))]
         public DateTime PublicationDate { get; set; }
 
-        public IFormFile? Thumbnail { get; set; } // Файл миниатюры
-        public List<IFormFile>? Photos { get; set; } // Файлы фотографий
+        public IFormFile? Thumbnail { get; set; }
+        public List<IFormFile>? Photos { get; set; } 
         public string Body { get; set; }
     }
 }

@@ -67,6 +67,15 @@ namespace OntuPhdApi.Repositories.Program
                 .ToListAsync();
         }
 
+        public async Task<ProgramModel> GetShortByIdAsync(int id)
+        {
+            return await _context.Programs
+                .AsNoTracking()
+                .Include(p => p.FieldOfStudy)
+                .Include(p => p.Speciality)
+                .FirstOrDefaultAsync(p => p.Id == id);
+        }
+
         public async Task<IEnumerable<ProgramModel>> GetByDegreeAsync(string degree)
         {
             _logger.LogInformation("Fetching programs for degree {Degree}.", degree?.ToString() ?? "all");
@@ -99,7 +108,6 @@ namespace OntuPhdApi.Repositories.Program
                 .FirstOrDefaultAsync(p => p.Id == id);
 
         }
-
 
         public async Task AddAsync(ProgramModel program)
         {

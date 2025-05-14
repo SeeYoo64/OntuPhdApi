@@ -180,8 +180,27 @@ namespace OntuPhdApi.Utilities.Mappers
             return isEmpty ? null : dto;
         }
 
+        public ProgramShortDto ToProgramShortDto(ProgramModel program)
+        {
+            if (program == null) return null;
 
-
+            return new ProgramShortDto
+            {
+                Id = program.Id,
+                Name = program.Name,
+                Degree = program.Degree,
+                FieldOfStudy = program.FieldOfStudy != null ? new FieldOfStudyDto
+                {
+                    Code = program.FieldOfStudy.Code,
+                    Name = program.FieldOfStudy.Name
+                } : null,
+                Speciality = program.Speciality != null ? new SpecialityDto
+                {
+                    Code = program.Speciality.Code,
+                    Name = program.Speciality.Name,
+                } : null
+            };
+        }
 
         public List<ProgramResponseDto> ToProgramResponseDtos(IEnumerable<ProgramModel> models)
         {

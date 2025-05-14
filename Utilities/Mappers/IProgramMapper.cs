@@ -12,5 +12,7 @@ namespace OntuPhdApi.Utilities.Mappers
         ProgramDegreeDto ToProgramDegree(ProgramModel program);
         List<ProgramDegreeDto> ToProgramDegrees(IEnumerable<ProgramModel> models);
         IEnumerable<ProgramResponseDto> ToProgramResponseDto1s(IEnumerable<ProgramModel> models);
+
+        ProgramShortDto ToProgramShortDto(ProgramModel program);
     }
 }

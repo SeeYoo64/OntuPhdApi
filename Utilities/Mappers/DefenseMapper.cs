@@ -22,7 +22,7 @@ namespace OntuPhdApi.Utilities.Mappers
                 CandidateNameSurname = entity.CandidateNameSurname,
                 DefenseTitle = entity.DefenseTitle,
                 ScienceTeachers = entity.ScienceTeachers,
-                DefenseDate = entity.DefenseDate,
+                DefenseDate = entity.DefenseDate.ToString("yyyy-MM-ddTHH:mm"),
                 Address = entity.Address,
                 Message = entity.Message,
                 Placeholder = entity.Placeholder,
@@ -42,13 +42,11 @@ namespace OntuPhdApi.Utilities.Mappers
                     Link = f.Link,
                     Type = f.Type
                 }).ToList(),
-                PublicationDate = entity.PublicationDate,
-                ProgramId = entity.ProgramId,
+                PublicationDate = entity.PublicationDate.ToString("yyyy-MM-ddTHH:mm"),
                 Program = entity.Program != null ? new ProgramDefenseDto
                 {
                     Id = entity.Program.Id,
                     Name = entity.Program.Name,
-                    Degree = entity.Program.Degree,
                     FieldOfStudy = entity.Program.FieldOfStudy != null ? new FieldOfStudyDto
                     {
                         Code = entity.Program.FieldOfStudy.Code,

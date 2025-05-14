@@ -7,6 +7,7 @@ namespace OntuPhdApi.Services.Programs
     public interface IProgramService
     {
         Task<IEnumerable<ProgramResponseDto>> GetAllProgramsAsync();
+        Task<ProgramShortDto> GetShortByIdAsync(int id);
         Task<ProgramResponseDto> GetProgramByIdAsync(int id);
         Task<ProgramResponseDto> CreateProgramAsync(ProgramCreateUpdateDto programDto);
         Task<bool> UpdateProgramAsync(int id, ProgramCreateUpdateDto programDto);

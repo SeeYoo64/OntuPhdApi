@@ -46,6 +46,26 @@ namespace OntuPhdApi.Controllers
             }
         }
 
+        [HttpGet("short/{id}")]
+        public async Task<ActionResult<ProgramShortDto>> GetShortById(int id)
+        {
+            _logger.LogInformation("Fetching all short programs.");
+            try
+            {
+                var program = await _programService.GetShortByIdAsync(id);
+                if (program == null)
+                {
+                    return NotFound();
+                }
+                return Ok(program);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to fetch programs.");
+                return StatusCode(500, "An error occurred while retrieving programs.");
+            }
+        }
+
 
         [HttpGet("degrees")]
         public async Task<IActionResult> GetProgramsDegrees([FromQuery] DegreeType? degree)

@@ -35,6 +35,11 @@ namespace OntuPhdApi.Services.Programs
             return _mapper.ToProgramResponseDtos(programs);
         }
 
+        public async Task<ProgramShortDto> GetShortByIdAsync(int id)
+        {
+            var program = await _programRepository.GetShortByIdAsync(id);
+            return _mapper.ToProgramShortDto(program);
+        }
         public async Task<ProgramResponseDto> GetProgramByIdAsync(int id)
         {
             var program = await _programRepository.GetByIdAsync(id);
@@ -93,7 +98,6 @@ namespace OntuPhdApi.Services.Programs
             var programs = await _programRepository.GetByDegreeAsync(degree);
             return _mapper.ToProgramDegrees(programs);
         }
-
 
 
     }
