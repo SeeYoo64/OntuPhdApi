@@ -10,7 +10,7 @@ namespace OntuPhdApi.Repositories.Program
         Task UpdateAsync(ProgramModel program);
         Task DeleteAsync(int id);
         Task<IEnumerable<ProgramModel>> GetByDegreeAsync(string degree);
-        Task<ProgramModel> GetShortByIdAsync(int id);
+        Task<IEnumerable<ProgramModel>> GetShortByDegreeAsync(string degree = null);
 
     }
 }

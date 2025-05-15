@@ -67,13 +67,30 @@ namespace OntuPhdApi.Repositories.Program
                 .ToListAsync();
         }
 
-        public async Task<ProgramModel> GetShortByIdAsync(int id)
+        public async Task<IEnumerable<ProgramModel>> GetShortByDegreeAsync(string degree = null)
         {
-            return await _context.Programs
+            var query = _context.Programs
                 .AsNoTracking()
                 .Include(p => p.FieldOfStudy)
                 .Include(p => p.Speciality)
-                .FirstOrDefaultAsync(p => p.Id == id);
+                .Include(p => p.Institute);
+
+            if (!string.IsNullOrEmpty(degree))
+            {
+                var queryx = _context.Programs
+                .AsNoTracking()
+                .Include(p => p.FieldOfStudy)
+                .Include(p => p.Speciality)
+                .Include(p => p.Institute)
+                .Where(p => p.Degree == degree)
+                .OrderBy(p => p.Degree == "phd" ? 0 : 1)
+                .ToListAsync(); ;
+                return await queryx;
+            }
+
+            return await query
+                .OrderBy(p => p.Degree == "phd" ? 0 : 1)
+                .ToListAsync();
         }
 
         public async Task<IEnumerable<ProgramModel>> GetByDegreeAsync(string degree)

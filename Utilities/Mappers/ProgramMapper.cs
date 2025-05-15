@@ -188,7 +188,6 @@ namespace OntuPhdApi.Utilities.Mappers
             {
                 Id = program.Id,
                 Name = program.Name,
-                Degree = program.Degree,
                 FieldOfStudy = program.FieldOfStudy != null ? new FieldOfStudyDto
                 {
                     Code = program.FieldOfStudy.Code,
@@ -198,8 +197,14 @@ namespace OntuPhdApi.Utilities.Mappers
                 {
                     Code = program.Speciality.Code,
                     Name = program.Speciality.Name,
-                } : null
+                } : null,
+                Institute = program.Institute.Name
             };
+        }
+
+        public List<ProgramShortDto> ToProgramShortDtos(IEnumerable<ProgramModel> models)
+        {
+            return models.Select(ToProgramShortDto).ToList();
         }
 
         public List<ProgramResponseDto> ToProgramResponseDtos(IEnumerable<ProgramModel> models)
@@ -207,10 +212,7 @@ namespace OntuPhdApi.Utilities.Mappers
             return models.Select(ToProgramResponseDto).ToList();
         }
 
-        public IEnumerable<ProgramResponseDto> ToProgramResponseDto1s(IEnumerable<ProgramModel> models)
-        {
-            return models.Select(ToProgramResponseDto).ToList();
-        }
+
 
 
         public ProgramDegreeDto ToProgramDegree(ProgramModel program)

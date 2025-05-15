@@ -46,13 +46,13 @@ namespace OntuPhdApi.Controllers
             }
         }
 
-        [HttpGet("short/{id}")]
-        public async Task<ActionResult<ProgramShortDto>> GetShortById(int id)
+        [HttpGet("short")]
+        public async Task<ActionResult<ProgramShortDto>> GetShortByDegree([FromQuery] string degree = null)
         {
             _logger.LogInformation("Fetching all short programs.");
             try
             {
-                var program = await _programService.GetShortByIdAsync(id);
+                var program = await _programService.GetShortByDegreeAsync(degree);
                 if (program == null)
                 {
                     return NotFound();

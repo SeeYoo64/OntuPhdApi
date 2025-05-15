@@ -12,5 +12,6 @@ namespace OntuPhdApi.Models.Programs.Dto
         public string Degree { get; set; }
         public FieldOfStudyDto FieldOfStudy { get; set; }
         public SpecialityDto Speciality { get; set; }
+        public string Institute { get; set; }
     }
 }
