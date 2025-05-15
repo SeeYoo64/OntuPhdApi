@@ -22,6 +22,7 @@ namespace OntuPhdApi.Utilities.Mappers
                 CandidateNameSurname = entity.CandidateNameSurname,
                 DefenseTitle = entity.DefenseTitle,
                 ScienceTeachers = entity.ScienceTeachers,
+                CandidateDegree = entity.Program.Degree,
                 DefenseDate = entity.DefenseDate.ToString("yyyy-MM-ddTHH:mm"),
                 Address = entity.Address,
                 Message = entity.Message,
