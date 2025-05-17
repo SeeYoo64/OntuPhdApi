@@ -5,6 +5,7 @@
         public string CandidateNameSurname { get; set; }
         public string DefenseTitle { get; set; }
         public List<string>? ScienceTeachers { get; set; }
+        public string? CandidateDegree { get; set; }
         public DateTime DefenseDate { get; set; }
         public string? Address { get; set; }
         public string? Message { get; set; }

@@ -10,6 +10,7 @@ namespace OntuPhdApi.Models.Defense
         public int Id { get; set; }
         public string CandidateNameSurname { get; set; } 
         public string DefenseTitle { get; set; }
+        public string? CandidateDegree { get; set; }
         public List<string>? ScienceTeachers { get; set; }
         public DateTime DefenseDate { get; set; }
         public string? Address { get; set; }
