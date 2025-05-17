@@ -227,7 +227,20 @@ namespace OntuPhdApi.Data
                 entity.Property(e => e.Files).HasColumnType("jsonb");
                 entity.Property(e => e.PublicationDate);
                 entity.Property(e => e.ProgramId);
+                
+                modelBuilder.Entity<DefenseModel>()
+                .Property(d => d.DefenseDate)
+                .HasConversion(
+                    v => v.ToUniversalTime(), 
+                    v => DateTime.SpecifyKind(v, DateTimeKind.Utc) 
+                );
 
+                modelBuilder.Entity<DefenseModel>()
+                    .Property(d => d.PublicationDate)
+                    .HasConversion(
+                        v => v.ToUniversalTime(),
+                        v => DateTime.SpecifyKind(v, DateTimeKind.Utc)
+                    );
                 // Связь с Program
                 entity.HasOne(d => d.Program)
                       .WithMany()
