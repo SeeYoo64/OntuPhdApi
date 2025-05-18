@@ -146,7 +146,7 @@ namespace OntuPhdApi.Controllers
             catch (KeyNotFoundException ex)
             {
                 _logger.LogWarning("Defense or Program not found: {ErrorMessage}", ex.Message);
-                return NotFound("Defense not found.");
+                return NotFound("Defense or Program not found.");
             }
             catch (Exception ex)
             {
