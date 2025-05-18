@@ -1,4 +1,6 @@
-﻿namespace OntuPhdApi.Models.Defense
+﻿using System.Text.Json.Serialization;
+
+namespace OntuPhdApi.Models.Defense
 {
     public class DefenseCreateDto
     {
@@ -6,12 +8,14 @@
         public string DefenseTitle { get; set; }
         public List<string>? ScienceTeachers { get; set; }
         public string? CandidateDegree { get; set; }
+        [JsonConverter(typeof(DefenseDateTimeConverter))]
         public DateTime DefenseDate { get; set; }
         public string? Address { get; set; }
         public string? Message { get; set; }
         public string? Placeholder { get; set; }
         public List<CompositionOfRadaDto>? Members { get; set; }
         public List<DefenseFileDto>? Files { get; set; }
+        [JsonConverter(typeof(DefenseDateTimeConverter))]
         public DateTime PublicationDate { get; set; }
         public int ProgramId { get; set; }
     }

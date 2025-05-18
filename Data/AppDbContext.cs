@@ -219,28 +219,16 @@ namespace OntuPhdApi.Data
                 entity.Property(e => e.CandidateNameSurname);
                 entity.Property(e => e.DefenseTitle);
                 entity.Property(e => e.ScienceTeachers).HasColumnType("jsonb");
-                entity.Property(e => e.DefenseDate);
+                entity.Property(e => e.DefenseDate).HasColumnType("timestamp without time zone");
                 entity.Property(e => e.Address);
                 entity.Property(e => e.Message);
                 entity.Property(e => e.Placeholder);
                 entity.Property(e => e.Members).HasColumnType("jsonb");
                 entity.Property(e => e.Files).HasColumnType("jsonb");
-                entity.Property(e => e.PublicationDate);
+                entity.Property(e => e.PublicationDate).HasColumnType("timestamp without time zone");
                 entity.Property(e => e.ProgramId);
                 
-                modelBuilder.Entity<DefenseModel>()
-                .Property(d => d.DefenseDate)
-                .HasConversion(
-                    v => v.ToUniversalTime(), 
-                    v => DateTime.SpecifyKind(v, DateTimeKind.Utc) 
-                );
 
-                modelBuilder.Entity<DefenseModel>()
-                    .Property(d => d.PublicationDate)
-                    .HasConversion(
-                        v => v.ToUniversalTime(),
-                        v => DateTime.SpecifyKind(v, DateTimeKind.Utc)
-                    );
                 // Связь с Program
                 entity.HasOne(d => d.Program)
                       .WithMany()
