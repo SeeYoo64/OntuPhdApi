@@ -159,32 +159,10 @@ namespace OntuPhdApi.Services.Defense
                 }
 
                 // Обновляем поля сущности
-                existingDefense.CandidateNameSurname = defenseDto.CandidateNameSurname;
-                existingDefense.DefenseTitle = defenseDto.DefenseTitle;
-                existingDefense.ScienceTeachers = defenseDto.ScienceTeachers;
-                existingDefense.DefenseDate = defenseDto.DefenseDate;
-                existingDefense.Address = defenseDto.Address;
-                existingDefense.Message = defenseDto.Message;
-                existingDefense.Placeholder = defenseDto.Placeholder;
-                existingDefense.Members = defenseDto.Members?.Select(m => new CompositionOfRada
-                {
-                    Position = m.Position,
-                    Members = m.Members?.Select(member => new MemberOfRada
-                    {
-                        NameSurname = member.NameSurname,
-                        ToolTip = member.ToolTip
-                    }).ToList()
-                }).ToList();
-                existingDefense.Files = defenseDto.Files?.Select(f => new DefenseFile
-                {
-                    Name = f.Name,
-                    Link = f.Link,
-                    Type = f.Type
-                }).ToList();
-                existingDefense.PublicationDate = defenseDto.PublicationDate;
-                existingDefense.ProgramId = defenseDto.ProgramId;
+                DefenseMapper.UpdateDefenseModel(existingDefense, defenseDto);
 
                 await _defenseRepository.UpdateDefenseAsync(existingDefense);
+                _logger.LogInformation("Defense with ID {DefenseId} updated successfully.", id);
             }
             catch (Exception ex)
             {

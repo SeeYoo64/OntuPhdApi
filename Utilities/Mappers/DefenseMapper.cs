@@ -5,6 +5,7 @@ using OntuPhdApi.Models.Programs.Components;
 
 namespace OntuPhdApi.Utilities.Mappers
 {
+
     public class DefenseMapper
     {
         public static DefenseDto ToDto(DefenseModel entity, AppDbContext context)
@@ -103,5 +104,40 @@ namespace OntuPhdApi.Utilities.Mappers
                 ProgramId = dto.ProgramId
             };
         }
+
+
+        public static void UpdateDefenseModel(DefenseModel defense, DefenseCreateDto dto)
+        {
+            if (defense == null || dto == null)
+                throw new ArgumentNullException("Defense or DTO cannot be null.");
+
+            defense.CandidateNameSurname = dto.CandidateNameSurname;
+            defense.DefenseTitle = dto.DefenseTitle;
+            defense.ScienceTeachers = dto.ScienceTeachers;
+            defense.CandidateDegree = dto.CandidateDegree;
+            defense.DefenseDate = dto.DefenseDate;
+            defense.Address = dto.Address;
+            defense.Message = dto.Message;
+            defense.Placeholder = dto.Placeholder;
+            defense.Members = dto.Members?.Select(m => new CompositionOfRada
+            {
+                Position = m.Position,
+                Members = m.Members?.Select(member => new MemberOfRada
+                {
+                    NameSurname = member.NameSurname,
+                    ToolTip = member.ToolTip,
+                    Title = member.Title
+                }).ToList()
+            }).ToList();
+            defense.Files = dto.Files?.Select(f => new DefenseFile
+            {
+                Name = f.Name,
+                Link = f.Link,
+                Type = f.Type
+            }).ToList();
+            defense.PublicationDate = dto.PublicationDate;
+            defense.ProgramId = dto.ProgramId;
+        }
+
     }
 }
