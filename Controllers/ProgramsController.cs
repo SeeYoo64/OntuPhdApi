@@ -114,12 +114,42 @@ namespace OntuPhdApi.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateProgram(int id, ProgramCreateUpdateDto programDto)
         {
-            var result = await _programService.UpdateProgramAsync(id, programDto);
-            if (!result)
+            _logger.LogInformation("Updating program with ID {Id}", id);
+
+            if (!ModelState.IsValid)
             {
-                return NotFound();
+                _logger.LogWarning("Invalid model state for program update ID {Id}", id);
+                return BadRequest(ModelState);
             }
-            return Ok(result);
+
+            try
+            {
+                await _programService.UpdateProgramAsync(id, programDto);
+                var updatedProgram = await _programService.GetProgramByIdAsync(id);
+                if (updatedProgram == null)
+                {
+                    _logger.LogError("Failed to retrieve updated program with ID {Id}", id);
+                    return StatusCode(500, new { error = "Failed to retrieve updated program" });
+                }
+
+                _logger.LogInformation("Program with ID {Id} updated successfully", id);
+                return Ok(updatedProgram);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                _logger.LogWarning("Program with ID {Id} not found: {Message}", id, ex.Message);
+                return NotFound(new { error = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning("Invalid input for program update ID {Id}: {Message}", id, ex.Message);
+                return BadRequest(new { error = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating program with ID {Id}", id);
+                return StatusCode(500, new { error = "An unexpected error occurred" });
+            }
         }
 
 

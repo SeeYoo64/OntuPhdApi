@@ -355,8 +355,14 @@ namespace OntuPhdApi.Utilities.Mappers
 
         public void UpdateProgramModel(ProgramModel program, ProgramCreateUpdateDto dto)
         {
-            program.Name = dto.Name;
-            program.Degree = dto.Degree;
+            if (program == null || dto == null)
+                throw new ArgumentNullException("Program or DTO cannot be null.");
+
+            if (string.IsNullOrEmpty(dto.Name))
+                throw new ArgumentException("Name is required.", nameof(dto.Name));
+            if (string.IsNullOrEmpty(dto.Degree))
+                throw new ArgumentException("Degree is required.", nameof(dto.Degree));
+
             program.NameCode = dto.NameCode;
             program.Form = dto.Form;
             program.Objects = dto.Objects;
@@ -376,6 +382,7 @@ namespace OntuPhdApi.Utilities.Mappers
             else
             {
                 program.Institute = null;
+                program.InstituteId = null;
             }
 
 

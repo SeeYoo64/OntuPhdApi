@@ -53,32 +53,40 @@ namespace OntuPhdApi.Services.Programs
             return _mapper.ToProgramResponseDto(program);
         }
 
-        public async Task<bool> UpdateProgramAsync(int id, ProgramCreateUpdateDto programDto)
+        public async Task UpdateProgramAsync(int id, ProgramCreateUpdateDto programDto)
         {
+            if (programDto == null)
+            {
+                _logger.LogWarning("Program DTO is null for update ID {Id}", id);
+                throw new ArgumentNullException(nameof(programDto));
+            }
+
             var existingProgram = await _programRepository.GetByIdAsync(id);
             if (existingProgram == null)
-                return false;
-
-            try
             {
+                _logger.LogWarning("Program with ID {Id} not found for update", id);
+                throw new KeyNotFoundException($"Program with ID {id} not found.");
+            }
 
-                if (programDto.Institute.Id != null)
+            if (programDto.Institute != null && programDto.Institute.Id != null)
+            {
+                var institute = await _context.Institutes.FindAsync(programDto.Institute.Id);
+                if (institute == null)
                 {
-                    var institute = await _context.Institutes.FindAsync(programDto.Institute.Id);
-                    if (institute == null) return false;
-                    existingProgram.Institute = institute;
+                    _logger.LogWarning("Institute with ID {InstituteId} not found for program ID {Id}", programDto.Institute.Id, id);
+                    throw new ArgumentException($"Institute with ID {programDto.Institute.Id} not found.");
                 }
-
-                _mapper.UpdateProgramModel(existingProgram, programDto);
-                await _programRepository.UpdateAsync(existingProgram);
-
-                return true;
+                existingProgram.Institute = institute;
             }
-            catch (Exception ex)
+            else
             {
-                _logger.LogError(ex, "Error while updating program ID = {ProgramId}", id);
-                return false;
+                existingProgram.Institute = null;
+                existingProgram.InstituteId = null;
             }
+
+            _mapper.UpdateProgramModel(existingProgram, programDto);
+            await _programRepository.UpdateAsync(existingProgram);
+            _logger.LogInformation("Program with ID {Id} updated successfully", id);
         }
 
         public async Task<bool> DeleteProgramAsync(int id)

@@ -136,7 +136,7 @@ namespace OntuPhdApi.Controllers
             try
             {
                 await _defenseService.UpdateDefenseAsync(id, defenseDto);
-                return NoContent();
+                return Ok(defenseDto);
             }
             catch (ArgumentException ex)
             {

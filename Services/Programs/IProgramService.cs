@@ -10,7 +10,7 @@ namespace OntuPhdApi.Services.Programs
         Task<IEnumerable<ProgramShortDto>> GetShortByDegreeAsync(string degree = null);
         Task<ProgramResponseDto> GetProgramByIdAsync(int id);
         Task<ProgramResponseDto> CreateProgramAsync(ProgramCreateUpdateDto programDto);
-        Task<bool> UpdateProgramAsync(int id, ProgramCreateUpdateDto programDto);
+        Task UpdateProgramAsync(int id, ProgramCreateUpdateDto programDto);
         Task<bool> DeleteProgramAsync(int id);
         Task<IEnumerable<ProgramDegreeDto>> GetProgramsByDegreeAsync(string degree);
     }

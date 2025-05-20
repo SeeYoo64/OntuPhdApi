@@ -320,6 +320,7 @@ namespace OntuPhdApi.Repositories.Program
 
         public async Task UpdateAsync(ProgramModel program)
         {
+            _context.Programs.Update(program);
             await _context.SaveChangesAsync();
         }
 
