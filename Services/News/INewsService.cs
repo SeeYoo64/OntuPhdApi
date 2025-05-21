@@ -6,6 +6,7 @@ namespace OntuPhdApi.Services.News
     {
         Task<List<NewsDto>> GetNewsAsync();
         Task<NewsViewDto> GetNewsByIdAsync(int id);
+        Task<NewsDto> GetFullNewsByIdAsync(int id);
         Task<List<NewsLatestDto>> GetLatestNewsAsync(int count);
         Task AddNewsAsync(NewsCreateUpdateDto newsDto);
         Task UpdateNewsAsync(int id, NewsCreateUpdateDto newsDto);

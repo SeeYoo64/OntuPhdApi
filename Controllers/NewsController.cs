@@ -64,6 +64,33 @@ namespace OntuPhdApi.Controllers
             }
         }
 
+        [HttpGet("full/{id}")]
+        public async Task<IActionResult> GetFullNewsById(int id)
+        {
+            _logger.LogInformation("Fetching news with ID {NewsId}.", id);
+            try
+            {
+                var news = await _newsService.GetFullNewsByIdAsync(id);
+                if (news == null)
+                {
+                    _logger.LogWarning("News with ID {NewsId} not found.", id);
+                    return StatusCode(404, $"News with ID {id} was not found");
+
+                }
+                return Ok(news);
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning("Invalid request for news with ID {NewsId}: {ErrorMessage}", id, ex.Message);
+                return StatusCode(400, $"Bad request error: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to fetch news with ID {NewsId}.", id);
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
         [HttpGet("latest")]
         public async Task<IActionResult> GetLatestNews([FromQuery] int count = 4)
         {

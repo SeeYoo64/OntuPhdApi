@@ -62,6 +62,26 @@ namespace OntuPhdApi.Services.News
             }
         }
 
+        public async Task<NewsDto> GetFullNewsByIdAsync(int id)
+        {
+            _logger.LogInformation("Fetching news with ID {NewsId}.", id);
+            try
+            {
+                var news = await _newsRepository.GetNewsByIdAsync(id);
+                if (news == null)
+                {
+                    _logger.LogWarning("News with ID {NewsId} not found.", id);
+                    return null;
+                }
+                return NewsMapper.ToDto(news);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to fetch news with ID {NewsId}.", id);
+                throw;
+            }
+        }
+
         public async Task<List<NewsLatestDto>> GetLatestNewsAsync(int count)
         {
             _logger.LogInformation("Fetching {Count} latest news.", count);
