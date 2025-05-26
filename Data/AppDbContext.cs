@@ -258,7 +258,7 @@ namespace OntuPhdApi.Data
                 entity.Property(e => e.Summary).IsRequired();
                 entity.Property(e => e.MainTag).IsRequired();
                 entity.Property(e => e.OtherTags).HasColumnType("jsonb");
-                entity.Property(e => e.PublicationDate);
+                entity.Property(e => e.PublicationDate).HasColumnType("timestamp without time zone");
                 entity.Property(e => e.ThumbnailPath);
                 entity.Property(e => e.PhotoPaths).HasColumnType("jsonb");
                 entity.Property(e => e.Body).HasColumnType("text");

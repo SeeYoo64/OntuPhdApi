@@ -10,7 +10,7 @@ namespace OntuPhdApi.Models.News
         public string MainTag { get; set; }
         public List<string>? OtherTags { get; set; }
 
-        [JsonConverter(typeof(DateOnlyConverter))]
+        [JsonConverter(typeof(DefenseDateTimeConverter))]
         public DateTime PublicationDate { get; set; }
 
         public string ThumbnailPath { get; set; }
