@@ -13,7 +13,7 @@ namespace OntuPhdApi.Models.News
         [JsonConverter(typeof(DefenseDateTimeConverter))]
         public DateTime PublicationDate { get; set; }
 
-        public string ThumbnailPath { get; set; }
+        public string? ThumbnailPath { get; set; }
         public List<string>? PhotoPaths { get; set; }
         public string Body { get; set; }
     }

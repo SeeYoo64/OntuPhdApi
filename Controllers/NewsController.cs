@@ -145,7 +145,7 @@ namespace OntuPhdApi.Controllers
             try
             {
                 await _newsService.UpdateNewsAsync(id, newsDto);
-                return NoContent();
+                return Ok(GetNewsById(id));
             }
             catch (ArgumentException ex)
             {
