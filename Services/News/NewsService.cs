@@ -124,30 +124,30 @@ namespace OntuPhdApi.Services.News
                 Directory.CreateDirectory(newsDir);
 
                 // Сохраняем миниатюру, если загружена
-                if (newsDto.Thumbnail != null && newsDto.Thumbnail.Length > 0)
+                if (newsDto.ThumbnailPath != null && newsDto.ThumbnailPath.Length > 0)
                 {
                     // Проверка размера
-                    if (newsDto.Thumbnail.Length > 5 * 1024 * 1024)
+                    if (newsDto.ThumbnailPath.Length > 5 * 1024 * 1024)
                     {
-                        _logger.LogWarning("Thumbnail too large for news ID: {NewsId}, Size: {Size}", news.Id, newsDto.Thumbnail.Length);
+                        _logger.LogWarning("Thumbnail too large for news ID: {NewsId}, Size: {Size}", news.Id, newsDto.ThumbnailPath.Length);
                         throw new ArgumentException("Thumbnail size exceeds 5 MB");
                     }
 
                     // Проверка типа
                     var allowedTypes = new[] { "image/png", "image/jpeg", "image/jpg" };
-                    if (!allowedTypes.Contains(newsDto.Thumbnail.ContentType))
+                    if (!allowedTypes.Contains(newsDto.ThumbnailPath.ContentType))
                     {
-                        _logger.LogWarning("Invalid thumbnail type for news ID: {NewsId}, Type: {Type}", news.Id, newsDto.Thumbnail.ContentType);
+                        _logger.LogWarning("Invalid thumbnail type for news ID: {NewsId}, Type: {Type}", news.Id, newsDto.ThumbnailPath.ContentType);
                         throw new ArgumentException("Only PNG, JPG, JPEG files are allowed for thumbnail");
                     }
 
-                    var extension = Path.GetExtension(newsDto.Thumbnail.FileName).ToLower();
+                    var extension = Path.GetExtension(newsDto.ThumbnailPath.FileName).ToLower();
                     var fileName = $"thumb_{DateTime.UtcNow:yyyyMMddHHmmss}{extension}";
                     var filePath = Path.Combine(newsDir, fileName);
 
                     using (var stream = new FileStream(filePath, FileMode.Create))
                     {
-                        await newsDto.Thumbnail.CopyToAsync(stream);
+                        await newsDto.ThumbnailPath.CopyToAsync(stream);
                     }
                     news.ThumbnailPath = fileName;
                     _logger.LogInformation("Uploaded thumbnail for news ID: {NewsId}, Path: {Path}", news.Id, news.ThumbnailPath);
@@ -159,10 +159,10 @@ namespace OntuPhdApi.Services.News
                 }
 
                 // Сохраняем фотографии, если загружены
-                if (newsDto.Photos != null && newsDto.Photos.Any())
+                if (newsDto.PhotoPaths != null && newsDto.PhotoPaths.Any())
                 {
                     news.PhotoPaths = new List<string>();
-                    foreach (var photo in newsDto.Photos)
+                    foreach (var photo in newsDto.PhotoPaths)
                     {
                         if (photo.Length == 0)
                             continue;
@@ -231,20 +231,20 @@ namespace OntuPhdApi.Services.News
                 Directory.CreateDirectory(newsDir);
 
                 // Обновляем миниатюру, если загружена
-                if (newsDto.Thumbnail != null && newsDto.Thumbnail.Length > 0)
+                if (newsDto.ThumbnailPath != null && newsDto.ThumbnailPath.Length > 0)
                 {
                     // Проверка размера
-                    if (newsDto.Thumbnail.Length > 5 * 1024 * 1024)
+                    if (newsDto.ThumbnailPath.Length > 5 * 1024 * 1024)
                     {
-                        _logger.LogWarning("Thumbnail too large for news ID: {NewsId}, Size: {Size}", id, newsDto.Thumbnail.Length);
+                        _logger.LogWarning("Thumbnail too large for news ID: {NewsId}, Size: {Size}", id, newsDto.ThumbnailPath.Length);
                         throw new ArgumentException("Thumbnail size exceeds 5 MB");
                     }
 
                     // Проверка типа
                     var allowedTypes = new[] { "image/png", "image/jpeg", "image/jpg" };
-                    if (!allowedTypes.Contains(newsDto.Thumbnail.ContentType))
+                    if (!allowedTypes.Contains(newsDto.ThumbnailPath.ContentType))
                     {
-                        _logger.LogWarning("Invalid thumbnail type for news ID: {NewsId}, Type: {Type}", id, newsDto.Thumbnail.ContentType);
+                        _logger.LogWarning("Invalid thumbnail type for news ID: {NewsId}, Type: {Type}", id, newsDto.ThumbnailPath.ContentType);
                         throw new ArgumentException("Only PNG, JPG, JPEG files are allowed for thumbnail");
                     }
 
@@ -259,13 +259,13 @@ namespace OntuPhdApi.Services.News
                         }
                     }
 
-                    var extension = Path.GetExtension(newsDto.Thumbnail.FileName).ToLower();
+                    var extension = Path.GetExtension(newsDto.ThumbnailPath.FileName).ToLower();
                     var fileName = $"thumb_{DateTime.UtcNow:yyyyMMddHHmmss}{extension}";
                     var filePath = Path.Combine(newsDir, fileName);
 
                     using (var stream = new FileStream(filePath, FileMode.Create))
                     {
-                        await newsDto.Thumbnail.CopyToAsync(stream);
+                        await newsDto.ThumbnailPath.CopyToAsync(stream);
                     }
                     news.ThumbnailPath = fileName;
                     _logger.LogInformation("Uploaded new thumbnail for news ID: {NewsId}, Path: {Path}", id, news.ThumbnailPath);
@@ -276,7 +276,7 @@ namespace OntuPhdApi.Services.News
                 }
 
                 // Обновляем фотографии, если загружены
-                if (newsDto.Photos != null && newsDto.Photos.Any())
+                if (newsDto.PhotoPaths != null && newsDto.PhotoPaths.Any())
                 {
                     // Удаляем старые фотографии
                     if (news.PhotoPaths != null && news.PhotoPaths.Any())
@@ -294,7 +294,7 @@ namespace OntuPhdApi.Services.News
 
                     // Сохраняем новые фотографии
                     news.PhotoPaths = new List<string>();
-                    foreach (var photo in newsDto.Photos)
+                    foreach (var photo in newsDto.PhotoPaths)
                     {
                         if (photo.Length == 0)
                             continue;
