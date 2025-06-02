@@ -103,7 +103,7 @@ namespace OntuPhdApi.Services.News
             }
         }
 
-        public async Task AddNewsAsync(NewsCreateUpdateDto newsDto)
+        public async Task AddNewsAsync(NewsCreateUpdateDto newsDto, List<IFormFile> photoFiles)
         {
             if (newsDto == null || string.IsNullOrEmpty(newsDto.Title) || string.IsNullOrEmpty(newsDto.Summary) || string.IsNullOrEmpty(newsDto.MainTag))
             {
@@ -159,10 +159,10 @@ namespace OntuPhdApi.Services.News
                 }
 
                 // Сохраняем фотографии, если загружены
-                if (newsDto.PhotoPaths != null && newsDto.PhotoPaths.Any())
+                if (photoFiles != null && photoFiles.Any())
                 {
                     news.PhotoPaths = new List<string>();
-                    foreach (var photo in newsDto.PhotoPaths)
+                    foreach (var photo in photoFiles)
                     {
                         if (photo.Length == 0)
                             continue;
@@ -206,7 +206,7 @@ namespace OntuPhdApi.Services.News
 
         }
 
-        public async Task UpdateNewsAsync(int id, NewsCreateUpdateDto newsDto)
+        public async Task UpdateNewsAsync(int id, NewsCreateUpdateDto newsDto, List<IFormFile> photoFiles)
         {
             if (newsDto == null || string.IsNullOrEmpty(newsDto.Title) || string.IsNullOrEmpty(newsDto.Summary) || string.IsNullOrEmpty(newsDto.MainTag))
             {
@@ -276,7 +276,7 @@ namespace OntuPhdApi.Services.News
                 }
 
                 // Обновляем фотографии, если загружены
-                if (newsDto.PhotoPaths != null && newsDto.PhotoPaths.Any())
+                if (photoFiles != null && photoFiles.Any())
                 {
                     // Удаляем старые фотографии
                     if (news.PhotoPaths != null && news.PhotoPaths.Any())
@@ -294,7 +294,7 @@ namespace OntuPhdApi.Services.News
 
                     // Сохраняем новые фотографии
                     news.PhotoPaths = new List<string>();
-                    foreach (var photo in newsDto.PhotoPaths)
+                    foreach (var photo in photoFiles)
                     {
                         if (photo.Length == 0)
                             continue;

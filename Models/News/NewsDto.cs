@@ -52,11 +52,9 @@ namespace OntuPhdApi.Models.News
         public string MainTag { get; set; }
         public List<string>? OtherTags { get; set; }
 
-        [JsonConverter(typeof(DateOnlyConverter))]
         public DateTime PublicationDate { get; set; }
 
         public IFormFile? ThumbnailPath { get; set; }
-        public List<IFormFile>? PhotoPaths { get; set; } 
         public string Body { get; set; }
     }
 }

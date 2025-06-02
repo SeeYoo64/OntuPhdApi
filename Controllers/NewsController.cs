@@ -114,12 +114,14 @@ namespace OntuPhdApi.Controllers
 
 
         [HttpPost]
-        public async Task<IActionResult> AddNews([FromForm] NewsCreateUpdateDto newsDto)
+        public async Task<IActionResult> AddNews(
+            [FromForm] NewsCreateUpdateDto newsDto,
+            [FromForm(Name = "photoPaths")] List<IFormFile> photoFiles)
         {
             _logger.LogInformation("Adding new news with title {NewsTitle}.", newsDto.Title);
             try
             {
-                await _newsService.AddNewsAsync(newsDto);
+                await _newsService.AddNewsAsync(newsDto, photoFiles);
                 return CreatedAtAction(
                     nameof(GetNewsById),
                     new { id = 0 }, // ID можно получить из сервиса, если нужно
@@ -139,12 +141,15 @@ namespace OntuPhdApi.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateNews(int id, [FromForm] NewsCreateUpdateDto newsDto)
+        public async Task<IActionResult> UpdateNews(
+            int id, 
+            [FromForm] NewsCreateUpdateDto newsDto,
+            [FromForm(Name = "photoPaths")] List<IFormFile> photoFiles)
         {
             _logger.LogInformation("Updating news with ID {NewsId}.", id);
             try
             {
-                await _newsService.UpdateNewsAsync(id, newsDto);
+                await _newsService.UpdateNewsAsync(id, newsDto, photoFiles);
                 return Ok(newsDto);
             }
             catch (ArgumentException ex)

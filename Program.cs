@@ -174,7 +174,7 @@ internal class Program
         {
             options.AddPolicy("AllowAll", builder =>
             {
-                builder.WithOrigins("http://192.168.0.160:3000")
+                builder.WithOrigins("http://localhost:3000")
                        .AllowAnyHeader()
                        .AllowAnyMethod()
                        .AllowCredentials();
