@@ -99,27 +99,27 @@ namespace OntuPhdApi.Services.Employees
                     _logger.LogWarning("Source blank.png not found at: {SourcePath}, proceeding without copy", sourceBlankPath);
                 }
 
-                if (employeeDto.Photo != null && employeeDto.Photo.Length > 0)
+                if (employeeDto.PhotoPath != null && employeeDto.PhotoPath.Length > 0)
                 {
                     var allowedTypes = new[] { "image/png", "image/jpeg", "image/jpg" };
-                    if (!allowedTypes.Contains(employeeDto.Photo.ContentType))
+                    if (!allowedTypes.Contains(employeeDto.PhotoPath.ContentType))
                     {
-                        _logger.LogError("Invalid photo type for employee: {EmployeeName}, Type: {Type}", employeeDto.Name, employeeDto.Photo.ContentType);
+                        _logger.LogError("Invalid photo type for employee: {EmployeeName}, Type: {Type}", employeeDto.Name, employeeDto.PhotoPath.ContentType);
                         throw new ArgumentException("Only PNG, JPG, JPEG files are allowed.");
                     }
 
-                    if (employeeDto.Photo.Length > 5 * 1024 * 1024)
+                    if (employeeDto.PhotoPath.Length > 5 * 1024 * 1024)
                     {
-                        _logger.LogError("Photo too large for employee: {EmployeeName}, Size: {Size}", employeeDto.Name, employeeDto.Photo.Length);
+                        _logger.LogError("Photo too large for employee: {EmployeeName}, Size: {Size}", employeeDto.Name, employeeDto.PhotoPath.Length);
                         throw new ArgumentException("File size exceeds 5 MB.");
                     }
 
-                    var extension = Path.GetExtension(employeeDto.Photo.FileName).ToLower();
+                    var extension = Path.GetExtension(employeeDto.PhotoPath.FileName).ToLower();
                     var photoFileName = $"photo_{DateTime.UtcNow:yyyyMMddHHmmss}{extension}";
                     var photoPath = Path.Combine(employeeDir, photoFileName);
                     using (var stream = new FileStream(photoPath, FileMode.Create))
                     {
-                        await employeeDto.Photo.CopyToAsync(stream);
+                        await employeeDto.PhotoPath.CopyToAsync(stream);
                     }
                     employee.PhotoPath = photoFileName;
                     _logger.LogInformation("Uploaded photo for employee: {EmployeeName}, Path: {PhotoPath}", employeeDto.Name, photoPath);
@@ -167,22 +167,22 @@ namespace OntuPhdApi.Services.Employees
                 } catch (Exception ex) { 
                     _logger.LogError(ex, "Failed to delete old photos for employee ID: {EmployeeId}, Directory: {Directory}", id, employeeDir); 
                 } 
-                if (employeeDto.Photo != null && employeeDto.Photo.Length != 0) { 
+                if (employeeDto.PhotoPath != null && employeeDto.PhotoPath.Length != 0) { 
                     var allowedTypes = new[] { "image/png", "image/jpeg", "image/jpg" }; 
-                    if (!allowedTypes.Contains(employeeDto.Photo.ContentType)) { 
-                        _logger.LogError("Invalid photo type for employee ID: {EmployeeId}, Type: {Type}", id, employeeDto.Photo.ContentType); 
+                    if (!allowedTypes.Contains(employeeDto.PhotoPath.ContentType)) { 
+                        _logger.LogError("Invalid photo type for employee ID: {EmployeeId}, Type: {Type}", id, employeeDto.PhotoPath.ContentType); 
                         throw new ArgumentException("Only PNG, JPG, JPEG files are allowed."); 
                     } 
-                    if (employeeDto.Photo.Length > 5 * 1024 * 1024) 
+                    if (employeeDto.PhotoPath.Length > 5 * 1024 * 1024) 
                     { 
-                        _logger.LogError("Photo too large for employee ID: {EmployeeId}, Size: {Size}", id, employeeDto.Photo.Length); 
+                        _logger.LogError("Photo too large for employee ID: {EmployeeId}, Size: {Size}", id, employeeDto.PhotoPath.Length); 
                         throw new ArgumentException("File size exceeds 5 MB."); 
                     } 
-                    var extension = Path.GetExtension(employeeDto.Photo.FileName).ToLower(); 
+                    var extension = Path.GetExtension(employeeDto.PhotoPath.FileName).ToLower(); 
                     var photoFileName = $"photo_{DateTime.UtcNow:yyyyMMddHHmmss}{extension}"; 
                     var photoPath = Path.Combine(employeeDir, photoFileName); 
                     using (var stream = new FileStream(photoPath, FileMode.Create)) { 
-                        await employeeDto.Photo.CopyToAsync(stream); 
+                        await employeeDto.PhotoPath.CopyToAsync(stream); 
                     } 
                     employee.PhotoPath = photoFileName; 
                     _logger.LogInformation("Uploaded photo for employee ID: {EmployeeId}, Path: {PhotoPath}", id, photoPath); 

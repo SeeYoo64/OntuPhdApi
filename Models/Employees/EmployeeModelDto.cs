@@ -13,7 +13,7 @@
     {
         public string Name { get; set; }
         public string Position { get; set; }
-        public IFormFile? Photo { get; set; } // Файл фотографии для загрузки
+        public IFormFile? PhotoPath { get; set; } // Файл фотографии для загрузки
     }
 
 }

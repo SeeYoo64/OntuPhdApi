@@ -93,7 +93,7 @@ namespace OntuPhdApi.Controllers
             try
             {
                 await _employeesService.UpdateEmployeeAsync(id, employeeDto);
-                return NoContent();
+                return Ok(employeeDto);
             }
             catch (ArgumentException ex)
             {
@@ -119,7 +119,7 @@ namespace OntuPhdApi.Controllers
             try
             {
                 await _employeesService.DeleteEmployeeAsync(id);
-                return NoContent();
+                return Ok(id);
             }
             catch (KeyNotFoundException ex)
             {
