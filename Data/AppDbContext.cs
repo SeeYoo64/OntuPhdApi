@@ -212,7 +212,6 @@ namespace OntuPhdApi.Data
 
         private void ConfigureDefense(ModelBuilder modelBuilder)
         {
-            // Конфигурация DefenseModel
             modelBuilder.Entity<DefenseModel>(entity =>
             {
                 entity.HasKey(e => e.Id);
@@ -228,8 +227,6 @@ namespace OntuPhdApi.Data
                 entity.Property(e => e.PublicationDate).HasColumnType("timestamp without time zone");
                 entity.Property(e => e.ProgramId);
                 
-
-                // Связь с Program
                 entity.HasOne(d => d.Program)
                       .WithMany()
                       .HasForeignKey(d => d.ProgramId)
@@ -267,7 +264,6 @@ namespace OntuPhdApi.Data
 
         private void ConfigureDocument(ModelBuilder modelBuilder)
         {
-            // Конфигурация Document
             modelBuilder.Entity<DocumentModel>(entity =>
             {
                 entity.HasKey(e => e.Id);
@@ -281,7 +277,6 @@ namespace OntuPhdApi.Data
 
         private void ConfigureApplyDocument(ModelBuilder modelBuilder)
         {
-            // Конфигурация ApplyDocument
             modelBuilder.Entity<ApplyDocumentModel>(entity =>
             {
                 entity.HasKey(d => d.Id);
@@ -316,7 +311,6 @@ namespace OntuPhdApi.Data
                 entity.Property(r => r.Description)
                       .IsRequired(false);
 
-                // Status is computed, not mapped
                 entity.Ignore(r => r.Status);
             });
         }
@@ -334,8 +328,6 @@ namespace OntuPhdApi.Data
             modelBuilder.Entity<User>(entity =>
             {
                 entity.HasKey(e => e.Id);
-
-                // Поля
                 entity.Property(e => e.Name).HasMaxLength(255);
                 entity.Property(e => e.Email).HasMaxLength(255);
             });
@@ -350,17 +342,14 @@ namespace OntuPhdApi.Data
 
         private void ConfigureAccount(ModelBuilder modelBuilder)
         {
-            // Конфигурация Account
             modelBuilder.Entity<Account>(entity =>
             {
                 entity.HasKey(e => e.Id);
 
-                // Поля
                 entity.Property(e => e.Type).HasMaxLength(255).IsRequired();
                 entity.Property(e => e.Provider).HasMaxLength(255).IsRequired();
                 entity.Property(e => e.ProviderAccountId).HasMaxLength(255).IsRequired();
 
-                // Связь с User
                 entity.HasOne(e => e.User)
                       .WithMany(u => u.Accounts)
                       .HasForeignKey(e => e.UserId)
@@ -370,13 +359,10 @@ namespace OntuPhdApi.Data
 
         private void ConfigureVerificationToken(ModelBuilder modelBuilder)
         {
-            // Конфигурация VerificationToken
             modelBuilder.Entity<VerificationToken>(entity =>
             {
-                // Составной ключ (identifier, token)
                 entity.HasKey(e => new { e.Identifier, e.Token });
 
-                // Все поля обязательные
                 entity.Property(e => e.Identifier).IsRequired();
                 entity.Property(e => e.Token).IsRequired();
                 entity.Property(e => e.Expires).IsRequired();

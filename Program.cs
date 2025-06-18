@@ -38,8 +38,6 @@ internal class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
-        // ЭТУ СТРОЧКУ УДАЛИ!!!!! ЕСЛИ НЕ РАБОТАЕТ!!!!!!!!!!!!!!!!!!!!!!!! И БУДЕТ ОБРАТНО ЛОКАЛХОСТ
-        // ИЛИ ДОБАВЬ ЧТО_ТО ЕЩЁ
         builder.WebHost.UseUrls("http://0.0.0.0:5124", "https://0.0.0.0:5125");
 
         // Adding Jwt services

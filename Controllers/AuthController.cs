@@ -204,7 +204,7 @@ namespace OntuPhdApi.Controllers
                 HttpOnly = false, // Доступно для JavaScript
                 Secure = false,
                 SameSite = SameSiteMode.Strict,
-                Expires = DateTimeOffset.UtcNow.AddMinutes(1) // 15 минут
+                Expires = DateTimeOffset.UtcNow.AddMinutes(15) // 15 минут
             });
 
             // Установка mustChangePassword Token в обычную куки
